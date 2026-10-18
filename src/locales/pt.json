@@ -918,7 +918,12 @@
         "bedtime": "deitar às {{time}}",
         "lastLate": "consumo às {{time}}, depois da hora"
       },
-      "targetSince": "Meta actual ({{target}}) desde {{date}}; antes, os dias contam com o valor de então."
+      "targetSince": "Meta actual ({{target}}) desde {{date}}; antes, os dias contam com o valor de então.",
+      "qtyDaily": "📅 Dia a dia (é isto que a meta conta): cada dia é estimado. A balança diz quanto saiu do saco entre duas pesagens e a app divide pelos toques, como se fossem todos do mesmo tamanho. Vê os picos.",
+      "qtyAvg": "⚖️ Média pela balança: ≈{{mg}} mg por dia",
+      "qtyAvgCover": "a balança cobre ~{{covered}} dos {{days}} dias",
+      "qtyAvgExplain": "Tudo o que saiu do saco a dividir pelo tempo entre pesagens. Não depende dos toques, mas esconde os picos: um dia muito alto fica diluído na média.",
+      "qtyAvgNone": "⚖️ Média pela balança: ainda não se sabe — as pesagens deste período cobrem menos de 2 dias."
     },
     "progress": {
       "title": "📈 Análise de Progresso Temporal",

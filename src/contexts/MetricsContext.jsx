@@ -4,7 +4,7 @@ import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
 import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal } from '../utils/helpers';
 import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
-import { deriveDailyMg } from '../utils/mgDerivation';
+import { deriveDailyMg, measuredPeriods } from '../utils/mgDerivation';
 
 const MetricsContext = createContext();
 
@@ -60,6 +60,12 @@ export const MetricsProvider = ({ children }) => {
   }, [weighings, consumptions, unloggedDates]);
 
   const weighingMeasuredMgByDate = mgDerivation.mgByDate;
+
+  // PERÍODOS PESADOS (entre duas pesagens): o que saiu do saco, direto da
+  // balança. Servem o Histórico e a "média pela balança" das metas de mg.
+  const weighedPeriods = useMemo(() => {
+    try { return measuredPeriods(weighings || [], consumptions || [], { unloggedDates }); } catch { return []; }
+  }, [weighings, consumptions, unloggedDates]);
   // Porque é que um dia NÃO tem mg fiável (códigos por dia). Serve para a app
   // explicar a ausência em vez de saltar o dia em silêncio.
   const mgGapReasonsByDate = mgDerivation.reasonsByDate;
@@ -490,6 +496,7 @@ export const MetricsProvider = ({ children }) => {
     dailySummary: effectiveDailySummary, // ficha completa por dia (count/parte-do-dia + sono/deitar/mg/humor/energia)
     weighingMeasuredMgByDate, // mg/dia derivados das pesagens (só dias medidos a 100%)
     mgGapReasonsByDate, // porque é que um dia ficou sem mg fiável
+    weighedPeriods, // o que saiu do saco entre cada duas pesagens (só balança)
     unloggedDates, // dias marcados "não registei" (dados em falta, não zeros)
     atypicalDates, // dias marcados como atípicos (fora das médias)
   }), [
@@ -497,7 +504,7 @@ export const MetricsProvider = ({ children }) => {
     analysis.temporalCorrelations, analysis.bidirectionalAnalysis, analysis.streaks,
     timeSinceLastConsumption, last7Days, avgFrequencyLast7Days, getGoalProgress,
     consumptionsByDate, effectiveDailyRollup, effectiveDailySummary, weighingMeasuredMgByDate,
-    mgGapReasonsByDate, unloggedDates, atypicalDates,
+    mgGapReasonsByDate, weighedPeriods, unloggedDates, atypicalDates,
   ]);
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;

@@ -421,6 +421,51 @@ export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
 }
 
 /**
+ * MÉDIA PELA BALANÇA: tudo o que saiu do saco ÷ o tempo que as pesagens cobrem,
+ * dentro de [fromMs, toMs]. Ao contrário do "por dia", não reparte pelos toques
+ * (não supõe toques todos iguais) — mas também não mostra picos: é o nível
+ * geral, para ver AO LADO do dia a dia da meta, nunca em vez dele.
+ * Um período só em parte dentro do intervalo (ou a passar por um dia atípico)
+ * conta na proporção do tempo. Os dias "não registei" contam: a balança sabe o
+ * que saiu mesmo sem toques.
+ * Com menos de 2 dias cobertos não se sabe → null (a app diz que não sabe).
+ * @param {Array} periods saída de measuredPeriods
+ * @returns {null | { mgPerDay:number, coveredDays:number, spanDays:number }}
+ */
+export function balanceAverage(periods = [], fromMs = null, toMs = null, { excludedDates } = {}) {
+  const DAY = 86400000;
+  const lo = fromMs ?? -Infinity;
+  const hi = toMs ?? Date.now();
+  const excluded = toDateSet(excludedDates);
+  let mg = 0, ms = 0, first = null;
+  for (const p of periods) {
+    const len = p.end - p.start;
+    const a = Math.max(p.start, lo), b = Math.min(p.end, hi);
+    if (!(len > 0) || b <= a) continue;
+    let inside = b - a;
+    if (excluded) {
+      for (const d of datesBetween(a, b)) {
+        if (!excluded.has(d)) continue;
+        const dayStart = new Date(`${d}T00:00:00`).getTime();
+        inside -= Math.max(0, Math.min(b, dayStart + DAY) - Math.max(a, dayStart));
+      }
+    }
+    if (inside <= 0) continue;
+    mg += p.consumed * (inside / len);
+    ms += inside;
+    first = first == null ? a : Math.min(first, a);
+  }
+  const coveredDays = ms / DAY;
+  if (coveredDays < 2) return null;
+  const spanStart = Number.isFinite(lo) ? lo : first;
+  return {
+    mgPerDay: Math.round(mg / coveredDays),
+    coveredDays: Math.round(coveredDays),
+    spanDays: Math.max(Math.round(coveredDays), Math.round((hi - spanStart) / DAY)),
+  };
+}
+
+/**
  * Detalhe do período fechado por uma pesagem — para a app poder MOSTRAR os
  * números em vez de pedir à pessoa que confie de olhos fechados (ex.: ao
  * decidir se desmarca um "enchimento esquecido"). Calcula o consumo COMO SE o

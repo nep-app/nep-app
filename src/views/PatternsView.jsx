@@ -7,6 +7,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay } from '../utils/helpers';
+import { balanceAverage } from '../utils/mgDerivation';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -308,12 +309,25 @@ export function PatternsView({
                                                     // Sem dias que contem não há percentagem: "ainda não se sabe", não 0%.
                                                     const successRate = totalPossible > 0 ? (achievementCount / totalPossible) * 100 : null;
 
+                                                    // Meta de mg: ao lado do dia a dia (o que a meta conta), a média
+                                                    // só pela balança no mesmo intervalo. Descritiva, sem ✓/✗: a
+                                                    // meta é um teto por dia, não uma média.
+                                                    const balance = g.type === 'reduce_quantity'
+                                                        ? balanceAverage(
+                                                            metrics?.weighedPeriods || [],
+                                                            fromDate ? new Date(`${fromDate}T00:00:00`).getTime() : null,
+                                                            periodTo && periodTo < getTodayKey() ? new Date(`${periodTo}T00:00:00`).getTime() + 86400000 : Date.now(),
+                                                            { excludedDates: metrics?.atypicalDates }
+                                                        )
+                                                        : null;
+
                                                     return {
                                                         ...g,
                                                         achievementCount,
                                                         totalPossible,
                                                         successRate,
                                                         goalDays,
+                                                        balance,
                                                         countsFrom: fromDate,
                                                         currentFrom: goalCountsFrom(g),
                                                     };
@@ -976,6 +990,20 @@ export function PatternsView({
                                                                                         ></div>
                                                                                     </div>
                                                                                 </div>
+                                                                                )}
+                                                                                {goal.type === 'reduce_quantity' && (
+                                                                                    <div className="mt-2 space-y-1.5 text-[11px] leading-snug">
+                                                                                        <p className="text-gray-400">{t('patterns.goals.qtyDaily')}</p>
+                                                                                        {goal.balance ? (
+                                                                                            <p className="text-gray-300">
+                                                                                                {t('patterns.goals.qtyAvg', { mg: goal.balance.mgPerDay })}{' · '}
+                                                                                                <span className="text-gray-500">{t('patterns.goals.qtyAvgCover', { covered: goal.balance.coveredDays, days: goal.balance.spanDays })}</span>
+                                                                                                <span className="block text-gray-500">{t('patterns.goals.qtyAvgExplain')}</span>
+                                                                                            </p>
+                                                                                        ) : (
+                                                                                            <p className="text-gray-500">{t('patterns.goals.qtyAvgNone')}</p>
+                                                                                        )}
+                                                                                    </div>
                                                                                 )}
                                                                                 {/* Desde quando conta e, ao tocar, cada dia com o valor e ✓/✗ */}
                                                                                 <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-gray-400">

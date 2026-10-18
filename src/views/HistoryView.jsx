@@ -9,7 +9,7 @@ import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeToISODate } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
-import { periodInfoForClosing, typicalMgPerDose, measuredPeriods } from '../utils/mgDerivation';
+import { periodInfoForClosing, typicalMgPerDose, balanceAverage } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
 import { UnloggedDaysPanel } from '../components/ui/UnloggedDaysPanel';
 import { EMOTION_EN } from '../constants/emotions';
@@ -220,9 +220,13 @@ export function HistoryView({
 
     // PERÍODOS PESADOS: o que saiu do saco entre duas pesagens. Vem da balança,
     // não depende de toques — é o que continua verdade quando faltam registos.
-    const weighedPeriods = useMemo(
-        () => measuredPeriods(weighings || [], consumptions || [], { unloggedDates: metrics?.unloggedDates }),
-        [weighings, consumptions, metrics?.unloggedDates]
+    const weighedPeriods = metrics?.weighedPeriods || [];
+
+    // MÉDIA PELA BALANÇA dos últimos 7 dias — o nível geral, ao lado do
+    // "Total por dia" (que é estimado dia a dia e é o que a meta conta).
+    const balanceWeek = useMemo(
+        () => balanceAverage(weighedPeriods, Date.now() - 7 * 86400000, Date.now(), { excludedDates: metrics?.atypicalDates }),
+        [weighedPeriods, metrics?.atypicalDates]
     );
 
     // Dias marcados como ATÍPICOS (ficam fora das médias).
@@ -995,10 +999,26 @@ export function HistoryView({
                                                     {/* Total de mg por dia PRIMEIRO: é o que se procura ao entrar
                                                         aqui. Fica encurtado para não empurrar os registos para
                                                         fora do ecrã quando há muitas dosagens. */}
+                                                    {/* Duas respostas diferentes, cada uma dita pelo nome: a MÉDIA vem só
+                                                        da balança (nível geral, sem picos); o TOTAL POR DIA reparte pelos
+                                                        toques (vê os picos, mas é estimado) e é o que a meta conta. */}
+                                                    {weighedPeriods.length > 0 && (
+                                                        <div className="mb-5 pb-4 border-b border-gray-700">
+                                                            <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Average from the scale · last 7 days' : 'Média pela balança · últimos 7 dias'}</h4>
+                                                            {balanceWeek ? (
+                                                                <>
+                                                                    <p className="text-sm text-gray-200">≈ <span className="font-semibold text-green-300">{balanceWeek.mgPerDay} mg</span> {isEN ? 'per day' : 'por dia'} <span className="text-xs text-gray-500">· {isEN ? `the scale covers ~${balanceWeek.coveredDays} of ${balanceWeek.spanDays} days` : `a balança cobre ~${balanceWeek.coveredDays} dos ${balanceWeek.spanDays} dias`}</span></p>
+                                                                    <p className="text-xs text-gray-500 mt-1">{isEN ? 'Everything that left the bag, divided by the time between weighings. It does not depend on your taps, but it hides peaks: one very high day gets diluted.' : 'Tudo o que saiu do saco a dividir pelo tempo entre pesagens. Não depende dos toques, mas esconde os picos: um dia muito alto fica diluído.'}</p>
+                                                                </>
+                                                            ) : (
+                                                                <p className="text-xs text-gray-500">{isEN ? 'Not enough weighings in the last 7 days to know (at least 2 days covered).' : 'Ainda não se sabe: as pesagens dos últimos 7 dias cobrem menos de 2 dias.'}</p>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     {derivedDaysList.length > 0 && (
                                                         <div className="mb-5 pb-4 border-b border-gray-700">
                                                             <h4 className="text-sm font-semibold text-white mb-1">{isEN ? 'Total per day' : 'Total por dia'}</h4>
-                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'From what you logged or from fully-weighed days. Days without a reliable value are not shown.' : 'Do que registaste ou de dias totalmente pesados. Dias sem valor fiável não aparecem.'}</p>
+                                                            <p className="text-xs text-gray-500 mb-3">{isEN ? 'How much on each day — this is what your mg goal counts. On weighed days, the app splits what left the bag across that period\'s taps, as if they were all the same size, so it is an estimate. It shows peaks. Days without a reliable value are not shown.' : 'Quanto foi em cada dia — é isto que a meta de mg conta. Nos dias pesados, a app divide o que saiu do saco pelos toques desse período, como se fossem todos do mesmo tamanho: por isso é uma estimativa. Mostra os picos. Dias sem valor fiável não aparecem.'}</p>
                                                             <div className="space-y-1">
                                                                 {(showAllDoseDays ? derivedDaysList : derivedDaysList.slice(0, 7)).map(d => (
                                                                     <div key={d.date} className="flex items-center justify-between bg-gray-900/40 rounded px-3 py-1.5">

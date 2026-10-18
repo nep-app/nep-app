@@ -855,7 +855,12 @@
         "bedtime": "bed at {{time}}",
         "lastLate": "use at {{time}}, after the time"
       },
-      "targetSince": "Current goal ({{target}}) since {{date}}; earlier days count with the value at the time."
+      "targetSince": "Current goal ({{target}}) since {{date}}; earlier days count with the value at the time.",
+      "qtyDaily": "📅 Day by day (this is what the goal counts): each day is an estimate. The scale says how much left the bag between two weighings and the app splits it across your taps, as if they were all the same size. It shows peaks.",
+      "qtyAvg": "⚖️ Average from the scale: ≈{{mg}} mg per day",
+      "qtyAvgCover": "the scale covers ~{{covered}} of {{days}} days",
+      "qtyAvgExplain": "Everything that left the bag divided by the time between weighings. It does not depend on taps, but it hides peaks: one very high day gets diluted in the average.",
+      "qtyAvgNone": "⚖️ Average from the scale: not known yet — the weighings in this period cover less than 2 days."
     },
     "progress": {
       "title": "📈 Temporal Progress Analysis",
