@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
-import { getTodayKey, toLocalDatetimeInput } from '../../utils/helpers';
+import { getTodayKey, safeToISODate } from '../../utils/helpers';
 
 export const DailyLogModal = ({
   isOpen,
@@ -12,15 +12,21 @@ export const DailyLogModal = ({
   onSubmit,
   onOpenWeighing,
   derivedMg,
+  cycleOptions = null,
+  cycleMg = [],
   onMarkNotWeighed
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
 
   if (!isOpen) return null;
 
   // Data de hoje em hora LOCAL (nunca UTC — senão entre 00h-01h ficava preso em "ontem")
   const today = getTodayKey();
+  const fmt = (ms) => new Date(ms).toLocaleString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  // O que a balança deu para o ciclo escolhido (se se sabe) — para comparar.
+  const chosenStart = cycleOptions && cycleOptions.length ? (dailyForm.cycleStart || cycleOptions[0].start) : null;
+  const scaleForCycle = chosenStart != null ? (cycleMg.find(c => c.start === chosenStart && !c.manual) || null) : null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
@@ -41,16 +47,40 @@ export const DailyLogModal = ({
             </button>
           )}
           <div>
-            {/* Data E hora: o valor vai para o ciclo (acordar → acordar) em que
-               esta hora cai — sem hora, não se sabia de que ciclo era. */}
+            {/* O total que calculaste (tara e contas feitas por ti) — o mesmo que
+               a balança faz pela app. Com ciclos, é o total DE UM CICLO
+               (acordar → acordar); sem ciclos, de um dia. */}
+            {cycleOptions && cycleOptions.length > 0 ? (
+              <>
+                <label htmlFor="mg-cycle" className="block text-sm font-medium mb-1 text-gray-300">{t('modals.dailyLog.cycleLabel')}</label>
+                <select
+                  id="mg-cycle"
+                  value={dailyForm.cycleStart || cycleOptions[0].start}
+                  onChange={(e) => { const start = Number(e.target.value); setDailyForm({ ...dailyForm, cycleStart: start, date: safeToISODate(start) }); }}
+                  className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
+                >
+                  {cycleOptions.map(o => (
+                    <option key={o.start} value={o.start}>
+                      {o.end == null
+                        ? t('modals.dailyLog.cycleCurrent', { from: fmt(o.start) })
+                        : t('modals.dailyLog.cycleRange', { from: fmt(o.start), to: fmt(o.end) })
+                          + (o.end - o.start > 36 * 3600000 ? ` ${t('modals.dailyLog.cycleTooLong')}` : '')}
+                    </option>
+                  ))}
+                </select>
+              </>
+            ) : (
+              <>
             <label className="block text-sm font-medium mb-1 text-gray-300">{t('modals.dailyLog.dateLabel')}</label>
             <input
-              type="datetime-local"
-              value={dailyForm.when || (dailyForm.date && dailyForm.date !== today ? `${dailyForm.date}T12:00` : toLocalDatetimeInput(new Date()))}
-              onChange={(e) => e.target.value && setDailyForm({...dailyForm, when: e.target.value, date: e.target.value.slice(0, 10)})}
-              max={toLocalDatetimeInput(new Date())}
+              type="date"
+              value={dailyForm.date || today}
+              onChange={(e) => setDailyForm({...dailyForm, date: e.target.value})}
+              max={today}
               className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
             />
+              </>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-300">{t('modals.dailyLog.mgLabel')}</label>
@@ -61,6 +91,16 @@ export const DailyLogModal = ({
               className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
               min="0"
             />
+            {scaleForCycle && (
+              <button
+                type="button"
+                onClick={() => setDailyForm({...dailyForm, mg: String(scaleForCycle.mg)})}
+                className="mt-2 w-full text-left bg-gray-900/50 border border-gray-700 hover:border-purple-500 rounded-lg p-2.5 text-xs text-gray-300 transition-colors"
+              >
+                ⚖️ {t('modals.dailyLog.scaleForCycle', { mg: scaleForCycle.mg })}
+                <span className="block text-purple-300 mt-0.5">{t('weighing.useThisValue')}</span>
+              </button>
+            )}
             {derivedMg && derivedMg.mg != null && (
               <button
                 type="button"

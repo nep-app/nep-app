@@ -373,12 +373,17 @@
   },
   "modals": {
     "dailyLog": {
-      "title": "Registar mg",
-      "dateLabel": "Quando",
-      "mgLabel": "Quantos mg (aproximado)",
+      "title": "Registar mg (feito por mim)",
+      "dateLabel": "De que dia?",
+      "mgLabel": "Total gasto (mg) — a conta que fizeste com a balança",
       "notesLabel": "Notas (opcional)",
       "notesPlaceholder": "Como te sentiste? Contexto...",
-      "save": "Guardar"
+      "save": "Guardar",
+      "cycleLabel": "De que ciclo é este total? (acordar → acordar)",
+      "cycleCurrent": "Ciclo atual — desde {{from}}",
+      "cycleRange": "{{from}} → {{to}}",
+      "scaleForCycle": "Pela app (balança + toques), este ciclo deu ≈{{mg}} mg.",
+      "cycleTooLong": "(mais de 36 h — falta registar um acordar; não conta)"
     },
     "wellbeing": {
       "title": "Bem-Estar",

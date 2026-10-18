@@ -373,12 +373,17 @@
   },
   "modals": {
     "dailyLog": {
-      "title": "Log mg",
-      "dateLabel": "When",
-      "mgLabel": "How many mg (approx.)",
+      "title": "Log mg (my own calculation)",
+      "dateLabel": "Which day?",
+      "mgLabel": "Total used (mg) — your own calculation from the scale",
       "notesLabel": "Notes (optional)",
       "notesPlaceholder": "How did you feel? Context...",
-      "save": "Save"
+      "save": "Save",
+      "cycleLabel": "Which cycle is this total for? (wake → wake)",
+      "cycleCurrent": "Current cycle — since {{from}}",
+      "cycleRange": "{{from}} → {{to}}",
+      "scaleForCycle": "From the app (scale + taps), this cycle came to ≈{{mg}} mg.",
+      "cycleTooLong": "(over 36 h — a wake-up is missing; does not count)"
     },
     "wellbeing": {
       "title": "Well-being",

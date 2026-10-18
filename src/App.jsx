@@ -276,6 +276,17 @@ export function AuthenticatedApp() {
                 const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
                 return deriveDailyMg(weighings, consumptions, { typical, unloggedDates });
             }, [weighings, consumptions, metrics?.unloggedDates]);
+            // "Registar mg" = o total que a pessoa calculou (tara e contas feitas
+            // por ela) — o mesmo que a balança faz pela app. Quem regista ciclos
+            // escolhe DE QUE CICLO é o total (acordar → acordar); quem não regista,
+            // escolhe o dia. Os 10 ciclos mais recentes, o atual primeiro.
+            const mgCycleOptions = React.useMemo(() => {
+                if (!metrics?.mgByCycleMode) return null;
+                const wakes = cycles.map(c => new Date(c.timestamp || c.createdAt || c.date).getTime()).filter(ms => !isNaN(ms)).sort((a, b) => a - b);
+                const out = [];
+                for (let i = wakes.length - 1; i >= 0 && out.length < 10; i--) out.push({ start: wakes[i], end: i + 1 < wakes.length ? wakes[i + 1] : null });
+                return out;
+            }, [cycles, metrics?.mgByCycleMode]);
             const [wellbeingForm, setWellbeingForm] = useState({ mood: '', energy: '', waterGlasses: 0, exerciseType: '', exerciseDuration: '', napDuration: '', social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '', datetime: '', isAtypical: false, atypicalReason: '' });
             const [emotionsForm, setEmotionsForm] = useState({ datetime: '', emotions: [], notes: '' });
             const [reflectionAnswer, setReflectionAnswer] = useState('');
@@ -401,10 +412,11 @@ export function AuthenticatedApp() {
             const openEditDailyLog = (log) => {
                 setEditingDailyLog({...log});
                 const dateStr = log.date || safeToISODate(log.timestamp) || getTodayKey();
-                // A hora guardada só vale se for do mesmo dia (registos antigos
-                // tinham a hora em que se gravou, não a do consumo).
-                const when = log.timestamp && safeToISODate(log.timestamp) === dateStr ? toLocalDatetimeInput(log.timestamp) : `${dateStr}T12:00`;
-                setDailyForm({ mg: log.mg ?? '', notes: log.notes || '', date: dateStr, when });
+                // Em que momento o registo está (a mesma regra do mgBySleepCycle):
+                // a hora guardada se for do mesmo dia, senão o meio-dia do dia.
+                const placed = log.timestamp && safeToISODate(log.timestamp) === dateStr ? new Date(log.timestamp).getTime() : new Date(`${dateStr}T12:00`).getTime();
+                const cyc = (mgCycleOptions || []).find(o => placed >= o.start && (o.end == null || placed < o.end));
+                setDailyForm({ mg: log.mg ?? '', notes: log.notes || '', date: dateStr, cycleStart: cyc ? cyc.start : null });
                 setShowDailyLogModal(true);
             };
 
@@ -555,20 +567,22 @@ export function AuthenticatedApp() {
                         await updateItem('dailyLogs', editingDailyLog.id, {
                             mg: dailyForm.mg !== '' ? parseFloat(dailyForm.mg) : null,
                             notes: sanitizeText(dailyForm.notes),
-                            date: dailyForm.date,
-                            ...(dailyForm.when ? { timestamp: new Date(dailyForm.when).toISOString() } : {})
+                            date: dailyForm.cycleStart ? safeToISODate(dailyForm.cycleStart) : dailyForm.date,
+                            ...(dailyForm.cycleStart ? { timestamp: new Date(dailyForm.cycleStart + 60000).toISOString() } : {})
                         });
                         setEditingDailyLog(null);
-                        setDailyForm({ mg: 30, notes: '', date: getTodayKey(), when: '' });
+                        setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null });
                         setShowDailyLogModal(false);
                         showToast(t('messages.dailyLogSaved'), 'success');
                         return;
                     }
 
-                    // Data e hora escolhidas (por defeito: agora). A hora decide
-                    // em que ciclo de sono (acordar → acordar) este valor conta.
-                    const selectedDate = dailyForm.when ? dailyForm.when.slice(0, 10) : (dailyForm.date || getTodayKey());
-                    const timestamp = dailyForm.when ? new Date(dailyForm.when).toISOString()
+                    // Com ciclos: o total é DO CICLO escolhido (por defeito, o atual) —
+                    // guarda-se 1 minuto depois de acordar, para cair nesse ciclo.
+                    // Sem ciclos: o dia escolhido (hoje → agora; outro dia → meio-dia).
+                    const cycleStart = mgCycleOptions && mgCycleOptions.length ? (dailyForm.cycleStart || mgCycleOptions[0].start) : null;
+                    const selectedDate = cycleStart ? safeToISODate(cycleStart) : (dailyForm.date || getTodayKey());
+                    const timestamp = cycleStart ? new Date(cycleStart + 60000).toISOString()
                         : selectedDate === getTodayKey() ? new Date().toISOString() : new Date(`${selectedDate}T12:00`).toISOString();
 
                     // Contar consumos do dia SELECIONADO pelas DUAS vias e ficar
@@ -591,7 +605,7 @@ export function AuthenticatedApp() {
                         notes: sanitizeText(dailyForm.notes)
                     };
                     await addDailyLog(item);
-                    setDailyForm({ mg: 30, notes: '', date: getTodayKey(), when: '' });
+                    setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null });
                     setShowDailyLogModal(false);
                     showToast(t('messages.dailyLogSaved'), 'success');
                 } catch (error) {
@@ -1420,12 +1434,14 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <DailyLogModal
                                 isOpen={showDailyLogModal}
-                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); setDailyForm({ mg: 30, notes: '', date: getTodayKey(), when: '' }); }}
+                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); setDailyForm({ mg: 30, notes: '', date: getTodayKey(), cycleStart: null }); }}
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}
                                 onOpenWeighing={() => { setShowDailyLogModal(false); setShowWeighingModal(true); }}
-                                derivedMg={derivedDailyMg[dailyForm.date || getTodayKey()] || null}
+                                cycleOptions={mgCycleOptions}
+                                cycleMg={metrics?.mgCycles || []}
+                                derivedMg={mgCycleOptions ? null : (derivedDailyMg[dailyForm.date || getTodayKey()] || null)}
                                 onMarkNotWeighed={() => markNotWeighedForDay(dailyForm.date)}
                             />
                         </Suspense>
