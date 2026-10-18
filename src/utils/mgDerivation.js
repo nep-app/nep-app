@@ -522,8 +522,9 @@ export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
       doseCount,
       mgPerDose: doseCount > 0 ? Math.round(cy.consumed / doseCount) : null,
       days,
-      // Dias dentro do período que a pessoa marcou como "não registei" — o
-      // total continua fiável (veio da balança), o mg/toque é que não.
+      // Dias dentro do período que a pessoa marcou como "não registei": aí
+      // pode ter havido um enchimento por registar, por isso o total é só um
+      // MÍNIMO ("pelo menos"), e o mg/toque não se sabe.
       unloggedDays,
     });
   }
@@ -536,8 +537,9 @@ export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
  * (não supõe toques todos iguais) — mas também não mostra picos: é o nível
  * geral, para ver AO LADO do dia a dia da meta, nunca em vez dele.
  * Um período só em parte dentro do intervalo (ou a passar por um dia atípico)
- * conta na proporção do tempo. Os dias "não registei" contam: a balança sabe o
- * que saiu mesmo sem toques.
+ * conta na proporção do tempo. Um período que passa por um dia "não registei"
+ * fica de fora: nesse dia pode ter havido um enchimento por registar, e então a
+ * balança só diz "pelo menos" — um mínimo não entra numa média.
  * Com menos de 2 dias cobertos não se sabe → null (a app diz que não sabe).
  * @param {Array} periods saída de measuredPeriods
  * @returns {null | { mgPerDay:number, coveredDays:number, spanDays:number }}
@@ -549,6 +551,7 @@ export function balanceAverage(periods = [], fromMs = null, toMs = null, { exclu
   const excluded = toDateSet(excludedDates);
   let mg = 0, ms = 0, first = null;
   for (const p of periods) {
+    if (p.unloggedDays && p.unloggedDays.length > 0) continue;
     const len = p.end - p.start;
     const a = Math.max(p.start, lo), b = Math.min(p.end, hi);
     if (!(len > 0) || b <= a) continue;

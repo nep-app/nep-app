@@ -1153,8 +1153,8 @@ export function HistoryView({
                                                                                     {d.reason === 'unloggedDaysInPeriod' && d.detail && d.detail.consumed != null && (
                                                                                         <div className="text-[11px] text-gray-500 mt-1 leading-snug">
                                                                                             {isEN
-                                                                                                ? `${d.detail.consumed} mg left the bag in a period that covers ${d.detail.dates.length} day(s) you marked as not logged. Splitting it per day would pile those mg onto the days that do have uses, so it is not split — the ${d.detail.consumed} mg still count under "Per weighed period", above.`
-                                                                                                : `Saíram ${d.detail.consumed} mg do saco num período que apanha ${d.detail.dates.length} dia(s) que marcaste como não registados. Reparti-los por dia empilhava esses mg nos dias que têm toques, por isso não se repartem — os ${d.detail.consumed} mg continuam contados em "Por período pesado", aqui em cima.`}
+                                                                                                ? `At least ${d.detail.consumed} mg left the bag in a period that covers ${d.detail.dates.length} day(s) you marked as not logged (there may have been a refill that was never logged). There is no way to know how much was on each day — see the period under "Per weighed period".`
+                                                                                                : `Saíram pelo menos ${d.detail.consumed} mg do saco num período que apanha ${d.detail.dates.length} dia(s) que marcaste como "não registei" (pode ter havido um enchimento por registar). Não se sabe quanto foi em cada dia — vês o período em "Por período pesado".`}
                                                                                         </div>
                                                                                     )}
                                                                                     {d.reason === 'unlogged' && (
@@ -1215,7 +1215,7 @@ export function HistoryView({
                                                                             <div key={`per-${p.start}-${p.end}`} className="bg-gray-900/40 rounded px-3 py-1.5">
                                                                                 <div className="flex items-center justify-between gap-2">
                                                                                     <span className="text-sm text-gray-300">{f(p.start)} → {f(p.end)}</span>
-                                                                                    <span className="text-sm font-medium text-green-300">{p.consumed} mg</span>
+                                                                                    <span className="text-sm font-medium text-green-300">{p.unloggedDays && p.unloggedDays.length > 0 ? '≥ ' : ''}{p.consumed} mg</span>
                                                                                 </div>
                                                                                 <div className="text-[11px] text-gray-500">
                                                                                     {/* Duração REAL entre as duas pesagens (não dias de calendário:
@@ -1225,15 +1225,15 @@ export function HistoryView({
                                                                                     {(() => { const h = (p.end - p.start) / 3600000; return h < 48 ? `~${Math.max(1, Math.round(h))} h` : `~${Math.round(h / 24)} ${isEN ? 'days' : 'dias'}`; })()}
                                                                                     {' · '}{p.doseCount} {isEN ? 'uses' : 'toques'}
                                                                                     {p.mgPerDose != null && !(p.unloggedDays && p.unloggedDays.length > 0) && <> · ≈{p.mgPerDose} mg/{isEN ? 'use' : 'toque'}</>}
-                                                                                    {(p.end - p.start) >= 20 * 3600000 && <>{' · ≈'}{Math.round(p.consumed / ((p.end - p.start) / 86400000))} mg {isEN ? 'per 24h' : 'por 24h'}</>}
+                                                                                    {(p.end - p.start) >= 20 * 3600000 && !(p.unloggedDays && p.unloggedDays.length > 0) && <>{' · ≈'}{Math.round(p.consumed / ((p.end - p.start) / 86400000))} mg {isEN ? 'per 24h' : 'por 24h'}</>}
                                                                                 </div>
                                                                                 {/* O total continua fiável (veio da balança); o mg/toque
                                                                                     é que não, porque faltam os toques desses dias. */}
                                                                                 {p.unloggedDays && p.unloggedDays.length > 0 && (
                                                                                     <div className="text-[11px] text-amber-400/70 mt-0.5 leading-snug">
                                                                                         {isEN
-                                                                                            ? `Includes ${p.unloggedDays.length} day(s) you marked as not logged: the ${p.consumed} mg are still right, but there is no way to know how much each use was.`
-                                                                                            : `Apanha ${p.unloggedDays.length} dia(s) que marcaste como não registados: os ${p.consumed} mg continuam certos, mas não dá para saber quanto foi cada toque.`}
+                                                                                            ? `Includes ${p.unloggedDays.length} day(s) you marked as not logged. On those days there may have been a refill that was never logged, so at least ${p.consumed} mg left the bag — maybe more. And there is no way to know how much each use was.`
+                                                                                            : `Apanha ${p.unloggedDays.length} dia(s) que marcaste como "não registei". Nesses dias pode ter havido um enchimento que não ficou registado: por isso saíram pelo menos ${p.consumed} mg — talvez mais. E não dá para saber quanto foi cada toque.`}
                                                                                     </div>
                                                                                 )}
                                                                             </div>
