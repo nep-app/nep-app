@@ -1773,7 +1773,9 @@
     "historyNow": "until today",
     "tagButtonByDay": "Tag old consumptions without a substance with each day's main one",
     "tagConfirmByDay": "There are {{count}} consumptions without a substance. Tag each one with the main substance of its day? Those that already have a substance stay as they are.",
-    "tagDoneByDay": "Done: {{count}} consumptions tagged with the main substance of their day."
+    "tagDoneByDay": "Done: {{count}} consumptions tagged with the main substance of their day.",
+    "askAmountLabel": "Ask the amount for each use of {{name}}",
+    "askAmountHint": "For people who measure each dose (e.g. ml, pills). It shows when editing a use and in \"Log a past use\" — quick log stays a single tap. The amount is saved with the record, but does not count in the mg calculations yet (those come from the scale)."
   },
   "home2": {
     "sleepTitle": "Sleep",

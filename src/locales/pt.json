@@ -1773,7 +1773,9 @@
     "historyNow": "até hoje",
     "tagButtonByDay": "Marcar consumos antigos sem substância com a principal de cada dia",
     "tagConfirmByDay": "Há {{count}} consumos sem substância. Marcar cada um com a principal do seu dia? Os que já têm substância não mudam.",
-    "tagDoneByDay": "Feito: {{count}} consumos marcados com a principal do seu dia."
+    "tagDoneByDay": "Feito: {{count}} consumos marcados com a principal do seu dia.",
+    "askAmountLabel": "Perguntar a quantidade em cada consumo de {{name}}",
+    "askAmountHint": "Para quem mede cada dose (ex.: ml, comprimidos). Aparece ao editar um consumo e em \"Registar um consumo passado\" — o registo rápido continua a ser um toque só. A quantidade fica guardada no registo, mas ainda não entra nas contas de mg (essas vêm da balança)."
   },
   "home2": {
     "sleepTitle": "Sono",

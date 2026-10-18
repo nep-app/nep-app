@@ -54,7 +54,11 @@ export function useSubstances() {
     }
   }, [all, updateItem, deleteItem]);
 
+  // Pedir a quantidade em cada consumo desta substância (opcional; a principal
+  // não pede, a não ser que a pessoa ligue isto — ex.: doses medidas em ml).
+  const setAskAmount = useCallback((id, on) => updateItem('substances', id, { askAmount: !!on }), [updateItem]);
+
   const defaultEntries = useMemo(() => defaultSubstanceEntries(substances), [substances]);
 
-  return { substances, allSubstances: all, addSubstance, removeSubstance, setDefaultSubstance, defaultEntries };
+  return { substances, allSubstances: all, addSubstance, removeSubstance, setDefaultSubstance, setAskAmount, defaultEntries };
 }

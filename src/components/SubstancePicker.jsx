@@ -13,9 +13,10 @@ export function SubstancePicker({ value = [], onChange, substances = [], onAddSu
 
   const list = sortSubstances(substances);
   // A principal não pede quantidade: os mg dela vêm das pesagens (nunca de
-  // um número escrito à mão). A quantidade fica para as outras (ex.: 1 mg).
+  // um número escrito à mão). A quantidade fica para as outras (ex.: 1 mg) —
+  // e para a principal só se a pessoa ligar "pedir a quantidade" (askAmount).
   const principal = getDefaultSubstance(substances);
-  const withAmount = value.filter(e => !(principal && sameName(e.name, principal.name)));
+  const withAmount = value.filter(e => !(principal && !principal.askAmount && sameName(e.name, principal.name)));
   const isOn = (name) => value.some(e => sameName(e.name, name));
   // Nomes que estão no registo mas já não estão na lista (ex.: tirados nas
   // Definições) continuam a aparecer, para não se perderem ao gravar.

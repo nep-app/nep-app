@@ -14,7 +14,7 @@ const showDay = (day) => formatDate(`${day}T12:00:00`);
 // mudar sem querer. Tirar daqui não mexe nos registos antigos.
 export function SubstancesManager() {
   const { t } = useTranslation();
-  const { substances, allSubstances, addSubstance, removeSubstance, setDefaultSubstance } = useSubstances();
+  const { substances, allSubstances, addSubstance, removeSubstance, setDefaultSubstance, setAskAmount } = useSubstances();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const current = substances.find(s => s.isDefault);
@@ -108,6 +108,16 @@ export function SubstancesManager() {
             {substances.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select>
           <p className="text-xs text-gray-400 mt-1">{t('substances.defaultHint')}</p>
+
+          {current && !change && (
+            <div className="mt-3">
+              <label className="flex items-start gap-2 text-sm text-gray-200">
+                <input type="checkbox" className="mt-1" checked={!!current.askAmount} onChange={(e) => setAskAmount(current.id, e.target.checked)} />
+                <span>{t('substances.askAmountLabel', { name: current.name })}</span>
+              </label>
+              <p className="text-xs text-gray-400 mt-1 ml-6">{t('substances.askAmountHint')}</p>
+            </div>
+          )}
 
           {change && (
             <div className="mt-3 space-y-2 bg-gray-700 border border-gray-600 rounded-lg p-3">
