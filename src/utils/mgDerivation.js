@@ -349,10 +349,16 @@ const MAX_SLEEP_CYCLE_MS = 36 * 3600000;
 // longo pode ser esquecimento (e aí a app pergunta).
 export const NO_SLEEP_BUTTON_SINCE_MS = new Date('2026-10-01T00:00:00').getTime();
 
-// Um ciclo longo de que não se sabe nada: mais de 36h, depois de existir o
-// botão "Não dormi". (Antes do botão, conta como uma noite sem dormir.)
+// Mesmo antes do botão, mais de 4 dias sem acordar registado não é "uma
+// noite sem dormir": é informação em falta (houve um "ciclo" de 286 dias).
+const MAX_NO_SLEEP_RUN_MS = 96 * 3600000;
+
+// Um ciclo longo de que não se sabe nada: mais de 36h depois de existir o
+// botão "Não dormi" (antes do botão, conta como noite sem dormir), ou mais de
+// 4 dias em qualquer altura.
 export const isUnknownLongCycle = (startMs, endMs) =>
-  endMs - startMs > MAX_SLEEP_CYCLE_MS && startMs >= NO_SLEEP_BUTTON_SINCE_MS;
+  endMs - startMs > MAX_SLEEP_CYCLE_MS
+  && (startMs >= NO_SLEEP_BUTTON_SINCE_MS || endMs - startMs > MAX_NO_SLEEP_RUN_MS);
 
 /**
  * mg POR CICLO (de acordar a acordar), que é o "dia" vivido — consumir às 3h
@@ -363,9 +369,10 @@ export const isUnknownLongCycle = (startMs, endMs) =>
  *   dessa data não havia o botão: um ciclo longo é uma noite sem dormir e conta.
  * - Ciclo que passa por um dia atípico ou "não registei" → fica de fora.
  * - mg escrito à mão ("Registar mg", ou o campo antigo do ciclo) manda: conta
- *   no ciclo em que a HORA do registo cai, e vários no mesmo ciclo somam-se.
- *   Registos antigos cuja hora é de outro dia (era a hora em que se gravou)
- *   ficam ao meio-dia do dia escolhido.
+ *   no ciclo que COMEÇA no dia do registo (o dia em que se acordou). Os
+ *   registos antigos eram totais POR DIA: pô-los pela hora fazia um ciclo que
+ *   passa por dois meios-dias somar dois dias (o dobro). Se nesse dia não se
+ *   registou nenhum acordar, vai para o ciclo onde cai o meio-dia desse dia.
  * - Senão, soma dos toques do ciclo; se algum toque não tiver mg, não se sabe
  *   (nunca se inventam mg). Sem toques nem mg à mão → não entra.
  * @param {Array} doseMg   saída de deriveDoseMg
@@ -379,13 +386,26 @@ export function mgBySleepCycle(doseMg = [], sleepCycles = [], { dailyLogs = [], 
     .map(c => ({ ms: c ? toMs(c.timestamp || c.createdAt || c.date) : null, mg: c && c.mg }))
     .filter(w => w.ms != null)
     .sort((a, b) => a.ms - b.ms);
-  const manualAt = [];
+  // Cada registo à mão vai para UM ciclo: o 1.º que começa no dia dele; senão,
+  // o que contém o meio-dia desse dia (ou a hora, se não tiver dia).
+  const manualByCycle = new Map(); // índice do ciclo → soma
+  const firstStartByDay = new Map();
+  for (let i = 0; i + 1 < wakes.length; i++) {
+    const d = localDay(wakes[i].ms);
+    if (!firstStartByDay.has(d)) firstStartByDay.set(d, i);
+  }
   for (const l of dailyLogs || []) {
     const v = l && l.mg != null && l.mg !== '' ? parseFloat(l.mg) : NaN;
     if (isNaN(v)) continue;
-    const ts = toMs(l.timestamp);
-    const ms = ts != null && (!l.date || localDay(ts) === l.date) ? ts : (l.date ? toMs(`${l.date}T12:00:00`) : null);
-    if (ms != null) manualAt.push({ ms, mg: v });
+    let ci = l.date != null ? firstStartByDay.get(l.date) : undefined;
+    if (ci == null) {
+      const ms = l.date ? toMs(`${l.date}T12:00:00`) : toMs(l.timestamp);
+      if (ms == null) continue;
+      for (let i = 0; i + 1 < wakes.length; i++) {
+        if (ms >= wakes[i].ms && ms < wakes[i + 1].ms) { ci = i; break; }
+      }
+    }
+    if (ci != null) manualByCycle.set(ci, (manualByCycle.get(ci) || 0) + v);
   }
   const doses = [...doseMg].sort((a, b) => a.ms - b.ms);
   const out = [];
@@ -396,10 +416,8 @@ export function mgBySleepCycle(doseMg = [], sleepCycles = [], { dailyLogs = [], 
     const day = localDay(start);
     if (isUnknownLongCycle(start, end)) continue;
     if (excluded && datesBetween(start, end - 1).some(d => excluded.has(d))) continue;
-    // Manual: o "Registar mg" cuja hora cai neste ciclo (somados); senão o
-    // campo antigo do próprio ciclo.
-    const inCycle = manualAt.filter(m => m.ms >= start && m.ms < end);
-    let manual = inCycle.length ? inCycle.reduce((sum, m) => sum + m.mg, 0) : null;
+    // Manual: o "Registar mg" deste ciclo; senão o campo antigo do ciclo.
+    let manual = manualByCycle.has(i) ? manualByCycle.get(i) : null;
     if (manual == null && wakes[i].mg != null && wakes[i].mg !== '' && !isNaN(parseFloat(wakes[i].mg))) manual = parseFloat(wakes[i].mg);
     if (manual != null) { out.push({ day, start, end, mg: Math.round(manual), manual: true }); continue; }
     let mg = 0, n = 0, unknown = false;
