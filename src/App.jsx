@@ -400,8 +400,11 @@ export function AuthenticatedApp() {
 
             const openEditDailyLog = (log) => {
                 setEditingDailyLog({...log});
-                const dateStr = log.date || (log.timestamp ? log.timestamp.split('T')[0] : getTodayKey());
-                setDailyForm({ mg: log.mg ?? '', notes: log.notes || '', date: dateStr });
+                const dateStr = log.date || safeToISODate(log.timestamp) || getTodayKey();
+                // A hora guardada só vale se for do mesmo dia (registos antigos
+                // tinham a hora em que se gravou, não a do consumo).
+                const when = log.timestamp && safeToISODate(log.timestamp) === dateStr ? toLocalDatetimeInput(log.timestamp) : `${dateStr}T12:00`;
+                setDailyForm({ mg: log.mg ?? '', notes: log.notes || '', date: dateStr, when });
                 setShowDailyLogModal(true);
             };
 
@@ -552,20 +555,21 @@ export function AuthenticatedApp() {
                         await updateItem('dailyLogs', editingDailyLog.id, {
                             mg: dailyForm.mg !== '' ? parseFloat(dailyForm.mg) : null,
                             notes: sanitizeText(dailyForm.notes),
-                            date: dailyForm.date
+                            date: dailyForm.date,
+                            ...(dailyForm.when ? { timestamp: new Date(dailyForm.when).toISOString() } : {})
                         });
                         setEditingDailyLog(null);
-                        setDailyForm({ mg: 30, notes: '', date: getTodayKey() });
+                        setDailyForm({ mg: 30, notes: '', date: getTodayKey(), when: '' });
                         setShowDailyLogModal(false);
                         showToast(t('messages.dailyLogSaved'), 'success');
                         return;
                     }
 
-                    // Usar data escolhida ou hoje
-                    const selectedDate = dailyForm.date || getTodayKey();
-
-                    // Usar timestamp REAL (hora atual de submissão)
-                    const timestamp = new Date().toISOString();
+                    // Data e hora escolhidas (por defeito: agora). A hora decide
+                    // em que ciclo de sono (acordar → acordar) este valor conta.
+                    const selectedDate = dailyForm.when ? dailyForm.when.slice(0, 10) : (dailyForm.date || getTodayKey());
+                    const timestamp = dailyForm.when ? new Date(dailyForm.when).toISOString()
+                        : selectedDate === getTodayKey() ? new Date().toISOString() : new Date(`${selectedDate}T12:00`).toISOString();
 
                     // Contar consumos do dia SELECIONADO pelas DUAS vias e ficar
                     // com a maior. Nenhuma das duas consegue contar a mais:
@@ -587,7 +591,7 @@ export function AuthenticatedApp() {
                         notes: sanitizeText(dailyForm.notes)
                     };
                     await addDailyLog(item);
-                    setDailyForm({ mg: 30, notes: '', date: getTodayKey() });
+                    setDailyForm({ mg: 30, notes: '', date: getTodayKey(), when: '' });
                     setShowDailyLogModal(false);
                     showToast(t('messages.dailyLogSaved'), 'success');
                 } catch (error) {
@@ -1416,7 +1420,7 @@ export function AuthenticatedApp() {
                         <Suspense fallback={null}>
                             <DailyLogModal
                                 isOpen={showDailyLogModal}
-                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); setDailyForm({ mg: 30, notes: '', date: getTodayKey() }); }}
+                                onClose={() => { setShowDailyLogModal(false); setEditingDailyLog(null); setDailyForm({ mg: 30, notes: '', date: getTodayKey(), when: '' }); }}
                                 dailyForm={dailyForm}
                                 setDailyForm={setDailyForm}
                                 onSubmit={submitDailyLog}

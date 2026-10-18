@@ -271,6 +271,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         </div>
       )}
 
+      <CycleNudge cycles={cycles} now={now} onOpen={() => setShowCycleModal(true)} />
+
       {/* Botão principal + consumo de outra hora (link discreto, como antes) */}
       <div className="w-full flex flex-col items-center gap-2">
         <button
@@ -375,6 +377,30 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
 }
 
 // ===== LINHA DO DIA (as últimas 24 horas, por ordem) =====
+// "Já dormiste?" — quando há muito tempo sem ciclo registado. Sem o acordar,
+// a app não sabe onde começa o dia (a meta de mg e as de 1.º/último consumo
+// contam de acordar a acordar). Só pergunta; nunca regista nada sozinha.
+const NUDGE_AFTER_MS = 20 * 3600000;
+const NUDGE_SNOOZE_KEY = 'nep_cycle_nudge_until';
+function CycleNudge({ cycles, now, onOpen }) {
+  const { t, i18n } = useTranslation();
+  const [snoozeUntil, setSnoozeUntil] = useState(() => { try { return Number(localStorage.getItem(NUDGE_SNOOZE_KEY)) || 0; } catch { return 0; } });
+  const lastMs = useMemo(() => Math.max(-Infinity, ...cycles.map(tsOf).filter(x => x != null)), [cycles]);
+  // Só para quem usa ciclos (pelo menos 2): a quem nunca registou não se pede nada.
+  if (cycles.length < 2 || !Number.isFinite(lastMs) || now - lastMs < NUDGE_AFTER_MS || now < snoozeUntil) return null;
+  const when = new Date(lastMs).toLocaleString(i18n.language, { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+  const snooze = () => { const until = Date.now() + 4 * 3600000; setSnoozeUntil(until); try { localStorage.setItem(NUDGE_SNOOZE_KEY, String(until)); } catch { /* sem armazenamento: só nesta sessão */ } };
+  return (
+    <div className="w-full rounded-2xl border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-50">
+      <p>{t('home2.cycleNudge', { when })}</p>
+      <div className="mt-2 flex gap-2">
+        <button type="button" onClick={onOpen} className="flex-1 py-2 rounded-xl bg-amber-500/25 border border-amber-400/50 font-semibold hover:bg-amber-500/35">{t('home2.cycleNudgeOpen')}</button>
+        <button type="button" onClick={snooze} className="px-3 py-2 rounded-xl text-amber-100/80 hover:text-amber-50">{t('home2.cycleNudgeLater')}</button>
+      </div>
+    </div>
+  );
+}
+
 const DELETE_COLLECTION = { consumption: 'consumptions', cycle: 'cycles', wellbeing: 'wellbeingLogs' };
 
 function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit = () => false }) {

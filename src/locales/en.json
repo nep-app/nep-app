@@ -373,9 +373,9 @@
   },
   "modals": {
     "dailyLog": {
-      "title": "Log Daily Dose",
-      "dateLabel": "Log date",
-      "mgLabel": "Approximate total (mg)",
+      "title": "Log mg",
+      "dateLabel": "When",
+      "mgLabel": "How many mg (approx.)",
       "notesLabel": "Notes (optional)",
       "notesPlaceholder": "How did you feel? Context...",
       "save": "Save"
@@ -1789,6 +1789,9 @@
     "reflect": "Do today's reflection",
     "substances": "Substances",
     "napShort": "nap {{min}} min",
-    "mgCycle": "mg in the last measured cycle (woke up {{date}})"
+    "mgCycle": "mg in the last measured cycle (woke up {{date}})",
+    "cycleNudge": "You have not logged a new cycle since {{when}}. Have you slept? If so, log when you woke up. If not, mark \"Didn't sleep\" — no problem, it just lets the app know where your day starts.",
+    "cycleNudgeOpen": "Log cycle",
+    "cycleNudgeLater": "Not now"
   }
 }

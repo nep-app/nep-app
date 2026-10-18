@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
-import { getTodayKey } from '../../utils/helpers';
+import { getTodayKey, toLocalDatetimeInput } from '../../utils/helpers';
 
 export const DailyLogModal = ({
   isOpen,
@@ -41,12 +41,14 @@ export const DailyLogModal = ({
             </button>
           )}
           <div>
+            {/* Data E hora: o valor vai para o ciclo (acordar → acordar) em que
+               esta hora cai — sem hora, não se sabia de que ciclo era. */}
             <label className="block text-sm font-medium mb-1 text-gray-300">{t('modals.dailyLog.dateLabel')}</label>
             <input
-              type="date"
-              value={dailyForm.date || today}
-              onChange={(e) => setDailyForm({...dailyForm, date: e.target.value})}
-              max={today}
+              type="datetime-local"
+              value={dailyForm.when || (dailyForm.date && dailyForm.date !== today ? `${dailyForm.date}T12:00` : toLocalDatetimeInput(new Date()))}
+              onChange={(e) => e.target.value && setDailyForm({...dailyForm, when: e.target.value, date: e.target.value.slice(0, 10)})}
+              max={toLocalDatetimeInput(new Date())}
               className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
             />
           </div>

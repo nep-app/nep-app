@@ -4,7 +4,7 @@ import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
 import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal } from '../utils/helpers';
 import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
-import { deriveDailyMg, measuredPeriods, mgBySleepCycle } from '../utils/mgDerivation';
+import { deriveDailyMg, measuredPeriods, mgBySleepCycle, sleepCycleGaps } from '../utils/mgDerivation';
 
 const MetricsContext = createContext();
 
@@ -100,6 +100,8 @@ export const MetricsProvider = ({ children }) => {
     if (!mgByCycleMode) return [];
     try { return mgBySleepCycle(mgDerivation.doseMg, cycles, { dailyLogs, excludedDates }); } catch { return []; }
   }, [mgByCycleMode, mgDerivation.doseMg, cycles, dailyLogs, excludedDates]);
+  // Mais de 36h sem acordar registado: a app pergunta em vez de adivinhar.
+  const cycleGaps = useMemo(() => (mgByCycleMode ? sleepCycleGaps(cycles) : []), [mgByCycleMode, cycles]);
 
   const filteredConsumptions = useMemo(() =>
     consumptions.filter(c => !excludedDates.has(c.date || getDateKeyFromItem(c))),
@@ -509,6 +511,7 @@ export const MetricsProvider = ({ children }) => {
     weighedPeriods, // o que saiu do saco entre cada duas pesagens (só balança)
     mgByCycleMode, // true → a meta de mg conta por ciclo de sono (há ciclos registados)
     mgCycles, // mg por ciclo de sono (acordar → acordar), só ciclos com valor fiável
+    cycleGaps, // [{start,end}] mais de 36h sem acordar registado (a app não sabe)
     unloggedDates, // dias marcados "não registei" (dados em falta, não zeros)
     atypicalDates, // dias marcados como atípicos (fora das médias)
   }), [
@@ -516,7 +519,7 @@ export const MetricsProvider = ({ children }) => {
     analysis.temporalCorrelations, analysis.bidirectionalAnalysis, analysis.streaks,
     timeSinceLastConsumption, last7Days, avgFrequencyLast7Days, getGoalProgress,
     consumptionsByDate, effectiveDailyRollup, effectiveDailySummary, weighingMeasuredMgByDate,
-    mgGapReasonsByDate, weighedPeriods, mgByCycleMode, mgCycles, unloggedDates, atypicalDates,
+    mgGapReasonsByDate, weighedPeriods, mgByCycleMode, mgCycles, cycleGaps, unloggedDates, atypicalDates,
   ]);
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;

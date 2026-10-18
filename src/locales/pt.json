@@ -373,9 +373,9 @@
   },
   "modals": {
     "dailyLog": {
-      "title": "Registar Dosagem do Dia",
-      "dateLabel": "Data do registo",
-      "mgLabel": "Total aproximado (mg)",
+      "title": "Registar mg",
+      "dateLabel": "Quando",
+      "mgLabel": "Quantos mg (aproximado)",
       "notesLabel": "Notas (opcional)",
       "notesPlaceholder": "Como te sentiste? Contexto...",
       "save": "Guardar"
@@ -1789,6 +1789,9 @@
     "reflect": "Fazer a reflexão de hoje",
     "substances": "Substâncias",
     "napShort": "sesta {{min}} min",
-    "mgCycle": "mg no último ciclo medido (acordaste a {{date}})"
+    "mgCycle": "mg no último ciclo medido (acordaste a {{date}})",
+    "cycleNudge": "Ainda não registaste um novo ciclo desde {{when}}. Já dormiste? Se sim, regista quando acordaste. Se não, marca \"Não dormi\" — é na boa, é só para a app saber onde começa o teu dia.",
+    "cycleNudgeOpen": "Registar ciclo",
+    "cycleNudgeLater": "Agora não"
   }
 }

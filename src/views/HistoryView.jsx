@@ -72,6 +72,8 @@ export function HistoryView({
     handleFillGap
 }) {
     const { consumptions, allConsumptions, reflections, wellbeingLogs, cycles, thoughts, dailyLogs, weighings, updateWeighing, db } = useData();
+    const { setShowCycleModal } = useUI();
+    const [showAllCycleGaps, setShowAllCycleGaps] = useState(false);
     // A lista mostra TODOS os registos (também os só de outras substâncias);
     // as contas de mg usam só os da principal (consumptions).
     const listConsumptions = allConsumptions || consumptions;
@@ -1040,6 +1042,31 @@ export function HistoryView({
                                                                     {metrics.mgCycles.length > 7 && (
                                                                         <button onClick={() => setShowAllMgCycles(v => !v)} className="mt-2 text-xs text-indigo-300 hover:text-indigo-200 underline">
                                                                             {showAllMgCycles ? (isEN ? 'Show fewer' : 'Mostrar menos') : (isEN ? `Show all ${metrics.mgCycles.length}` : `Ver todos os ${metrics.mgCycles.length}`)}
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {/* Mais de 36h sem acordar registado: a app não sabe se dormiste,
+                                                                por isso pergunta em vez de adivinhar. */}
+                                                            {(metrics.cycleGaps || []).length > 0 && (
+                                                                <div className="mt-4 pt-3 border-t border-gray-700/60">
+                                                                    <p className="text-xs text-amber-200/90 mb-2">{isEN
+                                                                        ? `❓ ${metrics.cycleGaps.length} time(s) more than 36 h went by without a wake-up logged. The app does not know if you slept, so those cycles do not count. If you remember, log when you woke up — or "I didn't sleep".`
+                                                                        : `❓ ${metrics.cycleGaps.length} vez(es) passaram mais de 36 h sem registares um acordar. A app não sabe se dormiste, por isso esses ciclos não contam. Se te lembrares, regista quando acordaste — ou "Não dormi".`}</p>
+                                                                    <div className="space-y-1">
+                                                                        {(showAllCycleGaps ? metrics.cycleGaps : metrics.cycleGaps.slice(0, 3)).map(g => {
+                                                                            const f = (ms) => { const d = new Date(ms); return `${d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }).replace(/\.$/, '')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+                                                                            return (
+                                                                                <div key={`gap-${g.start}`} className="flex items-center justify-between gap-2 bg-gray-900/40 rounded px-3 py-1.5">
+                                                                                    <span className="text-[13px] text-gray-300">{f(g.start)} → {f(g.end)} <span className="text-gray-500">· ~{Math.round((g.end - g.start) / 3600000)} h</span></span>
+                                                                                    <button onClick={() => setShowCycleModal(true)} className="text-xs text-amber-200 hover:text-amber-100 underline whitespace-nowrap">{isEN ? 'Log cycle' : 'Registar ciclo'}</button>
+                                                                                </div>
+                                                                            );
+                                                                        })}
+                                                                    </div>
+                                                                    {metrics.cycleGaps.length > 3 && (
+                                                                        <button onClick={() => setShowAllCycleGaps(v => !v)} className="mt-2 text-xs text-indigo-300 hover:text-indigo-200 underline">
+                                                                            {showAllCycleGaps ? (isEN ? 'Show fewer' : 'Mostrar menos') : (isEN ? `Show all ${metrics.cycleGaps.length}` : `Ver todas as ${metrics.cycleGaps.length}`)}
                                                                         </button>
                                                                     )}
                                                                 </div>
