@@ -38,6 +38,9 @@ export const DailyLogModal = ({
           </button>
         </div>
         <div className="space-y-4">
+          {/* Dizer logo o que isto é: um TOTAL feito pela pessoa, não a
+             quantidade de um consumo (os toques + a balança tratam disso). */}
+          <p className="text-xs text-gray-400 -mt-2">{t(cycleOptions && cycleOptions.length ? 'modals.dailyLog.whatIsCycle' : 'modals.dailyLog.whatIsDay')}</p>
           {onOpenWeighing && (
             <button
               onClick={onOpenWeighing}

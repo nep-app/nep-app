@@ -383,7 +383,9 @@
       "cycleCurrent": "Current cycle — since {{from}}",
       "cycleRange": "{{from}} → {{to}}",
       "scaleForCycle": "From the app (scale + taps), this cycle came to ≈{{mg}} mg.",
-      "cycleTooLong": "(over 36 h — a wake-up is missing; does not count)"
+      "cycleTooLong": "(over 36 h — a wake-up is missing; does not count)",
+      "whatIsCycle": "This is the total for a whole cycle (wake to wake), calculated by you. It is not the amount of a single use — the app works that out from your taps and the scale.",
+      "whatIsDay": "This is the total for a whole day, calculated by you. It is not the amount of a single use — the app works that out from your taps and the scale."
     },
     "wellbeing": {
       "title": "Well-being",
