@@ -306,7 +306,9 @@ export function HistoryView({
             case 'unloggedDaysInPeriod':
                 return isEN ? '🕳️ period covers days you did not log' : '🕳️ período apanha dias que não registaste';
             case 'beforeFirstWeighing':
-                return isEN ? '⚖️ before you started weighing' : '⚖️ antes de teres começado a pesar';
+                // Antes das pesagens do saco só havia o "Registar mg": este dia
+                // não tem nenhum (não é "não pesavas" — pesava-se, à mão).
+                return isEN ? '📊 no mg logged this day (before bag weighings)' : '📊 sem "Registar mg" neste dia (antes das pesagens do saco)';
             case 'afterLastWeighing':
                 return isEN ? '⚖️ no weighing after these uses yet' : '⚖️ ainda não há pesagem depois destes toques';
             case 'outsideAnyPeriod':
@@ -1110,7 +1112,10 @@ export function HistoryView({
 
                                                             {/* Dias que NÃO aparecem em cima — e porquê. Saltar dias em
                                                                 silêncio parece um erro; dizer o motivo é informação. */}
-                                                            {missingMgDays.length > 0 && (
+                                                            {/* Os dias sem valor são do "por dia do calendário": com ciclos,
+                                                                ficam dentro dessa secção (fechada), para não parecer que
+                                                                faltam no total por ciclo. */}
+                                                            {missingMgDays.length > 0 && (!metrics?.mgByCycleMode || showCalendarDays) && (
                                                                 <div className="mt-4 pt-3 border-t border-gray-700/60">
                                                                     <button
                                                                         onClick={() => setShowMissingMgDays(v => !v)}
