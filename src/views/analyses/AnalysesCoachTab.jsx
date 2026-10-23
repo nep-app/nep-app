@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
 import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
-import { safeToISODate, getTodayKey } from '../../utils/helpers';
+import { safeToISODate, getTodayKey, gapCrossesDays } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 
 const { getDateRangeForPeriod, filterByDateRange } = analyticsService;
@@ -19,10 +19,11 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     consumptions,
     mgByDate,
     unloggedDates,
+    excludedDays,
     patternsPeriod,
     patternsPeriodOffset,
 }) {
-    const _sigCoach = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${analysisReflections.length}|${analysisThoughts.length}|${(goals || []).length}|${patternsPeriod}|${patternsPeriodOffset}`;
+    const _sigCoach = `${analysisConsumptions.length}|${analysisWellbeing.length}|${analysisCycles.length}|${analysisDailyLogs.length}|${analysisReflections.length}|${analysisThoughts.length}|${(goals || []).length}|${patternsPeriod}|${patternsPeriodOffset}|${(unloggedDates && unloggedDates.size) || 0}|${(excludedDays && excludedDays.size) || 0}`;
     const coachData = useCrossMountMemo('analises-coach', _sigCoach, () => {
         if (analysisConsumptions.length === 0 && analysisWellbeing.length === 0) {
             return null;
@@ -57,9 +58,13 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
         // Trending
         const sorted = [...analysisConsumptions].sort((a,b) => a.timestamp.localeCompare(b.timestamp));
         const intervals = [];
+        // Intervalos que passam por um dia "não registei os consumos" ou atípico
+        // não se conhecem: ficam de fora.
+        const skipDays = new Set([...(unloggedDates || []), ...(excludedDays || [])]);
         for (let i = 1; i < sorted.length; i++) {
-            const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-            intervals.push(diff);
+            const t1 = new Date(sorted[i].timestamp).getTime(), t0 = new Date(sorted[i-1].timestamp).getTime();
+            if (gapCrossesDays(t0, t1, skipDays)) continue;
+            intervals.push((t1 - t0) / 3600000);
         }
         const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
         const goodIntervals = intervals.filter(i => i >= 2).length;

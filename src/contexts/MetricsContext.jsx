@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo, useState, useEffect } from '
 import { useData } from './DataContext';
 import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
-import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal } from '../utils/helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, gapCrossesDays } from '../utils/helpers';
 import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
 import { deriveDailyMg, measuredPeriods, mgBySleepCycle, sleepCycleGaps } from '../utils/mgDerivation';
 
@@ -124,7 +124,7 @@ export const MetricsProvider = ({ children }) => {
   [wellbeingLogs]);
 
   // Use analysis hook for core analytics
-  const analysis = useAnalysis(filteredConsumptions, filteredWellbeingLogs, reflections, filteredCycles, goals, thoughts, filteredDailyLogs);
+  const analysis = useAnalysis(filteredConsumptions, filteredWellbeingLogs, reflections, filteredCycles, goals, thoughts, filteredDailyLogs, excludedDates);
 
   // todayConsumptions from raw data (factual — not excluded on atypical days)
   const todayConsumptions = useMemo(() => {
@@ -271,9 +271,15 @@ export const MetricsProvider = ({ children }) => {
     : (persistedSummary || dailySummary);
 
   // Time since last consumption
+  // "Desde o último": se pelo meio há dias "não registei os consumos", não se
+  // sabe (null → o ecrã mostra "?"), em vez de "46 h sem". (Os atípicos têm os
+  // consumos registados: aqui contam, porque isto usa todos os consumos.)
   const timeSinceLastConsumption = useMemo(() => {
-    return analyticsService.calculateTimeSinceLastConsumption(consumptions);
-  }, [consumptions]);
+    const r = analyticsService.calculateTimeSinceLastConsumption(consumptions);
+    const lastMs = Math.max(-Infinity, ...consumptions.map(c => new Date(c.timestamp).getTime()).filter(x => !isNaN(x)));
+    if (r && Number.isFinite(lastMs) && gapCrossesDays(lastMs, Date.now(), unloggedDates)) return null;
+    return r;
+  }, [consumptions, unloggedDates]);
 
   // Last 7 days with averages (times and mg)
   const last7Days = useMemo(() => {

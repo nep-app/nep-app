@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay } from '../utils/helpers';
+import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -167,8 +167,9 @@ export function PatternsView({
                                             const sorted = [...filteredConsumptions].sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
                                             const intervals = [];
                                             for (let i = 1; i < sorted.length; i++) {
-                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                                intervals.push(diff);
+                                                const t1 = new Date(sorted[i].timestamp).getTime(), t0 = new Date(sorted[i-1].timestamp).getTime();
+                                                if (gapCrossesDays(t0, t1, excludedDates)) continue; // passa por dia sem registo → não se sabe
+                                                intervals.push((t1 - t0) / 3600000);
                                             }
                                             const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
 
@@ -2472,8 +2473,9 @@ export function PatternsView({
                                             const sorted = [...filteredConsumptions].sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
                                             const intervals = [];
                                             for (let i = 1; i < sorted.length; i++) {
-                                                const diff = (new Date(sorted[i].timestamp) - new Date(sorted[i-1].timestamp)) / (1000 * 60 * 60);
-                                                intervals.push({ hours: diff, date: sorted[i].date });
+                                                const t1 = new Date(sorted[i].timestamp).getTime(), t0 = new Date(sorted[i-1].timestamp).getTime();
+                                                if (gapCrossesDays(t0, t1, excludedDates)) continue; // passa por dia sem registo → não se sabe
+                                                intervals.push({ hours: (t1 - t0) / 3600000, date: sorted[i].date });
                                             }
 
                                             return (

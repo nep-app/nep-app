@@ -176,6 +176,7 @@ export function AnalysesView({
                         consumptions={consumptions}
                         mgByDate={analysisMgByDate}
                         unloggedDates={unloggedDates}
+                        excludedDays={analysisData.atypicalDates}
                         patternsPeriod={patternsPeriod}
                         patternsPeriodOffset={patternsPeriodOffset}
                     />

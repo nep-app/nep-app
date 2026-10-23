@@ -192,6 +192,20 @@ export const datesInRange = (from, to) => {
   return out;
 };
 
+// ===== INTERVALOS QUE NÃO SE CONHECEM =====
+// Um intervalo entre dois consumos (ou "desde o último" até agora) só se
+// conhece se nenhum dia pelo meio, nem os das pontas, está marcado "não
+// registei os consumos" ou atípico: nesses dias os consumos não estão (todos)
+// na app, e o "intervalo" de 46 h seria inventado — não pode contar para metas,
+// avisos nem análises, nem ser mostrado como se fosse verdade.
+export const gapCrossesDays = (startMs, endMs, days) => {
+  if (!days || days.size === 0 || startMs == null || endMs == null) return false;
+  const a = safeToISODate(Math.min(startMs, endMs));
+  const b = safeToISODate(Math.max(startMs, endMs));
+  if (!a || !b) return false;
+  return datesInRange(a, b).some(d => days.has(d));
+};
+
 // ===== METAS: QUE ALVO ESTAVA EM VIGOR NUM DIA =====
 // Uma meta guarda o alvo actual (target) desde countsFrom ('YYYY-MM-DD') e os
 // anteriores em targetHistory: [{ target, from, to }] (dias inclusive). Mudar

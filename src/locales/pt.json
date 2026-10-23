@@ -1733,7 +1733,8 @@
     "tl3dCount_one": "{{count}} consumo hoje, ontem e anteontem.",
     "tl3dCount_other": "{{count}} consumos hoje, ontem e anteontem.",
     "tlDayCount_one": "{{count}} consumo",
-    "tlDayCount_other": "{{count}} consumos"
+    "tlDayCount_other": "{{count}} consumos",
+    "sinceLastUnknown": "não sabes — há dias sem consumos registados"
   },
   "substances": {
     "settingsTitle": "As minhas substâncias",
@@ -1802,6 +1803,7 @@
     "mgCycle": "mg no último ciclo medido (acordaste a {{date}})",
     "cycleNudge": "Ainda não registaste um novo ciclo desde {{when}}. Já dormiste? Se sim, regista quando acordaste. Se não, marca \"Não dormi\" — é na boa, é só para a app saber onde começa o teu dia.",
     "cycleNudgeOpen": "Registar ciclo",
-    "cycleNudgeLater": "Agora não"
+    "cycleNudgeLater": "Agora não",
+    "unknownGap": "? (há dias sem consumos registados pelo meio)"
   }
 }

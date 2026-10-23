@@ -2,7 +2,7 @@ import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
 import { deriveDailyMg, deriveDoseMg, mgBySleepCycle, typicalMgPerDose } from './mgDerivation';
-import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline, meetsGoal } from './helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, gapCrossesDays } from './helpers';
 
 // MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
 // escrevem na base de dados REAL (localDB) — por isso, em demo, NÃO devem gravar
@@ -242,9 +242,12 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     if (twoFiltered.length >= 2) {
       const last = new Date(twoFiltered[0].timestamp || twoFiltered[0].createdAt);
       const secondLast = new Date(twoFiltered[1].timestamp || twoFiltered[1].createdAt);
+      // Passa por um dia "não registei os consumos" ou atípico → não se sabe:
+      // nada de "Bom intervalo! 46h" por um intervalo que não aconteceu.
+      const crosses = gapCrossesDays(secondLast.getTime(), last.getTime(), new Set([...atypicalDates, ...unloggedDates]));
       const diffMs = last - secondLast;
       const hours = (diffMs / (1000 * 60 * 60)).toFixed(1);
-      lastInterval = parseFloat(hours);
+      lastInterval = crosses ? null : parseFloat(hours);
     }
 
     // Último mg — de cycles, dailyLogs E dos mg DERIVADOS das pesagens.
@@ -325,7 +328,9 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
 
     // Tempo desde último consumo (para badge "Sem consumir há")
     let timeSinceLastConsumption = null;
-    if (lastConsumptionTime) {
+    // Com dias "não registei os consumos" pelo meio, não se sabe ("?"), em vez
+    // de "sem consumir há 46 h".
+    if (lastConsumptionTime && !gapCrossesDays(new Date(lastConsumptionTime).getTime(), Date.now(), unloggedDates)) {
       const last = new Date(lastConsumptionTime);
       const now = new Date();
       const diffMs = now - last;

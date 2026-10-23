@@ -1,8 +1,10 @@
 import { useMemo, useState, useEffect } from 'react';
-import { getTodayKey as getTodayKeyHelper, safeToISODate, getDateDaysAgo, getDateKeyFromItem } from '../utils/helpers';
+import { getTodayKey as getTodayKeyHelper, safeToISODate, getDateDaysAgo, getDateKeyFromItem, gapCrossesDays } from '../utils/helpers';
 import { getUserStats } from '../utils/userStats';
 
-export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals, thoughts = [], dailyLogs = []) => {
+// excludedDates: dias "não registei os consumos" e atípicos — os intervalos
+// que passam por eles não se conhecem (ver helpers.gapCrossesDays).
+export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, goals, thoughts = [], dailyLogs = [], excludedDates = null) => {
   // Carregar stats pré-calculadas (para mostrar streak LOGO no boot)
   const [cachedStats, setCachedStats] = useState(null);
 
@@ -35,15 +37,17 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     const last20 = sorted.slice(-20);
     const intervals = [];
     for (let i = 1; i < last20.length; i++) {
-      const diff = (new Date(last20[i].timestamp) - new Date(last20[i-1].timestamp)) / (1000 * 60 * 60);
-      intervals.push({ hours: diff, date: last20[i].date, timestamp: last20[i].timestamp });
+      const t1 = new Date(last20[i].timestamp).getTime(), t0 = new Date(last20[i-1].timestamp).getTime();
+      if (gapCrossesDays(t0, t1, excludedDates)) continue;
+      intervals.push({ hours: (t1 - t0) / 3600000, date: last20[i].date, timestamp: last20[i].timestamp });
     }
+    if (intervals.length === 0) return null;
     const avgHours = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
     const shortIntervals = intervals.filter(i => i.hours < 2);
     const shortByDay = {};
     shortIntervals.forEach(i => { shortByDay[i.date] = (shortByDay[i.date] || 0) + 1; });
     return { avgHours: avgHours.toFixed(1), intervals: intervals.slice(-10).reverse(), shortIntervals: shortIntervals.length, shortByDay };
-  }, [consumptions]);
+  }, [consumptions, excludedDates]);
 
   // Memoized last interval
   const lastInterval = useMemo(() => {
@@ -51,10 +55,11 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     const sorted = [...consumptions].sort((a,b) => b.timestamp.localeCompare(a.timestamp));
     const last = new Date(sorted[0].timestamp);
     const secondLast = new Date(sorted[1].timestamp);
+    if (gapCrossesDays(secondLast.getTime(), last.getTime(), excludedDates)) return null;
     const diffMs = last - secondLast;
     const hours = diffMs / (1000 * 60 * 60);
     return { hours: hours.toFixed(1), isShort: hours < 2 };
-  }, [consumptions]);
+  }, [consumptions, excludedDates]);
 
   // Memoized today's consumptions
   const todayConsumptions = useMemo(() => {

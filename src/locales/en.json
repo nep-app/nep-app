@@ -1733,7 +1733,8 @@
     "tl3dCount_one": "{{count}} use today, yesterday and the day before.",
     "tl3dCount_other": "{{count}} uses today, yesterday and the day before.",
     "tlDayCount_one": "{{count}} use",
-    "tlDayCount_other": "{{count}} uses"
+    "tlDayCount_other": "{{count}} uses",
+    "sinceLastUnknown": "unknown — days without logged uses"
   },
   "substances": {
     "settingsTitle": "My substances",
@@ -1802,6 +1803,7 @@
     "mgCycle": "mg in the last measured cycle (woke up {{date}})",
     "cycleNudge": "You have not logged a new cycle since {{when}}. Have you slept? If so, log when you woke up. If not, mark \"Didn't sleep\" — no problem, it just lets the app know where your day starts.",
     "cycleNudgeOpen": "Log cycle",
-    "cycleNudgeLater": "Not now"
+    "cycleNudgeLater": "Not now",
+    "unknownGap": "? (days without logged uses in between)"
   }
 }

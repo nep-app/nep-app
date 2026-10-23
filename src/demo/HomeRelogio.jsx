@@ -5,7 +5,7 @@ import { useUI } from '../contexts/UIContext';
 import * as Icons from '../components/Icons';
 import { SubstancesModal } from '../components/modals/SubstancesModal';
 import { formatSubstances } from '../utils/substances';
-import { getTodayKey, safeToISODate, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, getDateDaysAgo, meetsGoal } from '../utils/helpers';
+import { getTodayKey, safeToISODate, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, getDateDaysAgo, meetsGoal, gapCrossesDays } from '../utils/helpers';
 import { getUserStats } from '../utils/userStats';
 import { useMetrics } from '../contexts/MetricsContext';
 
@@ -74,6 +74,9 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
   // contas usam só os da substância principal.
   const listCons = allConsumptions || consumptions;
   const { setShowGoalModal, setShowWellbeingModal, setShowEmotionsModal, setShowReflectionModal, setShowCycleModal, setShowDailyLogModal, setShowThoughtsModal } = useUI();
+  // Dias "não registei os consumos": um intervalo (ou o "desde o último") que
+  // passe por eles não se sabe — mostra-se "?" e não conta para a meta.
+  const { unloggedDates } = useMetrics();
 
   // Relógio a andar: recalcula de minuto a minuto.
   const [now, setNow] = useState(() => Date.now());
@@ -168,6 +171,9 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     // Consumos (só os da substância principal) desde que acordou
     const cons = consumptions.map(tsOf).filter(x => x != null).sort((a, b) => a - b);
     const wake = lastCycle && !cycleStale ? tsOf(lastCycle) : null;
+    // Desde que acordou passou por um dia "não registei os consumos": o 1.º e o
+    // último registados podem não ser os verdadeiros — mostra-se, sem julgar.
+    const consUnknown = wake != null && gapCrossesDays(wake, now, unloggedDates);
     if (wake != null) {
       const first = cons.find(x => x >= wake);
       const g = goal('first_not_before');
@@ -175,8 +181,8 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         const after = first - wake;
         out.cons.push({
           label: t('home2.firstAfterWake'),
-          value: t('home2.firstValue', { time: hhmm(first), after: agoText(after) }),
-          goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('first_not_before', after / H, g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
+          value: t('home2.firstValue', { time: hhmm(first), after: agoText(after) }) + (consUnknown ? ' ?' : ''),
+          goal: !consUnknown && g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('first_not_before', after / H, g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
         });
       } else {
         out.cons.push({ label: t('home2.firstAfterWake'), value: t('home2.noneYet') });
@@ -186,7 +192,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     if (lastC != null) {
       const g = goal('limit_last');
       let gl = null;
-      if (g && wake != null && lastC >= wake) {
+      if (g && wake != null && lastC >= wake && !consUnknown) {
         const deadline = limitLastDeadline(wake, g.target);
         if (deadline != null) gl = { ok: lastC <= deadline, target: t('home2.until', { time: g.target }) };
       }
@@ -196,11 +202,12 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     // Intervalo entre os dois últimos
     if (cons.length >= 2) {
       const gap = (cons[cons.length - 1] - cons[cons.length - 2]) / H;
+      const unknownGap = gapCrossesDays(cons[cons.length - 2], cons[cons.length - 1], unloggedDates);
       const g = goal('increase_interval');
       out.interval.push({
         label: t('home2.interval'),
-        value: agoText(gap * H),
-        goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('increase_interval', gap, g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
+        value: unknownGap ? t('home2.unknownGap') : agoText(gap * H),
+        goal: !unknownGap && g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('increase_interval', gap, g.target), target: `≥ ${fmtH(parseFloat(g.target))}` } : null,
       });
     }
     // mg: só se houver uma pesagem dos últimos 3 dias (senão o número é velho)
@@ -215,7 +222,7 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
       });
     }
     return out;
-  }, [cycles, consumptions, weighings, wellbeingLogs, goals, mgStats, now, t, i18n.language]);
+  }, [cycles, consumptions, weighings, wellbeingLogs, goals, mgStats, now, t, i18n.language, unloggedDates]);
 
   const [showLine, setShowLine] = useState(false);
   const [showSubstances, setShowSubstances] = useState(false);
@@ -252,8 +259,17 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
         <span className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
           {data.last != null ? (
             <>
-              <span className="text-3xl font-semibold text-gray-100 leading-none font-mono-theme">{agoText(now - data.last)}</span>
-              <span className="text-[11px] text-gray-400 mt-1">{t('demoHome.sinceLast')}</span>
+              {gapCrossesDays(data.last, now, unloggedDates) ? (
+                <>
+                  <span className="text-3xl font-semibold text-gray-100 leading-none font-mono-theme">?</span>
+                  <span className="text-[11px] text-gray-400 mt-1 px-12 leading-tight">{t('demoHome.sinceLastUnknown')}</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-3xl font-semibold text-gray-100 leading-none font-mono-theme">{agoText(now - data.last)}</span>
+                  <span className="text-[11px] text-gray-400 mt-1">{t('demoHome.sinceLast')}</span>
+                </>
+              )}
               <span className="mt-1.5 inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-teal-500/25 border border-teal-300/60 text-[9px] font-semibold text-teal-50">{t('demoHome.tapHint')} <span aria-hidden="true">›</span></span>
             </>
           ) : (
@@ -408,6 +424,7 @@ function CycleNudge({ cycles, now, onOpen }) {
 const DELETE_COLLECTION = { consumption: 'consumptions', cycle: 'cycles', wellbeing: 'wellbeingLogs' };
 
 function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit = () => false }) {
+  const { unloggedDates: unloggedTl } = useMetrics();
   const { t, i18n } = useTranslation();
   const [openGroup, setOpenGroup] = useState(null);
   // 24 horas ou 3 dias (para ver uma sessão de vários dias de uma vez).
@@ -536,7 +553,7 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
           <li className="grid grid-cols-[52px_20px_1fr_auto] items-center min-h-[52px]">
             <span className="text-xs font-semibold text-gray-200">{t('demoHome.tlNow')}</span>
             <span className="flex justify-center"><span className="w-3.5 h-3.5 rounded-full border-[3px] border-gray-200" /></span>
-            <span className="text-sm text-gray-400">{hhmm(now)}{data.last != null ? ` · ${t('demoHome.tlSince', { ago: agoText(now - data.last) })}` : ''}</span>
+            <span className="text-sm text-gray-400">{hhmm(now)}{data.last != null && !gapCrossesDays(data.last, now, unloggedTl) ? ` · ${t('demoHome.tlSince', { ago: agoText(now - data.last) })}` : ''}</span>
           </li>
         </ol>
       </div>
