@@ -1142,7 +1142,7 @@
     "symptomsLabel": "🩺 Sintomas de saúde",
     "atypicalReasonPlaceholder": "Razão (opcional) — ex: festa, viagem, doença...",
     "atypicalLabel": "📌 Dia atípico",
-    "atypicalDesc": "Dias atípicos são excluídos dos cálculos de metas e análises.",
+    "atypicalDesc": "Fica o dia TODO de fora das análises e das metas (uma festa, uma doença, uma viagem). Também dá para marcar em Histórico → Marcar dias.",
     "atypicalBanner_one": "1 dia atípico excluído das análises e metas.",
     "atypicalBanner_other": "{{count}} dias atípicos excluídos das análises e metas.",
     "atypicalTag": "Atípico",

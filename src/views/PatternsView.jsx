@@ -59,8 +59,11 @@ export function PatternsView({
         }).length;
 
         const filteredConsumptions = allFilteredConsumptions.filter(c => !excluded(c.date || safeToISODate(c.timestamp)));
-        const filteredWellbeingLogs = allFilteredWellbeingLogs.filter(w => !excluded(w.date || safeToISODate(w.timestamp)));
-        const filteredCycles = allFilteredCycles.filter(c => !excluded(c.date || safeToISODate(c.timestamp)));
+        // Bem-estar e ciclos (sono) só saem nos dias ATÍPICOS: "não registei os
+        // consumos" não apaga o sono nem o humor desse dia. As contas que dependem
+        // do consumo continuam a deixar esses dias de fora (excludedDates).
+        const filteredWellbeingLogs = allFilteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
+        const filteredCycles = allFilteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
         // A própria marca não é um registo.
         const filteredDailyLogs = allFilteredDailyLogs.filter(l => !l?.notLogged && !excluded(l.date || safeToISODate(l.timestamp)));
 
@@ -307,6 +310,7 @@ export function PatternsView({
                                                             toDate: periodTo,
                                                             targetForDay: (d) => goalTargetForDay(g, d),
                                                             excludedDates,
+                                                            nightExcludedDates: atypicalDates,
                                                             measuredMgByDate: metrics?.weighingMeasuredMgByDate || {},
                                                             mgCycles: metrics?.mgByCycleMode ? metrics.mgCycles : undefined,
                                                             allCycles: cycles,

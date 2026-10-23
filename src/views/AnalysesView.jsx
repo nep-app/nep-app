@@ -43,19 +43,24 @@ export function AnalysesView({
                 .filter(Boolean)
         );
         const atypicalCount = atypicalDates.size;
+        // As Análises comparam quase tudo com o consumo ("isto anda junto com
+        // aquilo"): um dia "não registei os consumos" teria consumo 0 falso. Por
+        // isso aqui esses dias saem por inteiro (antes entravam como dias a zero).
+        const unl = unloggedDates || new Set();
+        const out = (x) => { const d = x.date || safeToISODate(x.timestamp); return atypicalDates.has(d) || unl.has(d); };
 
         return {
             dateRange,
             atypicalCount,
             atypicalDates,
-            analysisConsumptions: filteredConsumptions.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp))),
-            analysisWellbeing: filteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp))),
-            analysisCycles: filteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp))),
-            analysisDailyLogs: filteredDailyLogs.filter(l => !atypicalDates.has(l.date || safeToISODate(l.timestamp))),
+            analysisConsumptions: filteredConsumptions.filter(c => !out(c)),
+            analysisWellbeing: filteredWellbeingLogs.filter(w => !out(w)),
+            analysisCycles: filteredCycles.filter(c => !out(c)),
+            analysisDailyLogs: filteredDailyLogs.filter(l => !l?.notLogged && !out(l)),
             analysisReflections: filteredReflections,
             analysisThoughts: filteredThoughts,
         };
-    }, [consumptions, wellbeingLogs, cycles, dailyLogs, reflections, thoughts, patternsPeriod, patternsPeriodOffset]);
+    }, [consumptions, wellbeingLogs, cycles, dailyLogs, reflections, thoughts, patternsPeriod, patternsPeriodOffset, unloggedDates]);
 
     const {
         dateRange, atypicalCount,

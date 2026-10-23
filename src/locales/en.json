@@ -1142,7 +1142,7 @@
     "symptomsLabel": "🩺 Health symptoms",
     "atypicalReasonPlaceholder": "Reason (optional) — e.g. party, travel, illness...",
     "atypicalLabel": "📌 Atypical day",
-    "atypicalDesc": "Atypical days are excluded from goal and analysis calculations.",
+    "atypicalDesc": "The WHOLE day is left out of the analyses and goals (a party, being ill, a trip). You can also mark it under History → Mark days.",
     "atypicalBanner_one": "1 atypical day excluded from analyses and goals.",
     "atypicalBanner_other": "{{count}} atypical days excluded from analyses and goals.",
     "atypicalTag": "Atypical",

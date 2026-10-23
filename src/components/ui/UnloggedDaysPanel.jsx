@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useData } from '../../contexts/DataContext';
 import { genId, getTodayKey, safeToISODate, datesInRange } from '../../utils/helpers';
 
-const OPEN_KEY = 'nep-unlogged-open';
+const OPEN_KEYS = { unlogged: 'nep-unlogged-open', atypical: 'nep-atypical-open' };
 const MAX_RANGE_DAYS = 120;
 
 // Lista de datas 'YYYY-MM-DD' entre duas datas (inclusive).
@@ -40,17 +40,24 @@ const groupConsecutive = (sortedDates) => {
  * (e que foi registado); aqui o dia pode ter sido perfeitamente normal — só não
  * ficou registado.
  */
-export const UnloggedDaysPanel = React.memo(() => {
+// kind: 'unlogged' → "Não registei os consumos" (marca em dailyLogs, notLogged):
+//        só os consumos e os mg desse dia ficam de fora; sono, humor, etc. contam.
+//       'atypical' → "Dia atípico" (isAtypical no bem-estar desse dia): o dia
+//        TODO fica de fora. Se não houver bem-estar nesse dia, cria-se um só com
+//        a marca (atypicalOnly), que se apaga ao desmarcar.
+export const UnloggedDaysPanel = React.memo(({ kind = 'unlogged' }) => {
   const { i18n } = useTranslation();
   const isEN = i18n.language === 'en';
-  const { dailyLogs, consumptions, cycles, wellbeingLogs, weighings, addDailyLog, deleteItem } = useData();
+  const { dailyLogs, consumptions, wellbeingLogs, weighings, addDailyLog, addItem, updateItem, deleteItem } = useData();
+  const atypical = kind === 'atypical';
+  const OPEN_KEY = OPEN_KEYS[kind] || OPEN_KEYS.unlogged;
 
   const [isOpen, setIsOpen] = useState(() => {
     try { return localStorage.getItem(OPEN_KEY) === 'true'; } catch { return false; }
   });
   useEffect(() => {
     try { localStorage.setItem(OPEN_KEY, String(isOpen)); } catch { /* best-effort */ }
-  }, [isOpen]);
+  }, [isOpen, OPEN_KEY]);
 
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -63,39 +70,38 @@ export const UnloggedDaysPanel = React.memo(() => {
   // dizia "desmarcado" com o dia a continuar marcado.
   const marks = useMemo(() => {
     const byDate = new Map();
-    (dailyLogs || []).forEach(l => {
-      if (!l || !l.notLogged) return;
+    (atypical ? wellbeingLogs : dailyLogs || []).forEach(l => {
+      if (!l || !(atypical ? l.isAtypical : l.notLogged)) return;
       const d = l.date || (l.timestamp ? safeToISODate(l.timestamp) : null);
       if (!d) return;
       const list = byDate.get(d);
       if (list) list.push(l); else byDate.set(d, [l]);
     });
     return byDate;
-  }, [dailyLogs]);
+  }, [dailyLogs, wellbeingLogs, atypical]);
 
   const groups = useMemo(
     () => groupConsecutive([...marks.keys()].sort()),
     [marks]
   );
 
-  // Dias marcados que afinal TÊM registos — vale a pena avisar, porque nesses
-  // dias a marca põe dados reais de fora das médias. Tem de olhar para TODOS os
-  // tipos de registo, não só consumos: marcar um dia também tira dali a pesagem,
-  // o ciclo de sono, o humor e o registo de mg desse dia.
+  // Dias marcados "não registei os consumos" que afinal TÊM consumos, mg ou
+  // pesagens — avisar, porque a marca põe esses dados de fora das contas. (O
+  // sono e o humor desses dias contam na mesma.) No atípico não se avisa: tirar
+  // o dia todo é o que se quer.
   const datesWithRecords = useMemo(() => {
     const s = new Set();
+    if (atypical) return s;
     const scan = (arr) => (arr || []).forEach(item => {
       if (!item || item.notLogged) return;
       const d = item.date || (item.timestamp ? safeToISODate(item.timestamp) : null);
       if (d && marks.has(d)) s.add(d);
     });
     scan(consumptions);
-    scan(dailyLogs);
-    scan(cycles);
-    scan(wellbeingLogs);
+    scan((dailyLogs || []).filter(l => l && l.mg != null && l.mg !== ''));
     scan(weighings);
     return s;
-  }, [consumptions, dailyLogs, cycles, wellbeingLogs, weighings, marks]);
+  }, [consumptions, dailyLogs, weighings, marks, atypical]);
 
   const fmt = useCallback((date) => (
     new Date(`${date}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -137,13 +143,22 @@ export const UnloggedDaysPanel = React.memo(() => {
     for (const date of dates) {
       if (marks.has(date)) { already.push(date); continue; }
       try {
-        await addDailyLog({
-          id: genId(),
-          date,
-          timestamp: new Date(`${date}T12:00:00`).toISOString(),
-          notLogged: true,
-          mg: null,
-        });
+        if (atypical) {
+          // Bem-estar desse dia (o mais recente) leva a marca; sem nenhum, cria-se um só com ela.
+          const existing = (wellbeingLogs || [])
+            .filter(w => w && (w.date || safeToISODate(w.timestamp)) === date)
+            .sort((x, y) => String(y.timestamp || '').localeCompare(String(x.timestamp || '')))[0];
+          if (existing) await updateItem('wellbeingLogs', existing.id, { isAtypical: true });
+          else await addItem('wellbeingLogs', { id: genId(), date, timestamp: new Date(`${date}T12:00:00`).toISOString(), isAtypical: true, atypicalOnly: true });
+        } else {
+          await addDailyLog({
+            id: genId(),
+            date,
+            timestamp: new Date(`${date}T12:00:00`).toISOString(),
+            notLogged: true,
+            mg: null,
+          });
+        }
         added.push(date);
       } catch (e) {
         failed.push(date);
@@ -183,7 +198,11 @@ export const UnloggedDaysPanel = React.memo(() => {
       // marcado — a pior combinação possível.
       for (const log of (marks.get(date) || [])) {
         if (!log?.id) continue;
-        try { await deleteItem('dailyLogs', log.id); } catch (e) { failed.push(date); }
+        try {
+          if (!atypical) await deleteItem('dailyLogs', log.id);
+          else if (log.atypicalOnly) await deleteItem('wellbeingLogs', log.id);
+          else await updateItem('wellbeingLogs', log.id, { isAtypical: false, atypicalReason: '' });
+        } catch (e) { failed.push(date); }
       }
     }
     setBusy(false);
@@ -202,7 +221,9 @@ export const UnloggedDaysPanel = React.memo(() => {
         className="w-full flex items-center justify-between text-left"
       >
         <span className="font-semibold text-white text-sm">
-          🕳️ {isEN ? 'Days I did not log' : 'Dias que não registei'}
+          {atypical
+            ? `📌 ${isEN ? 'Atypical days' : 'Dias atípicos'}`
+            : `🕳️ ${isEN ? 'Days I did not log my uses' : 'Dias em que não registei os consumos'}`}
           {marks.size > 0 && (
             <span className="ml-2 text-xs font-normal text-gray-400">({marks.size})</span>
           )}
@@ -213,14 +234,13 @@ export const UnloggedDaysPanel = React.memo(() => {
       {isOpen && (
         <div className="mt-3">
           <p className="text-xs text-gray-400 leading-relaxed">
-            {isEN
-              ? 'A day with nothing logged is not the same as a day with zero uses. Marking it here tells the app the information is missing: those days are left out of the averages instead of being counted as zero, and the app stops treating them as if nothing happened.'
-              : 'Um dia sem registos não é o mesmo que um dia a zero. Marcar aqui diz à app que a informação está em falta: esses dias ficam de fora das médias em vez de contarem como zero, e a app deixa de fazer contas como se nada tivesse acontecido.'}
-          </p>
-          <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">
-            {isEN
-              ? 'Different from an "atypical day": that one happened differently and was logged. Here the day may have been perfectly normal — it just never got written down.'
-              : 'Diferente de "dia atípico": esse aconteceu de forma diferente e foi registado. Aqui o dia até pode ter sido normal — só não ficou escrito.'}
+            {atypical
+              ? (isEN
+                ? 'A day out of the ordinary that you do not want counted (a party, being ill, a trip). The WHOLE day is left out of the analyses and goals.'
+                : 'Um dia fora do normal que não queres que conte (uma festa, uma doença, uma viagem). Fica o dia TODO de fora das análises e das metas.')
+              : (isEN
+                ? 'You know other things about the day, but not your uses. Your uses and mg that day are left out (not counted as zero). Sleep, bedtime, mood and exercise that day still count.'
+                : 'Sabes outras coisas do dia, mas não os consumos. Os consumos e os mg desse dia ficam de fora (não contam como zero). O sono, a hora de deitar, o humor e o exercício desse dia contam na mesma.')}
           </p>
 
           <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -303,8 +323,8 @@ export const UnloggedDaysPanel = React.memo(() => {
                     {withRecords > 0 && (
                       <p className="text-[11px] text-amber-400/80 mt-1 leading-snug">
                         {isEN
-                          ? `${withRecords} of these day(s) do have uses logged — those records still show in the history, but the days stay out of the averages while marked.`
-                          : `${withRecords} desses dias até têm consumos registados — esses registos continuam no histórico, mas os dias ficam fora das médias enquanto a marca estiver posta.`}
+                          ? `${withRecords} of these day(s) do have uses, mg or weighings logged — they still show in the history, but stay out of the counts while marked.`
+                          : `${withRecords} desses dias até têm consumos, mg ou pesagens registados — continuam no histórico, mas ficam fora das contas enquanto a marca estiver posta.`}
                       </p>
                     )}
                   </div>

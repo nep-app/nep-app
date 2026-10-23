@@ -265,6 +265,9 @@ const itemMs = (x) => new Date(x.timestamp || x.createdAt || x.date).getTime();
  *   fromDate, toDate   'YYYY-MM-DD' — o período avaliado (inclusive). Sem
  *                      fromDate começa no 1.º registo de qualquer tipo.
  *   excludedDates      Set de dias a deixar de fora (atípicos, "não registei").
+ *   nightExcludedDates Set de dias a deixar de fora nas metas de sono e de
+ *                      deitar (só os atípicos: "não registei os consumos" não
+ *                      apaga o sono desse dia).
  *   measuredMgByDate   { dia: mg } medidos pelas pesagens (todo o histórico;
  *                      aqui é cortado ao período).
  *   mgCycles           [{ day, mg }] mg por ciclo de sono — se vier, a meta de
@@ -392,7 +395,10 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
     // A NOITE fica completa quando se regista o acordar: o ciclo de hoje (a
     // noite de ontem para hoje) já conta — não é preciso esperar por amanhã.
     // ("Hoje não conta" é para as metas do dia, que ainda não acabou.)
-    const inRangeNight = (d) => !!d && d <= today && !excluded.has(d)
+    // Os dias "não registei os consumos" CONTAM aqui (o sono é conhecido): só
+    // ficam de fora os de opts.nightExcludedDates (os atípicos), se vier.
+    const nightExcluded = opts.nightExcludedDates || excluded;
+    const inRangeNight = (d) => !!d && d <= today && !nightExcluded.has(d)
         && (!opts.fromDate || d >= opts.fromDate) && (!opts.toDate || d <= opts.toDate);
     const latestCycleByDay = (pick) => {
         const byDate = {};

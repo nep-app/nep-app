@@ -646,7 +646,13 @@ export function HistoryView({
                                     {/* Dias que simplesmente não foram registados: dado em
                                         falta, não um dia a zero. Fica ao lado dos gaps porque
                                         é a resposta para quando não há nada a preencher. */}
-                                    <UnloggedDaysPanel />
+                                    {/* MARCAR DIAS: as duas marcas juntas, cada uma a dizer o que
+                                        tira e o que deixa ficar. */}
+                                    <div className="mb-4">
+                                        <h3 className="text-sm font-semibold text-gray-200 mb-2">{isEN ? '📅 Mark days' : '📅 Marcar dias'}</h3>
+                                        <UnloggedDaysPanel kind="unlogged" />
+                                        <UnloggedDaysPanel kind="atypical" />
+                                    </div>
 
                                     {/* Temporal Filters */}
                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
