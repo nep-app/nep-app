@@ -11,7 +11,7 @@ import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeT
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
 import { periodInfoForClosing, typicalMgPerDose, balanceAverage } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
-import { UnloggedDaysPanel } from '../components/ui/UnloggedDaysPanel';
+import { DayMarksPanel } from '../components/ui/DayMarksPanel';
 import { EMOTION_EN } from '../constants/emotions';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
@@ -649,14 +649,9 @@ export function HistoryView({
                                     {/* Dias que simplesmente não foram registados: dado em
                                         falta, não um dia a zero. Fica ao lado dos gaps porque
                                         é a resposta para quando não há nada a preencher. */}
-                                    {/* MARCAR DIAS: as duas marcas juntas, cada uma a dizer o que
-                                        tira e o que deixa ficar. */}
-                                    <div className="mb-4">
-                                        <h3 className="text-sm font-semibold text-gray-200 mb-2">{isEN ? '📅 Mark days' : '📅 Marcar dias'}</h3>
-                                        <UnloggedDaysPanel kind="unlogged" />
-                                        <UnloggedDaysPanel kind="unsureRefill" />
-                                        <UnloggedDaysPanel kind="atypical" />
-                                    </div>
+                                    {/* MARCAR UM DIA: uma pergunta só ("o que aconteceu?") com as
+                                        três situações, cada uma a dizer o que tira e o que deixa. */}
+                                    <DayMarksPanel />
 
                                     {/* Temporal Filters */}
                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
