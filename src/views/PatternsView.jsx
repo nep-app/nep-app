@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays } from '../utils/helpers';
+import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -65,7 +65,7 @@ export function PatternsView({
         const filteredWellbeingLogs = allFilteredWellbeingLogs.filter(w => !atypicalDates.has(w.date || safeToISODate(w.timestamp)));
         const filteredCycles = allFilteredCycles.filter(c => !atypicalDates.has(c.date || safeToISODate(c.timestamp)));
         // A própria marca não é um registo.
-        const filteredDailyLogs = allFilteredDailyLogs.filter(l => !l?.notLogged && !excluded(l.date || safeToISODate(l.timestamp)));
+        const filteredDailyLogs = allFilteredDailyLogs.filter(l => !isDayMarkLog(l) && !excluded(l.date || safeToISODate(l.timestamp)));
 
         // mg POR DIA do período, da fonte unificada (metrics.dailySummary): o
         // "Registar mg" à mão manda; as pesagens do saco preenchem os outros dias.

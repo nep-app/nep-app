@@ -190,6 +190,7 @@ export const WeighingModal = ({ isOpen, onClose, weighings = [], onSubmit }) => 
         {mode === 'naoPesei' ? (
           <div className="space-y-4">
             <p className="text-sm text-gray-300">{t('weighing.notWeighedExplain')}</p>
+            <p className="text-xs text-gray-400">{t('weighing.notWeighedUnsureHint')}</p>
             <div className="flex gap-2">
               <button onClick={() => setMode(firstEver ? 'novo' : 'normal')}
                 className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 py-2.5 rounded-lg font-medium">

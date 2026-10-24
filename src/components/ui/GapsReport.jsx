@@ -74,6 +74,7 @@ export const GapsReport = React.memo(({ onFillGap }) => {
       const logDate = log.date || (log.timestamp ? safeToISODate(log.timestamp) : null);
       if (!logDate) return;
       if (log.notLogged) { unloggedDates.add(logDate); return; }
+      if (log.unsureRefill) return; // marca "não sei se enchi", não é um registo de mg
       dailyLogDates.add(logDate);
     });
 

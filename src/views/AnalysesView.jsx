@@ -5,7 +5,7 @@ import * as analyticsService from '../services/analyticsService';
 import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
-import { safeToISODate } from '../utils/helpers';
+import { safeToISODate, isDayMarkLog } from '../utils/helpers';
 import { AnalysesCoachTab } from './analyses/AnalysesCoachTab';
 import { AnalysesEstadoTab } from './analyses/AnalysesEstadoTab';
 import { AnalysesCorrelacoesTab } from './analyses/AnalysesCorrelacoesTab';
@@ -56,7 +56,7 @@ export function AnalysesView({
             analysisConsumptions: filteredConsumptions.filter(c => !out(c)),
             analysisWellbeing: filteredWellbeingLogs.filter(w => !out(w)),
             analysisCycles: filteredCycles.filter(c => !out(c)),
-            analysisDailyLogs: filteredDailyLogs.filter(l => !l?.notLogged && !out(l)),
+            analysisDailyLogs: filteredDailyLogs.filter(l => !isDayMarkLog(l) && !out(l)),
             analysisReflections: filteredReflections,
             analysisThoughts: filteredThoughts,
         };

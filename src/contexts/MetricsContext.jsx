@@ -2,7 +2,7 @@ import React, { createContext, useContext, useMemo, useState, useEffect } from '
 import { useData } from './DataContext';
 import { useAnalysis } from '../hooks/useAnalysis';
 import * as analyticsService from '../services/analyticsService';
-import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, gapCrossesDays } from '../utils/helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, gapCrossesDays, isDayMarkLog } from '../utils/helpers';
 import { getDailyRollup, saveDailyRollup, getDailySummary, saveDailySummary } from '../utils/userStats';
 import { deriveDailyMg, measuredPeriods, mgBySleepCycle, sleepCycleGaps } from '../utils/mgDerivation';
 
@@ -36,6 +36,20 @@ export const MetricsProvider = ({ children }) => {
     return s;
   }, [dailyLogs]);
 
+  // DIAS "NÃO SEI SE ENCHI O SACO": os consumos estão registados, mas a pessoa
+  // não sabe se pôs mais no saco. Os consumos contam; o período pesado que passa
+  // por esses dias só diz "pelo menos X mg" (não reparte por dia, fora da média).
+  const unsureRefillDates = useMemo(() => {
+    const s = new Set();
+    (dailyLogs || []).forEach(l => {
+      if (l && l.unsureRefill) {
+        const d = l.date || getDateKeyFromItem(l);
+        if (d) s.add(d);
+      }
+    });
+    return s;
+  }, [dailyLogs]);
+
   // mg/dia DERIVADOS das pesagens, SÓ dos dias medidos a sério (todas as doses
   // pesadas). Estimativas nunca entram — a app não inventa mg. Serve para o resumo
   // por dia, e assim a pesagem chega às páginas pesadas (Padrões/Análises/Coach).
@@ -48,7 +62,7 @@ export const MetricsProvider = ({ children }) => {
     const doseMg = []; // mg de cada toque (ou null) — para somar por ciclo de sono
     if (!weighings || weighings.length === 0) return { mgByDate, reasonsByDate, doseMg };
     try {
-      const perDay = deriveDailyMg(weighings, consumptions, { unloggedDates, _doseOut: doseMg });
+      const perDay = deriveDailyMg(weighings, consumptions, { unloggedDates, unsureDates: unsureRefillDates, _doseOut: doseMg });
       for (const [date, day] of Object.entries(perDay || {})) {
         if (!day) continue;
         if (day.mg > 0 && day.state === 'measured') mgByDate[date] = day.mg;
@@ -58,15 +72,15 @@ export const MetricsProvider = ({ children }) => {
       }
     } catch (e) { /* best-effort: nunca parte as métricas */ }
     return { mgByDate, reasonsByDate, doseMg };
-  }, [weighings, consumptions, unloggedDates]);
+  }, [weighings, consumptions, unloggedDates, unsureRefillDates]);
 
   const weighingMeasuredMgByDate = mgDerivation.mgByDate;
 
   // PERÍODOS PESADOS (entre duas pesagens): o que saiu do saco, direto da
   // balança. Servem o Histórico e a "média pela balança" das metas de mg.
   const weighedPeriods = useMemo(() => {
-    try { return measuredPeriods(weighings || [], consumptions || [], { unloggedDates }); } catch { return []; }
-  }, [weighings, consumptions, unloggedDates]);
+    try { return measuredPeriods(weighings || [], consumptions || [], { unloggedDates, unsureDates: unsureRefillDates }); } catch { return []; }
+  }, [weighings, consumptions, unloggedDates, unsureRefillDates]);
   // Porque é que um dia NÃO tem mg fiável (códigos por dia). Serve para a app
   // explicar a ausência em vez de saltar o dia em silêncio.
   const mgGapReasonsByDate = mgDerivation.reasonsByDate;
@@ -116,7 +130,7 @@ export const MetricsProvider = ({ children }) => {
   // As marcas "não registei" são metadados, não registos: não podem contar como
   // dia com dados (senão faziam streak e enchiam as contagens de registos).
   const filteredDailyLogs = useMemo(() =>
-    dailyLogs.filter(l => !l?.notLogged && !excludedDates.has(l.date || getDateKeyFromItem(l))),
+    dailyLogs.filter(l => !isDayMarkLog(l) && !excludedDates.has(l.date || getDateKeyFromItem(l))),
   [dailyLogs, excludedDates]);
 
   const filteredWellbeingLogs = useMemo(() =>
@@ -521,13 +535,14 @@ export const MetricsProvider = ({ children }) => {
     mgCycles, // mg por ciclo de sono (acordar → acordar), só ciclos com valor fiável
     cycleGaps, // [{start,end}] mais de 36h sem acordar registado (a app não sabe)
     unloggedDates, // dias marcados "não registei" (dados em falta, não zeros)
+    unsureRefillDates, // dias "não sei se enchi o saco" (consumos contam; mg do período é um mínimo)
     atypicalDates, // dias marcados como atípicos (fora das médias)
   }), [
     analysis.intervalStats, analysis.lastInterval, todayConsumptions,
     analysis.temporalCorrelations, analysis.bidirectionalAnalysis, analysis.streaks,
     timeSinceLastConsumption, last7Days, avgFrequencyLast7Days, getGoalProgress,
     consumptionsByDate, effectiveDailyRollup, effectiveDailySummary, weighingMeasuredMgByDate,
-    mgGapReasonsByDate, weighedPeriods, mgByCycleMode, mgCycles, cycleGaps, unloggedDates, atypicalDates,
+    mgGapReasonsByDate, weighedPeriods, mgByCycleMode, mgCycles, cycleGaps, unloggedDates, unsureRefillDates, atypicalDates,
   ]);
 
   return <MetricsContext.Provider value={value}>{children}</MetricsContext.Provider>;

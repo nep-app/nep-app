@@ -2,7 +2,7 @@ import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
 import { deriveDailyMg, deriveDoseMg, mgBySleepCycle, typicalMgPerDose } from './mgDerivation';
-import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, gapCrossesDays } from './helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, gapCrossesDays, isDayMarkLog } from './helpers';
 
 // MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
 // escrevem na base de dados REAL (localDB) — por isso, em demo, NÃO devem gravar
@@ -220,7 +220,9 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const filteredConsumptions = consumptions.filter(c => !excluded(c.date));
     const filteredCycles = cycles.filter(c => !excluded(c.date));
     // A própria marca não é um registo (não pode contar como dia com dados).
-    const filteredDailyLogs = dailyLogs.filter(l => !l?.notLogged && !excluded(l.date));
+    const filteredDailyLogs = dailyLogs.filter(l => !isDayMarkLog(l) && !excluded(l.date));
+    // "Não sei se enchi o saco": os consumos contam, os mg do período não.
+    const unsureDates = new Set(dailyLogs.filter(l => l && l.unsureRefill).map(l => l.date).filter(Boolean));
     const filteredWellbeingLogs = (wellbeingLogs || []).filter(w => !w.isAtypical);
 
     // Último consumo real (para badge "Tempo desde último consumo" — inclui dias atípicos)
@@ -277,8 +279,8 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
     const derivedMgEntries = [];
     if (weighings && weighings.length > 0) {
       try {
-        const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
-        const perDay = deriveDailyMg(weighings, consumptions, { typical, unloggedDates });
+        const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates, unsureDates });
+        const perDay = deriveDailyMg(weighings, consumptions, { typical, unloggedDates, unsureDates });
         for (const [date, day] of Object.entries(perDay || {})) {
           if (!day || !(day.mg > 0)) continue;
           // SÓ dias medidos a 100% (todas as doses dentro de períodos pesados).
@@ -312,7 +314,7 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       lastMgByCycle = true;
       lastMg = null; lastMgTs = null; lastMgEstimated = false;
       try {
-        const doseMg = weighings && weighings.length > 0 ? deriveDoseMg(weighings, consumptions, { unloggedDates }) : [];
+        const doseMg = weighings && weighings.length > 0 ? deriveDoseMg(weighings, consumptions, { unloggedDates, unsureDates }) : [];
         const byCycle = mgBySleepCycle(doseMg, cycles, { dailyLogs: filteredDailyLogs, excludedDates: new Set([...atypicalDates, ...unloggedDates]) });
         if (byCycle.length > 0) { lastMg = byCycle[0].mg; lastMgTs = byCycle[0].start; }
       } catch (e) { /* best-effort: nunca parte os avisos */ }

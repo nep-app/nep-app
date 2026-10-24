@@ -273,9 +273,10 @@ export function AuthenticatedApp() {
             // a app a contradizer-se a si própria.
             const derivedDailyMg = React.useMemo(() => {
                 const unloggedDates = metrics?.unloggedDates;
-                const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
-                return deriveDailyMg(weighings, consumptions, { typical, unloggedDates });
-            }, [weighings, consumptions, metrics?.unloggedDates]);
+                const unsureDates = metrics?.unsureRefillDates;
+                const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates, unsureDates });
+                return deriveDailyMg(weighings, consumptions, { typical, unloggedDates, unsureDates });
+            }, [weighings, consumptions, metrics?.unloggedDates, metrics?.unsureRefillDates]);
             // "Registar mg" = o total que a pessoa calculou (tara e contas feitas
             // por ela) — o mesmo que a balança faz pela app. Quem regista ciclos
             // escolhe DE QUE CICLO é o total (acordar → acordar); quem não regista,

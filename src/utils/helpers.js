@@ -192,6 +192,12 @@ export const datesInRange = (from, to) => {
   return out;
 };
 
+// ===== MARCAS DE DIA (em dailyLogs) =====
+// "Não registei os consumos" (notLogged) e "Não sei se enchi o saco"
+// (unsureRefill) vivem em dailyLogs para sincronizar, mas NÃO são um
+// "Registar mg": não contam como dia com dados nem como mg em falta.
+export const isDayMarkLog = (l) => !!(l && (l.notLogged || l.unsureRefill));
+
 // ===== INTERVALOS QUE NÃO SE CONHECEM =====
 // Um intervalo entre dois consumos (ou "desde o último" até agora) só se
 // conhece se nenhum dia pelo meio, nem os das pontas, está marcado "não

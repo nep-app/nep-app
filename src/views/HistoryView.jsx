@@ -7,7 +7,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeToISODate } from '../utils/helpers';
+import { formatDateTime, formatDateShort, formatDateWithWeekday, safeDate, safeToISODate, isDayMarkLog } from '../utils/helpers';
 import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis';
 import { periodInfoForClosing, typicalMgPerDose, balanceAverage } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
@@ -174,7 +174,7 @@ export function HistoryView({
     // apareciam como cartões vazios no Histórico e inchavam as contagens
     // ("Tudo (4103)"). Quem as mostra é o painel "Dias que não registei".
     const tempFilteredDailyLogs = useMemo(() =>
-        filterByDateRange(dailyLogs.filter(l => !l?.notLogged), dateRange, 'date')
+        filterByDateRange(dailyLogs.filter(l => !isDayMarkLog(l)), dateRange, 'date')
             .sort((a, b) => new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp)),
         [dailyLogs, dateRange]
     );
@@ -218,8 +218,8 @@ export function HistoryView({
 
     // mg/toque típico — referência para a pessoa julgar um período suspeito.
     const typicalPerDose = useMemo(
-        () => typicalMgPerDose(weighings || [], consumptions || [], { unloggedDates: metrics?.unloggedDates }),
-        [weighings, consumptions, metrics?.unloggedDates]
+        () => typicalMgPerDose(weighings || [], consumptions || [], { unloggedDates: metrics?.unloggedDates, unsureDates: metrics?.unsureRefillDates }),
+        [weighings, consumptions, metrics?.unloggedDates, metrics?.unsureRefillDates]
     );
 
     // PERÍODOS PESADOS: o que saiu do saco entre duas pesagens. Vem da balança,
@@ -269,11 +269,12 @@ export function HistoryView({
                 // um dia inflacionado, e é o que a pessoa pode corrigir.
                 const code = codes.includes('unloggedDaysInPeriod')
                     ? 'unloggedDaysInPeriod'
+                    : codes.includes('unsureRefillInPeriod') ? 'unsureRefillInPeriod'
                     : codes.includes('missingTouches') ? 'missingTouches' : (codes[0] || 'unmeasured');
                 // Há um "Registar mg" para este dia, mas com a caixa dos mg vazia:
                 // dizer isso (é diferente de não haver registo nenhum).
                 const emptyLog = (code === 'beforeFirstWeighing' || code === 'unmeasured')
-                    && (dailyLogs || []).some(l => l && !l.notLogged && l.date === d && (l.mg == null || l.mg === ''));
+                    && (dailyLogs || []).some(l => l && !isDayMarkLog(l) && l.date === d && (l.mg == null || l.mg === ''));
                 arr.push({
                     date: d,
                     reason: unloggedDates.has(d) ? 'unlogged' : atypicalDates.has(d) ? 'atypical' : emptyLog ? 'emptyMgLog' : code,
@@ -325,6 +326,8 @@ export function HistoryView({
                 return isEN ? '🕳️ you marked it as not logged' : '🕳️ marcaste como "não registei"';
             case 'unloggedDaysInPeriod':
                 return isEN ? '🕳️ period covers days you did not log' : '🕳️ período apanha dias que não registaste';
+            case 'unsureRefillInPeriod':
+                return isEN ? '❔ you are not sure if you refilled the bag' : '❔ não sabes se encheste o saco neste período';
             case 'beforeFirstWeighing':
                 // Antes das pesagens do saco só havia o "Registar mg": este dia
                 // não tem nenhum (não é "não pesavas" — pesava-se, à mão).
@@ -651,6 +654,7 @@ export function HistoryView({
                                     <div className="mb-4">
                                         <h3 className="text-sm font-semibold text-gray-200 mb-2">{isEN ? '📅 Mark days' : '📅 Marcar dias'}</h3>
                                         <UnloggedDaysPanel kind="unlogged" />
+                                        <UnloggedDaysPanel kind="unsureRefill" />
                                         <UnloggedDaysPanel kind="atypical" />
                                     </div>
 
@@ -1183,6 +1187,13 @@ export function HistoryView({
                                                                                                 : `Saíram pelo menos ${d.detail.consumed} mg do saco num período que apanha ${d.detail.dates.length} dia(s) que marcaste como "não registei" (pode ter havido um enchimento por registar). Não se sabe quanto foi em cada dia — vês o período em "Por período pesado".`}
                                                                                         </div>
                                                                                     )}
+                                                                                    {d.reason === 'unsureRefillInPeriod' && d.detail && d.detail.consumed != null && (
+                                                                                        <div className="text-[11px] text-gray-500 mt-1 leading-snug">
+                                                                                            {isEN
+                                                                                                ? `At least ${d.detail.consumed} mg left the bag in this period. You marked ${d.detail.dates.length} day(s) as "not sure if I refilled": if you did, more left. Your uses count as usual; the mg per day are not known — see the period under "Per weighed period".`
+                                                                                                : `Saíram pelo menos ${d.detail.consumed} mg do saco neste período. Marcaste ${d.detail.dates.length} dia(s) como "não sei se enchi": se encheste, saiu mais. Os consumos contam normalmente; os mg de cada dia é que não se sabem — vês o período em "Por período pesado".`}
+                                                                                        </div>
+                                                                                    )}
                                                                                     {d.reason === 'emptyMgLog' && (
                                                                                         <div className="text-[11px] text-gray-500 mt-1 leading-snug">
                                                                                             {isEN
@@ -1248,7 +1259,7 @@ export function HistoryView({
                                                                             <div key={`per-${p.start}-${p.end}`} className="bg-gray-900/40 rounded px-3 py-1.5">
                                                                                 <div className="flex items-center justify-between gap-2">
                                                                                     <span className="text-sm text-gray-300">{f(p.start)} → {f(p.end)}</span>
-                                                                                    <span className="text-sm font-medium text-green-300">{p.unloggedDays && p.unloggedDays.length > 0 ? '≥ ' : ''}{p.consumed} mg</span>
+                                                                                    <span className="text-sm font-medium text-green-300">{(p.unloggedDays?.length > 0 || p.unsureDays?.length > 0) ? '≥ ' : ''}{p.consumed} mg</span>
                                                                                 </div>
                                                                                 <div className="text-[11px] text-gray-500">
                                                                                     {/* Duração REAL entre as duas pesagens (não dias de calendário:
@@ -1257,8 +1268,8 @@ export function HistoryView({
                                                                                         esticado a 24h dava um número que não aconteceu. */}
                                                                                     {(() => { const h = (p.end - p.start) / 3600000; return h < 48 ? `~${Math.max(1, Math.round(h))} h` : `~${Math.round(h / 24)} ${isEN ? 'days' : 'dias'}`; })()}
                                                                                     {' · '}{p.doseCount} {isEN ? 'uses' : 'toques'}
-                                                                                    {p.mgPerDose != null && !(p.unloggedDays && p.unloggedDays.length > 0) && <> · ≈{p.mgPerDose} mg/{isEN ? 'use' : 'toque'}</>}
-                                                                                    {(p.end - p.start) >= 20 * 3600000 && !(p.unloggedDays && p.unloggedDays.length > 0) && <>{' · ≈'}{Math.round(p.consumed / ((p.end - p.start) / 86400000))} mg {isEN ? 'per 24h' : 'por 24h'}</>}
+                                                                                    {p.mgPerDose != null && !(p.unloggedDays?.length > 0 || p.unsureDays?.length > 0) && <> · ≈{p.mgPerDose} mg/{isEN ? 'use' : 'toque'}</>}
+                                                                                    {(p.end - p.start) >= 20 * 3600000 && !(p.unloggedDays?.length > 0 || p.unsureDays?.length > 0) && <>{' · ≈'}{Math.round(p.consumed / ((p.end - p.start) / 86400000))} mg {isEN ? 'per 24h' : 'por 24h'}</>}
                                                                                 </div>
                                                                                 {/* O total continua fiável (veio da balança); o mg/toque
                                                                                     é que não, porque faltam os toques desses dias. */}
@@ -1267,6 +1278,13 @@ export function HistoryView({
                                                                                         {isEN
                                                                                             ? `Includes ${p.unloggedDays.length} day(s) you marked as not logged. On those days there may have been a refill that was never logged, so at least ${p.consumed} mg left the bag — maybe more. And there is no way to know how much each use was.`
                                                                                             : `Apanha ${p.unloggedDays.length} dia(s) que marcaste como "não registei". Nesses dias pode ter havido um enchimento que não ficou registado: por isso saíram pelo menos ${p.consumed} mg — talvez mais. E não dá para saber quanto foi cada toque.`}
+                                                                                    </div>
+                                                                                )}
+                                                                                {!(p.unloggedDays?.length > 0) && p.unsureDays?.length > 0 && (
+                                                                                    <div className="text-[11px] text-amber-400/70 mt-0.5 leading-snug">
+                                                                                        {isEN
+                                                                                            ? `Includes ${p.unsureDays.length} day(s) you marked as "not sure if I refilled". If you did, more left the bag: at least ${p.consumed} mg — maybe more. Not split per day and left out of the average.`
+                                                                                            : `Apanha ${p.unsureDays.length} dia(s) que marcaste como "não sei se enchi". Se encheste, saiu mais: pelo menos ${p.consumed} mg — talvez mais. Não se reparte por dia e fica fora da média.`}
                                                                                     </div>
                                                                                 )}
                                                                             </div>

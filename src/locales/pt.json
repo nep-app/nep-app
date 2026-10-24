@@ -105,6 +105,7 @@
     "previewSwapped": "Os pesos parecem trocados (o cheio é menor que o de antes). Confirma a ordem.",
     "notWeighedLink": "Enchi sem pesar",
     "notWeighedExplain": "A app marca este período como \"sem peso registado\" — mostra as tuas doses mas nunca inventa mg.",
+    "notWeighedUnsureHint": "Não sabes se encheste? Não uses este botão: vai a Histórico → Marcar dias → \"Dias em que não sei se enchi o saco\".",
     "markNotWeighed": "Marcar \"não pesei\"",
     "save": "Guardar pesagem",
     "saved": "Pesagem guardada.",

@@ -37,7 +37,7 @@ export const WeighingSuggestion = () => {
   const { t, i18n } = useTranslation();
   const isEN = i18n.language === 'en';
   const { weighings, consumptions, updateWeighing } = useData();
-  const { unloggedDates } = useMetrics();
+  const { unloggedDates, unsureRefillDates } = useMetrics();
   const [busy, setBusy] = useState(false);
   const [snoozed, setSnoozed] = useState(readSnoozed);
 
@@ -46,11 +46,11 @@ export const WeighingSuggestion = () => {
   }, [snoozed]);
 
   const suspicion = useMemo(() => {
-    const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates });
-    const list = detectForgottenRefills(weighings, consumptions, typical);
+    const typical = typicalMgPerDose(weighings, consumptions, { unloggedDates, unsureDates: unsureRefillDates });
+    const list = detectForgottenRefills(weighings, consumptions, typical, { unsureDates: unsureRefillDates });
     const now = Date.now();
     return list.find(s => s.closingId && !(snoozed[s.closingId] > now)) || null;
-  }, [weighings, consumptions, unloggedDates, snoozed]);
+  }, [weighings, consumptions, unloggedDates, unsureRefillDates, snoozed]);
 
   if (!suspicion) return null;
 

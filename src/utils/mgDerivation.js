@@ -63,6 +63,15 @@ const unloggedInCycle = (cy, unloggedSet) => {
   return datesBetween(cy.start, cy.end).filter(d => unloggedSet.has(d));
 };
 
+// Dias "não sei se enchi o saco": a pessoa registou os consumos, mas não sabe
+// se pôs mais no saco. Se pôs, saiu mais do que a balança diz — o total do
+// período é um MÍNIMO e não dá para repartir por dia (como os "não registei",
+// mas aqui os consumos desses dias contam).
+const unsureInCycle = (cy, unsureSet) => {
+  if (!unsureSet) return [];
+  return datesBetween(cy.start, cy.end).filter(d => unsureSet.has(d));
+};
+
 // ⚡ PREPARAÇÃO ÚNICA DAS DOSES.
 // O custo real destas funções não estava nas contas — estava em transformar
 // texto ("2025-09-01T12:00:00") em data. Cada função voltava a fazê-lo para
@@ -195,13 +204,15 @@ export function lastMeasuredPeriod(weighings = []) {
 /**
  * @param {Array} weighings   pesagens desencriptadas
  * @param {Array} consumptions doses desencriptadas
- * @param {Object} [opts] { typical, unloggedDates } mg/dose típico e dias que a
- *        pessoa marcou como "não registei" (dados em falta, não zeros).
+ * @param {Object} [opts] { typical, unloggedDates, unsureDates } mg/dose típico,
+ *        dias que a pessoa marcou como "não registei" (dados em falta, não
+ *        zeros) e dias "não sei se enchi o saco".
  * @returns {Object} { [date]: { mg, state, doseCount, measuredDoses, estimatedDoses, unknownDoses, estimated } }
  */
 export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   const typical = (opts.typical != null && !isNaN(opts.typical) && opts.typical > 0) ? opts.typical : null;
   const unloggedSet = toDateSet(opts.unloggedDates);
+  const unsureSet = toDateSet(opts.unsureDates);
 
   const ws = prepWeighings(weighings);
   const doses = opts._doses || prepDoses(consumptions);
@@ -225,7 +236,7 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
   const measuredCycles = cycles.filter(cy => cy.measured);
   const typicalRef = (typical != null && typical > 0)
     ? typical
-    : typicalMgPerDose(weighings, consumptions, { unloggedDates: unloggedSet, _doses: doses });
+    : typicalMgPerDose(weighings, consumptions, { unloggedDates: unloggedSet, unsureDates: unsureSet, _doses: doses });
   const unreliableByTouches = new Map(); // cycle -> { consumed, doseCount, mgPerDose }
 
   // ⚠️ DIAS "NÃO REGISTEI": a pessoa disse-nos que nesses dias não registou nada.
@@ -240,6 +251,21 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
       const dates = unloggedInCycle(cy, unloggedSet);
       if (dates.length === 0) continue;
       unreliableByUnlogged.set(cy, {
+        consumed: Math.round(cy.consumed),
+        dates,
+        doseCount: doseCountByCycle.get(cy) || 0,
+      });
+    }
+  }
+
+  // ⚠️ DIAS "NÃO SEI SE ENCHI": o mesmo raciocínio — se houve um enchimento,
+  // saiu mais do que a balança mostra. Os toques contam; os mg por dia não.
+  const unreliableByUnsure = new Map(); // cycle -> { consumed, dates, doseCount }
+  if (unsureSet) {
+    for (const cy of measuredCycles) {
+      const dates = unsureInCycle(cy, unsureSet);
+      if (dates.length === 0) continue;
+      unreliableByUnsure.set(cy, {
         consumed: Math.round(cy.consumed),
         dates,
         doseCount: doseCountByCycle.get(cy) || 0,
@@ -279,8 +305,9 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
     const ci = owner[di];
     const cy = ci >= 0 ? cycles[ci] : null;
     const unlogged = cy ? unreliableByUnlogged.get(cy) : null;
+    const unsure = cy ? unreliableByUnsure.get(cy) : null;
     const suspect = cy ? unreliableByTouches.get(cy) : null;
-    if (cy && cy.measured && !suspect && !unlogged) {
+    if (cy && cy.measured && !suspect && !unlogged && !unsure) {
       const n = doseCountByCycle.get(cy) || 1;
       day.mg += cy.consumed / n;
       day.measuredDoses++;
@@ -293,6 +320,11 @@ export function deriveDailyMg(weighings = [], consumptions = [], opts = {}) {
       day.unknownDoses++;
       day.reasons.add('unloggedDaysInPeriod');
       if (!day.gapDetail) day.gapDetail = unlogged;
+    } else if (unsure) {
+      // Período com um dia "não sei se enchi": conta o toque, SEM mg.
+      day.unknownDoses++;
+      day.reasons.add('unsureRefillInPeriod');
+      if (!day.gapDetail) day.gapDetail = unsure;
     } else if (suspect) {
       // Período com toques a menos: conta o toque, mas SEM mg (não inventar).
       day.unknownDoses++;
@@ -463,7 +495,8 @@ export function sleepCycleGaps(sleepCycles = [], { unloggedDates } = {}) {
  *
  * @returns {Array} suspeitas: { closingId, startTs, endTs, mgPerDose, typical, dates:[], doseCount }
  */
-export function detectForgottenRefills(weighings = [], consumptions = [], typical = null) {
+export function detectForgottenRefills(weighings = [], consumptions = [], typical = null, { unsureDates } = {}) {
+  const unsureSet = toDateSet(unsureDates);
   if (typical == null || isNaN(typical) || typical <= 0) return [];
 
   const ws = prepWeighings(weighings);
@@ -490,6 +523,8 @@ export function detectForgottenRefills(weighings = [], consumptions = [], typica
     const cy = cycles[ci];
     if (!cy.measured) continue;
     if (cy.closing?.confirmedLow || cy.closing?.forgottenRefill) continue;
+    // A pessoa já disse que não sabe se encheu: não voltar a perguntar.
+    if (unsureInCycle(cy, unsureSet).length > 0) continue;
     const n = counts[ci];
     if (n < 2) continue; // pouca informação
     const mgPerDose = cy.consumed / n;
@@ -518,6 +553,7 @@ export function detectForgottenRefills(weighings = [], consumptions = [], typica
  */
 export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
   const unloggedSet = toDateSet(opts.unloggedDates);
+  const unsureSet = toDateSet(opts.unsureDates);
   const ws = prepWeighings(weighings);
   const doses = opts._doses || prepDoses(consumptions);
 
@@ -544,6 +580,8 @@ export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
       // pode ter havido um enchimento por registar, por isso o total é só um
       // MÍNIMO ("pelo menos"), e o mg/toque não se sabe.
       unloggedDays,
+      // Dias "não sei se enchi o saco": o mesmo — o total é só um MÍNIMO.
+      unsureDays: unsureInCycle(cy, unsureSet),
     });
   }
   return out.sort((a, b) => b.end - a.end); // mais recente primeiro
@@ -556,8 +594,9 @@ export function measuredPeriods(weighings = [], consumptions = [], opts = {}) {
  * geral, para ver AO LADO do dia a dia da meta, nunca em vez dele.
  * Um período só em parte dentro do intervalo (ou a passar por um dia atípico)
  * conta na proporção do tempo. Um período que passa por um dia "não registei"
- * fica de fora: nesse dia pode ter havido um enchimento por registar, e então a
- * balança só diz "pelo menos" — um mínimo não entra numa média.
+ * (ou "não sei se enchi o saco") fica de fora: nesse dia pode ter havido um
+ * enchimento por registar, e então a balança só diz "pelo menos" — um mínimo
+ * não entra numa média.
  * Com menos de 2 dias cobertos não se sabe → null (a app diz que não sabe).
  * @param {Array} periods saída de measuredPeriods
  * @returns {null | { mgPerDay:number, coveredDays:number, spanDays:number }}
@@ -570,6 +609,7 @@ export function balanceAverage(periods = [], fromMs = null, toMs = null, { exclu
   let mg = 0, ms = 0, first = null;
   for (const p of periods) {
     if (p.unloggedDays && p.unloggedDays.length > 0) continue;
+    if (p.unsureDays && p.unsureDays.length > 0) continue;
     const len = p.end - p.start;
     const a = Math.max(p.start, lo), b = Math.min(p.end, hi);
     if (!(len > 0) || b <= a) continue;
@@ -647,6 +687,7 @@ export function periodInfoForClosing(weighings = [], consumptions = [], closingI
  */
 export function typicalMgPerDose(weighings = [], consumptions = [], opts = {}) {
   const unloggedSet = toDateSet(opts.unloggedDates);
+  const unsureSet = toDateSet(opts.unsureDates);
   const ws = prepWeighings(weighings);
   const doses = opts._doses || prepDoses(consumptions);
 
@@ -668,7 +709,8 @@ export function typicalMgPerDose(weighings = [], consumptions = [], opts = {}) {
     all.push(perDose);
     // Períodos que atravessam dias "não registei" têm toques a menos por
     // construção — usá-los empurrava o "típico" artificialmente para cima.
-    if (unloggedInCycle(cy, unloggedSet).length === 0) clean.push(perDose);
+    // Os "não sei se enchi" também: se houve enchimento, o mg/toque real é outro.
+    if (unloggedInCycle(cy, unloggedSet).length === 0 && unsureInCycle(cy, unsureSet).length === 0) clean.push(perDose);
   }
 
   // ⚠️ NUNCA devolver null só porque TODOS os períodos apanham um dia marcado.

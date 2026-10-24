@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useData } from '../../contexts/DataContext';
 import { genId, getTodayKey, safeToISODate, datesInRange } from '../../utils/helpers';
 
-const OPEN_KEYS = { unlogged: 'nep-unlogged-open', atypical: 'nep-atypical-open' };
+const OPEN_KEYS = { unlogged: 'nep-unlogged-open', unsureRefill: 'nep-unsure-refill-open', atypical: 'nep-atypical-open' };
 const MAX_RANGE_DAYS = 120;
 
 // Lista de datas 'YYYY-MM-DD' entre duas datas (inclusive).
@@ -45,11 +45,16 @@ const groupConsecutive = (sortedDates) => {
 //       'atypical' → "Dia atípico" (isAtypical no bem-estar desse dia): o dia
 //        TODO fica de fora. Se não houver bem-estar nesse dia, cria-se um só com
 //        a marca (atypicalOnly), que se apaga ao desmarcar.
+//       'unsureRefill' → "Não sei se enchi o saco" (marca em dailyLogs,
+//        unsureRefill): os consumos contam; o período pesado que passa por esse
+//        dia só diz "pelo menos X mg" (não se reparte por dia, fica fora da média).
 export const UnloggedDaysPanel = React.memo(({ kind = 'unlogged' }) => {
   const { i18n } = useTranslation();
   const isEN = i18n.language === 'en';
   const { dailyLogs, consumptions, wellbeingLogs, weighings, addDailyLog, addItem, updateItem, deleteItem } = useData();
   const atypical = kind === 'atypical';
+  const unsure = kind === 'unsureRefill';
+  const markField = unsure ? 'unsureRefill' : 'notLogged';
   const OPEN_KEY = OPEN_KEYS[kind] || OPEN_KEYS.unlogged;
 
   const [isOpen, setIsOpen] = useState(() => {
@@ -71,14 +76,14 @@ export const UnloggedDaysPanel = React.memo(({ kind = 'unlogged' }) => {
   const marks = useMemo(() => {
     const byDate = new Map();
     (atypical ? wellbeingLogs : dailyLogs || []).forEach(l => {
-      if (!l || !(atypical ? l.isAtypical : l.notLogged)) return;
+      if (!l || !(atypical ? l.isAtypical : l[markField])) return;
       const d = l.date || (l.timestamp ? safeToISODate(l.timestamp) : null);
       if (!d) return;
       const list = byDate.get(d);
       if (list) list.push(l); else byDate.set(d, [l]);
     });
     return byDate;
-  }, [dailyLogs, wellbeingLogs, atypical]);
+  }, [dailyLogs, wellbeingLogs, atypical, markField]);
 
   const groups = useMemo(
     () => groupConsecutive([...marks.keys()].sort()),
@@ -91,7 +96,7 @@ export const UnloggedDaysPanel = React.memo(({ kind = 'unlogged' }) => {
   // o dia todo é o que se quer.
   const datesWithRecords = useMemo(() => {
     const s = new Set();
-    if (atypical) return s;
+    if (atypical || unsure) return s;
     const scan = (arr) => (arr || []).forEach(item => {
       if (!item || item.notLogged) return;
       const d = item.date || (item.timestamp ? safeToISODate(item.timestamp) : null);
@@ -101,7 +106,7 @@ export const UnloggedDaysPanel = React.memo(({ kind = 'unlogged' }) => {
     scan((dailyLogs || []).filter(l => l && l.mg != null && l.mg !== ''));
     scan(weighings);
     return s;
-  }, [consumptions, dailyLogs, weighings, marks, atypical]);
+  }, [consumptions, dailyLogs, weighings, marks, atypical, unsure]);
 
   const fmt = useCallback((date) => (
     new Date(`${date}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -155,7 +160,7 @@ export const UnloggedDaysPanel = React.memo(({ kind = 'unlogged' }) => {
             id: genId(),
             date,
             timestamp: new Date(`${date}T12:00:00`).toISOString(),
-            notLogged: true,
+            [markField]: true,
             mg: null,
           });
         }
@@ -223,7 +228,9 @@ export const UnloggedDaysPanel = React.memo(({ kind = 'unlogged' }) => {
         <span className="font-semibold text-white text-sm">
           {atypical
             ? `📌 ${isEN ? 'Atypical days' : 'Dias atípicos'}`
-            : `🕳️ ${isEN ? 'Days I did not log my uses' : 'Dias em que não registei os consumos'}`}
+            : unsure
+              ? `❔ ${isEN ? 'Days I am not sure if I refilled the bag' : 'Dias em que não sei se enchi o saco'}`
+              : `🕳️ ${isEN ? 'Days I did not log my uses' : 'Dias em que não registei os consumos'}`}
           {marks.size > 0 && (
             <span className="ml-2 text-xs font-normal text-gray-400">({marks.size})</span>
           )}
@@ -238,6 +245,10 @@ export const UnloggedDaysPanel = React.memo(({ kind = 'unlogged' }) => {
               ? (isEN
                 ? 'A day out of the ordinary that you do not want counted (a party, being ill, a trip). The WHOLE day is left out of the analyses and goals.'
                 : 'Um dia fora do normal que não queres que conte (uma festa, uma doença, uma viagem). Fica o dia TODO de fora das análises e das metas.')
+              : unsure
+                ? (isEN
+                  ? 'You logged your uses, but you do not know if you put more in the bag. Your uses count as usual. The weighed period that covers this day only says "at least X mg" (if you refilled, more left): it is not split per day and stays out of the average. Different from "Refilled without weighing", which says you DID refill.'
+                  : 'Registaste os consumos, mas não sabes se puseste mais no saco. Os consumos contam normalmente. O período pesado que apanha este dia só diz "pelo menos X mg" (se encheste, saiu mais): não se reparte por dia e fica fora da média. Diferente de "Enchi sem pesar", que diz que encheste MESMO.')
               : (isEN
                 ? 'You know other things about the day, but not your uses. Your uses and mg that day are left out (not counted as zero). Sleep, bedtime, mood and exercise that day still count.'
                 : 'Sabes outras coisas do dia, mas não os consumos. Os consumos e os mg desse dia ficam de fora (não contam como zero). O sono, a hora de deitar, o humor e o exercício desse dia contam na mesma.')}
