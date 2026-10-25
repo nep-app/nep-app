@@ -42,8 +42,8 @@ const KINDS = [
   {
     kind: 'unsureRefill',
     icon: '❔',
-    pt: { situation: 'Registei os consumos, mas não sei se pus mais no saco', example: 'Os consumos estão na app; só não sei se enchi o saco.', effect: 'Os consumos contam. O saco desse período só diz "pelo menos X mg": não se reparte por dia e fica fora da média.', short: 'não sei se enchi o saco' },
-    en: { situation: 'I logged my uses, but I do not know if I put more in the bag', example: 'My uses are in the app; I just do not know if I refilled.', effect: 'Uses count. The bag for that period only says "at least X mg": not split per day and left out of the average.', short: 'not sure if I refilled' },
+    pt: { situation: 'Registei os consumos, mas não pesei o que consumi', example: 'Os consumos estão na app; só não sei quantos mg foram.', effect: 'Os consumos contam. Os mg desse período ficam como "pelo menos X mg": não se repartem por dia e ficam fora da média.', short: 'não pesei o que consumi' },
+    en: { situation: 'I logged my uses, but I did not weigh what I used', example: 'My uses are in the app; I just do not know how many mg.', effect: 'Uses count. The mg for that period stay as "at least X mg": not split per day and left out of the average.', short: 'did not weigh what I used' },
   },
   {
     kind: 'atypical',

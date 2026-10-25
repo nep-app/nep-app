@@ -327,7 +327,7 @@ export function HistoryView({
             case 'unloggedDaysInPeriod':
                 return isEN ? '🕳️ period covers days you did not log' : '🕳️ período apanha dias que não registaste';
             case 'unsureRefillInPeriod':
-                return isEN ? '❔ you are not sure if you refilled the bag' : '❔ não sabes se encheste o saco neste período';
+                return isEN ? '❔ you marked "did not weigh what I used"' : '❔ marcaste "não pesei o que consumi"';
             case 'beforeFirstWeighing':
                 // Antes das pesagens do saco só havia o "Registar mg": este dia
                 // não tem nenhum (não é "não pesavas" — pesava-se, à mão).
@@ -1185,8 +1185,8 @@ export function HistoryView({
                                                                                     {d.reason === 'unsureRefillInPeriod' && d.detail && d.detail.consumed != null && (
                                                                                         <div className="text-[11px] text-gray-500 mt-1 leading-snug">
                                                                                             {isEN
-                                                                                                ? `At least ${d.detail.consumed} mg left the bag in this period. You marked ${d.detail.dates.length} day(s) as "not sure if I refilled": if you did, more left. Your uses count as usual; the mg per day are not known — see the period under "Per weighed period".`
-                                                                                                : `Saíram pelo menos ${d.detail.consumed} mg do saco neste período. Marcaste ${d.detail.dates.length} dia(s) como "não sei se enchi": se encheste, saiu mais. Os consumos contam normalmente; os mg de cada dia é que não se sabem — vês o período em "Por período pesado".`}
+                                                                                                ? `At least ${d.detail.consumed} mg in this period. You marked ${d.detail.dates.length} day(s) as "did not weigh what I used": it may have been more. Your uses count as usual; the mg per day are not known — see the period under "Per weighed period".`
+                                                                                                : `Pelo menos ${d.detail.consumed} mg neste período. Marcaste ${d.detail.dates.length} dia(s) como "não pesei o que consumi": pode ter sido mais. Os consumos contam normalmente; os mg de cada dia é que não se sabem — vês o período em "Por período pesado".`}
                                                                                         </div>
                                                                                     )}
                                                                                     {d.reason === 'emptyMgLog' && (
@@ -1278,8 +1278,8 @@ export function HistoryView({
                                                                                 {!(p.unloggedDays?.length > 0) && p.unsureDays?.length > 0 && (
                                                                                     <div className="text-[11px] text-amber-400/70 mt-0.5 leading-snug">
                                                                                         {isEN
-                                                                                            ? `Includes ${p.unsureDays.length} day(s) you marked as "not sure if I refilled". If you did, more left the bag: at least ${p.consumed} mg — maybe more. Not split per day and left out of the average.`
-                                                                                            : `Apanha ${p.unsureDays.length} dia(s) que marcaste como "não sei se enchi". Se encheste, saiu mais: pelo menos ${p.consumed} mg — talvez mais. Não se reparte por dia e fica fora da média.`}
+                                                                                            ? `Includes ${p.unsureDays.length} day(s) you marked as "did not weigh what I used". It may have been more: at least ${p.consumed} mg — maybe more. Not split per day and left out of the average.`
+                                                                                            : `Apanha ${p.unsureDays.length} dia(s) que marcaste como "não pesei o que consumi". Pode ter sido mais: pelo menos ${p.consumed} mg — talvez mais. Não se reparte por dia e fica fora da média.`}
                                                                                     </div>
                                                                                 )}
                                                                             </div>
