@@ -29,6 +29,9 @@ const groupConsecutive = (sortedDates) => {
 //   'unsureRefill' → dailyLogs.unsureRefill: os consumos contam; o período
 //                    pesado que passa por esse dia só diz "pelo menos X mg"
 //                    (não se reparte por dia, fica fora da média).
+//   'notWeighed'   → uma pesagem { notWeighed: true } ao meio-dia (a mesma do
+//                    "Enchi sem pesar"): pôs-se mais e não se pesou, por isso os
+//                    mg dos períodos à volta não se sabem (não há número).
 //   'atypical'     → isAtypical no bem-estar desse dia: o dia TODO fica de
 //                    fora. Sem bem-estar nesse dia, cria-se um só com a marca
 //                    (atypicalOnly), que se apaga ao desmarcar.
@@ -42,8 +45,14 @@ const KINDS = [
   {
     kind: 'unsureRefill',
     icon: '❔',
-    pt: { situation: 'Registei os consumos, mas não pesei o que consumi', example: 'Os consumos estão na app; só não sei quantos mg foram.', effect: 'Os consumos contam. Os mg desse período ficam como "pelo menos X mg": não se repartem por dia e ficam fora da média.', short: 'não pesei o que consumi' },
-    en: { situation: 'I logged my uses, but I did not weigh what I used', example: 'My uses are in the app; I just do not know how many mg.', effect: 'Uses count. The mg for that period stay as "at least X mg": not split per day and left out of the average.', short: 'did not weigh what I used' },
+    pt: { situation: 'Registei os consumos, mas não sei se pesei', example: 'Os consumos estão na app; não me lembro se pesei.', effect: 'Os consumos contam. Os mg desse período ficam como "pelo menos X mg" (pode ter sido mais): não se repartem por dia e ficam fora da média.', short: 'não sei se pesei' },
+    en: { situation: 'I logged my uses, but I do not know if I weighed', example: 'My uses are in the app; I do not remember if I weighed.', effect: 'Uses count. The mg for that period stay as "at least X mg" (it may have been more): not split per day and left out of the average.', short: 'not sure if I weighed' },
+  },
+  {
+    kind: 'notWeighed',
+    icon: '⚖️',
+    pt: { situation: 'Registei os consumos, mas não pesei', example: 'Tenho a certeza de que não pesei.', effect: 'Os consumos contam. Os mg desse período não se sabem: a app não mostra número nem o inventa. (É o mesmo que "Enchi sem pesar".)', short: 'não pesei' },
+    en: { situation: 'I logged my uses, but I did not weigh', example: 'I am sure I did not weigh.', effect: 'Uses count. The mg for that period are not known: the app shows no number and never invents one. (Same as "I refilled without weighing".)', short: 'did not weigh' },
   },
   {
     kind: 'atypical',
@@ -65,7 +74,7 @@ export const DayMarksPanel = React.memo(() => {
   const { i18n } = useTranslation();
   const isEN = i18n.language === 'en';
   const L = (k) => (isEN ? k.en : k.pt);
-  const { dailyLogs, consumptions, wellbeingLogs, weighings, addDailyLog, addItem, updateItem, deleteItem } = useData();
+  const { dailyLogs, consumptions, wellbeingLogs, weighings, addDailyLog, addWeighing, deleteWeighing, addItem, updateItem, deleteItem } = useData();
 
   const [isOpen, setIsOpen] = useState(() => {
     try { return localStorage.getItem(OPEN_KEY) === 'true'; } catch { return false; }
@@ -85,7 +94,7 @@ export const DayMarksPanel = React.memo(() => {
   // podem criar duas marcas para o mesmo dia, e aí "Desmarcar" apagava uma e
   // dizia "desmarcado" com o dia a continuar marcado.
   const marks = useMemo(() => {
-    const out = { unlogged: new Map(), unsureRefill: new Map(), atypical: new Map() };
+    const out = { unlogged: new Map(), unsureRefill: new Map(), notWeighed: new Map(), atypical: new Map() };
     const put = (map, l) => {
       const d = l.date || (l.timestamp ? safeToISODate(l.timestamp) : null);
       if (!d) return;
@@ -97,11 +106,12 @@ export const DayMarksPanel = React.memo(() => {
       if (l.notLogged) put(out.unlogged, l);
       if (l.unsureRefill) put(out.unsureRefill, l);
     });
+    (weighings || []).forEach(w => { if (w && w.notWeighed) put(out.notWeighed, w); });
     (wellbeingLogs || []).forEach(w => { if (w && w.isAtypical) put(out.atypical, w); });
     return out;
-  }, [dailyLogs, wellbeingLogs]);
+  }, [dailyLogs, wellbeingLogs, weighings]);
 
-  const total = marks.unlogged.size + marks.unsureRefill.size + marks.atypical.size;
+  const total = KINDS.reduce((n, k) => n + marks[k.kind].size, 0);
 
   // Todas as marcas numa lista só (mais recente primeiro), cada grupo com o seu tipo.
   const groups = useMemo(() => {
@@ -154,6 +164,8 @@ export const DayMarksPanel = React.memo(() => {
         .sort((x, y) => String(y.timestamp || '').localeCompare(String(x.timestamp || '')))[0];
       if (existing) await updateItem('wellbeingLogs', existing.id, { isAtypical: true });
       else await addItem('wellbeingLogs', { id: genId(), date, timestamp: new Date(`${date}T12:00:00`).toISOString(), isAtypical: true, atypicalOnly: true });
+    } else if (k === 'notWeighed') {
+      await addWeighing({ id: genId(), timestamp: new Date(`${date}T12:00:00`).toISOString(), date, notWeighed: true });
     } else {
       await addDailyLog({
         id: genId(),
@@ -221,7 +233,8 @@ export const DayMarksPanel = React.memo(() => {
       for (const log of (marks[k].get(date) || [])) {
         if (!log?.id) continue;
         try {
-          if (k !== 'atypical') await deleteItem('dailyLogs', log.id);
+          if (k === 'notWeighed') await deleteWeighing(log.id);
+          else if (k !== 'atypical') await deleteItem('dailyLogs', log.id);
           else if (log.atypicalOnly) await deleteItem('wellbeingLogs', log.id);
           else await updateItem('wellbeingLogs', log.id, { isAtypical: false, atypicalReason: '' });
         } catch (e) { failed.push(date); }

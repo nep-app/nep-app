@@ -105,7 +105,7 @@
     "previewSwapped": "The weights look swapped (full is less than before). Check the order.",
     "notWeighedLink": "I refilled without weighing",
     "notWeighedExplain": "The app will mark this period as \"no weight recorded\" — it shows your doses but never invents mg.",
-    "notWeighedUnsureHint": "Not sure if you refilled? Do not use this button: go to History → Days with missing logs or out of the ordinary → \"I logged my uses, but I did not weigh what I used\".",
+    "notWeighedUnsureHint": "Not sure if you weighed? Do not use this button: go to History → Days with missing logs or out of the ordinary → \"I logged my uses, but I do not know if I weighed\".",
     "markNotWeighed": "Mark \"not weighed\"",
     "save": "Save weighing",
     "saved": "Weighing saved.",
