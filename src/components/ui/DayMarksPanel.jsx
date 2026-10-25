@@ -45,14 +45,14 @@ const KINDS = [
   {
     kind: 'unsureRefill',
     icon: '❔',
-    pt: { situation: 'Registei os consumos, mas não sei se pesei', example: 'Os consumos estão na app; não me lembro se pesei.', effect: 'Os consumos contam. Os mg desse período ficam como "pelo menos X mg" (pode ter sido mais): não se repartem por dia e ficam fora da média.', short: 'não sei se pesei' },
-    en: { situation: 'I logged my uses, but I do not know if I weighed', example: 'My uses are in the app; I do not remember if I weighed.', effect: 'Uses count. The mg for that period stay as "at least X mg" (it may have been more): not split per day and left out of the average.', short: 'not sure if I weighed' },
+    pt: { situation: 'Não sei se pesei', example: 'Não me lembro se pesei.', effect: 'Os consumos que registaste contam. Os mg desse período ficam como "pelo menos X mg" (pode ter sido mais): não se repartem por dia e ficam fora da média.', short: 'não sei se pesei' },
+    en: { situation: 'I do not know if I weighed', example: 'I do not remember if I weighed.', effect: 'The uses you logged count. The mg for that period stay as "at least X mg" (it may have been more): not split per day and left out of the average.', short: 'not sure if I weighed' },
   },
   {
     kind: 'notWeighed',
     icon: '⚖️',
-    pt: { situation: 'Registei os consumos, mas não pesei', example: 'Tenho a certeza de que não pesei.', effect: 'Os consumos contam. Os mg desse período não se sabem: a app não mostra número nem o inventa. (É o mesmo que "Enchi sem pesar".)', short: 'não pesei' },
-    en: { situation: 'I logged my uses, but I did not weigh', example: 'I am sure I did not weigh.', effect: 'Uses count. The mg for that period are not known: the app shows no number and never invents one. (Same as "I refilled without weighing".)', short: 'did not weigh' },
+    pt: { situation: 'Não pesei', example: 'Tenho a certeza de que não pesei.', effect: 'Os consumos que registaste contam. Os mg desse período não se sabem: a app não mostra número nem o inventa. (É o mesmo que "Enchi sem pesar".)', short: 'não pesei' },
+    en: { situation: 'I did not weigh', example: 'I am sure I did not weigh.', effect: 'The uses you logged count. The mg for that period are not known: the app shows no number and never invents one. (Same as "I refilled without weighing".)', short: 'did not weigh' },
   },
   {
     kind: 'atypical',
@@ -311,6 +311,7 @@ export const DayMarksPanel = React.memo(() => {
           )}
 
           <p className="mt-3 text-xs font-semibold text-gray-200">{isEN ? '2. What happened that day?' : '2. O que aconteceu neste dia?'}</p>
+          <p className="text-[11px] text-gray-500">{isEN ? 'If more than one applies, mark the day once for each.' : 'Se for mais do que uma, marca o dia uma vez para cada.'}</p>
           <div className="mt-1 space-y-1.5" role="radiogroup">
             {KINDS.map(k => {
               const on = kind === k.kind;
