@@ -55,7 +55,7 @@ const KINDS = [
 const KIND_BY_ID = Object.fromEntries(KINDS.map(k => [k.kind, k]));
 
 /**
- * "Marcar um dia" — dizer à app o que FALTA saber de um dia, em vez de ela
+ * "Dias com registos em falta ou fora do normal" — dizer à app o que FALTA saber de um dia, em vez de ela
  * inventar. Um dia sem registos não é um dia a zero; um saco que talvez tenha
  * sido enchido não é um saco medido; um dia fora do normal não serve para
  * comparar. Uma pergunta só ("o que aconteceu?") em vez de três painéis com
@@ -243,7 +243,7 @@ export const DayMarksPanel = React.memo(() => {
         className="w-full flex items-center justify-between text-left"
       >
         <span className="font-semibold text-white text-sm">
-          📅 {isEN ? 'Mark a day' : 'Marcar um dia'}
+          📅 {isEN ? 'Days with missing logs or out of the ordinary' : 'Dias com registos em falta ou fora do normal'}
           {total > 0 && <span className="ml-2 text-xs font-normal text-gray-400">({total})</span>}
         </span>
         <span className="text-gray-400 text-sm">{isOpen ? '▴' : '▾'}</span>
