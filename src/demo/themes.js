@@ -108,6 +108,27 @@ export const saveAppTheme = (id) => {
 // Para o React saber quando a escolha muda (ex.: o cabeçalho compacto).
 export const subscribeAppTheme = (fn) => { themeListeners.add(fn); return () => themeListeners.delete(fn); };
 
+// No DEMO a escolha guarda-se à parte (não mexe nas cores da app a sério
+// deste dispositivo) e não há 'Atual': um tema que não esteja na lista (ou
+// nenhum) passa ao primeiro.
+export const readDemoTheme = () => {
+  const first = DEMO_THEMES[0].id;
+  try { const v = localStorage.getItem(DEMO_THEME_KEY); return DEMO_THEMES.some(t => t.id === v) ? v : first; } catch { return first; }
+};
+export const saveDemoTheme = (id) => {
+  try { localStorage.setItem(DEMO_THEME_KEY, id); } catch { /* fica só nesta sessão */ }
+  themeListeners.forEach(fn => fn());
+};
+
+// Sair do demo: volta às cores de sempre e limpa o que é só do demo
+// ('nep_demo_layout' é a chave antiga do selector de início). O botão está
+// nas Definições — a barra de cima do demo saiu na v6.94.0.
+export const exitDemo = () => {
+  applyDemoTheme('atual');
+  try { localStorage.removeItem(DEMO_THEME_KEY); localStorage.removeItem('nep_demo_layout'); localStorage.removeItem('nep_demo'); } catch { /* nada a limpar */ }
+  window.location.reload();
+};
+
 const varsFor = (theme) => {
   const bg = rgb(theme.bg);
   const ink = rgb(theme.ink);

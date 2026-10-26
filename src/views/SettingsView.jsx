@@ -5,7 +5,7 @@ import { PushRemindersSettings } from '../components/PushRemindersSettings';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { getDataMode, setDataMode } from '../services/researchService';
-import { APP_THEMES, applyDemoTheme, readAppTheme, saveAppTheme } from '../demo/themes';
+import { APP_THEMES, DEMO_THEMES, applyDemoTheme, readAppTheme, saveAppTheme, readDemoTheme, saveDemoTheme, exitDemo } from '../demo/themes';
 import { useDemoPrefs, saveAppLayout } from '../demo/DemoPrefsContext';
 /* global __APP_VERSION__ */
 // Versão vinda do package.json (injetada pelo Vite). Fonte única.
@@ -68,16 +68,20 @@ function LayoutSettings() {
     );
 }
 
-// ── Cores (só fora do demo; o demo tem o seu selector lá em cima) ───────────
-function ThemeSettings() {
+// ── Cores ───────────────────────────────────────────────────────────────────
+// No demo a escolha guarda-se à parte (não mexe nas cores da app a sério deste
+// dispositivo) e mostra todos os temas, para comparar.
+function ThemeSettings({ demo = false }) {
     const { t } = useTranslation();
-    const [theme, setTheme] = useState(readAppTheme);
+    const [theme, setTheme] = useState(demo ? readDemoTheme : readAppTheme);
     const choose = (id) => {
         setTheme(id);
-        saveAppTheme(id);
+        if (demo) saveDemoTheme(id); else saveAppTheme(id);
         applyDemoTheme(id);
     };
-    const options = [{ id: 'atual', name: t('settings.themeCurrent') }, ...APP_THEMES.map(th => ({ id: th.id, name: th.name }))];
+    const options = demo
+        ? DEMO_THEMES.map(th => ({ id: th.id, name: th.name }))
+        : [{ id: 'atual', name: t('settings.themeCurrent') }, ...APP_THEMES.map(th => ({ id: th.id, name: th.name }))];
     return (
         <div className="space-y-2">
             {options.map(o => (
@@ -229,6 +233,19 @@ export const SettingsView = ({
                 {t('settings.title')}
             </h2>
 
+            {/* ── Modo demo: dizer que é o demo e como sair (a barra de cima saiu) ── */}
+            {isDemo && (
+                <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border flex items-center justify-between gap-3">
+                    <p className="text-sm text-gray-300">{t('firebase.demoBanner')}</p>
+                    <button
+                        onClick={exitDemo}
+                        className="shrink-0 bg-purple-600 hover:bg-purple-500 text-white text-sm rounded-lg px-3 py-1.5"
+                    >
+                        {t('firebase.demoExit')}
+                    </button>
+                </div>
+            )}
+
             {/* ── Idioma (compacto, no topo) ── */}
             <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
                 <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
@@ -266,19 +283,19 @@ export const SettingsView = ({
                 icon={<Icons.Bell className="w-5 h-5 text-purple-400" />}
                 title={t('settings.screenTitle')}
             >
-                {/* Página inicial e cores não aparecem no demo: lá manda o selector de cima. */}
+                {/* A página inicial não aparece no demo (lá é sempre o relógio). */}
                 {!isDemo && (
                     <>
                         <p className="text-sm font-semibold text-white mb-1">🕐 {t('settings.layoutTitle')}</p>
                         <p className="text-xs text-gray-400 mb-2">{t('settings.layoutSubtitle')}</p>
                         <LayoutSettings />
                         <div className="border-t border-gray-700 my-4" />
-                        <p className="text-sm font-semibold text-white mb-1">🎨 {t('settings.themeTitle')}</p>
-                        <p className="text-xs text-gray-400 mb-2">{t('settings.themeSubtitle')}</p>
-                        <ThemeSettings />
-                        <div className="border-t border-gray-700 my-4" />
                     </>
                 )}
+                <p className="text-sm font-semibold text-white mb-1">🎨 {t('settings.themeTitle')}</p>
+                <p className="text-xs text-gray-400 mb-2">{t('settings.themeSubtitle')}</p>
+                <ThemeSettings demo={isDemo} />
+                <div className="border-t border-gray-700 my-4" />
                 <p className="text-sm font-semibold text-white mb-1">🔔 {pt ? 'Notificações' : 'Notifications'}</p>
                 <p className="text-xs text-gray-400 mb-2">{pt
                     ? 'Lembretes que chegam mesmo com a app fechada.'
