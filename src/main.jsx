@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import { installDomGuard } from './utils/domGuard'
 import './i18n'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import App from './App'
@@ -11,6 +12,10 @@ import { MetricsProvider } from './contexts/MetricsContext'
 import { UIProvider } from './contexts/UIContext'
 import { DemoShell } from './components/DemoShell'
 import './index.css'
+
+// Extensões que mexem no texto da página (leitura "bionic", tradutores) não
+// podem partir a app — ver utils/domGuard.js. Tem de vir antes do React.
+installDomGuard();
 
 /* global __APP_VERSION__ */
 // App version — fonte única em package.json (injetada pelo Vite). Não editar aqui.

@@ -525,7 +525,7 @@ export function HomeViewRefactored({
           onOpenThoughts={() => setShowThoughtsModal(true)}
           onOpenReflection={() => setShowReflectionModal(true)}
           onProceed={pendingConsumption ? () => markConsumption() : null}
-          onLog={(payload) => addUrgeEvent({ id: genId(), timestamp: new Date().toISOString(), ...payload })}
+          onLog={(payload) => addUrgeEvent?.({ id: genId(), timestamp: new Date().toISOString(), ...payload })}
           warnings={urgeWarnings}
         />
       </Suspense>

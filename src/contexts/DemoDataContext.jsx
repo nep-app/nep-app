@@ -22,6 +22,9 @@ export const DemoDataProvider = ({ children }) => {
   // nenhuma — a parte dos mg da app era invisível a quem experimentasse.
   const [weighings,     setWeighings]     = useState(_demoSeed.weighings || []);
   const [substances,    setSubstances]    = useState([]);
+  // Os momentos de "surfar o impulso" faltavam aqui: no demo, ao terminar o
+  // exercício, a app chamava addUrgeEvent (que não existia) e partia.
+  const [urgeEvents,    setUrgeEvents]    = useState([]);
 
   // Generic add/update/delete helpers
   const addTo   = (setter, item) => setter(prev => [item, ...prev]);
@@ -45,6 +48,7 @@ export const DemoDataProvider = ({ children }) => {
   const addWeighing     = useCallback(async (item) => { addTo(setWeighings, item); return item; }, []);
   const updateWeighing  = useCallback(async (id, u) => { updateIn(setWeighings, id, u); }, []);
   const deleteWeighing  = useCallback(async (id)  => { removeFrom(setWeighings, id); }, []);
+  const addUrgeEvent    = useCallback(async (item) => { addTo(setUrgeEvents, item); return item; }, []);
 
   const setterMap = {
     consumptions:  setConsumptions,
@@ -56,6 +60,7 @@ export const DemoDataProvider = ({ children }) => {
     thoughts:      setThoughts,
     weighings:     setWeighings,
     substances:    setSubstances,
+    urgeEvents:    setUrgeEvents,
   };
 
   const tagConsumptionsWithoutSubstance = useCallback(async (name, { dryRun = false } = {}) => {
@@ -103,6 +108,7 @@ export const DemoDataProvider = ({ children }) => {
     thoughts,
     weighings,
     substances,
+    urgeEvents,
     healthLogs: [],
 
     addConsumption, deleteConsumption,
@@ -111,6 +117,7 @@ export const DemoDataProvider = ({ children }) => {
     addGoal, updateGoal, deleteGoal,
     addThought,
     addWeighing, updateWeighing, deleteWeighing,
+    addUrgeEvent,
     addItem,
     updateItem,
     deleteItem,
