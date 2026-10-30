@@ -21,6 +21,7 @@
 export const INVITE_CODES = [
   'NAOSEI-2026',
   'NEP-957W-8HX7', // convite pessoal (out/2026)
+  'NEP-LFQL-FAZT', // convite pessoal (out/2026)
 ];
 
 const normalize = (s) => String(s || '').trim().toUpperCase();
