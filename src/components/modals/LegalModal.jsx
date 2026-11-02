@@ -94,7 +94,7 @@ export const LegalModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]" onClick={onClose}>
       <div
         className="bg-gray-800 border-gray-700 rounded-2xl p-6 max-w-3xl w-full max-h-[90dvh] overflow-hidden flex flex-col border"
         onClick={(e) => e.stopPropagation()}

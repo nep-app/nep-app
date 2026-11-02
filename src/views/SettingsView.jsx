@@ -679,7 +679,7 @@ export const SettingsView = ({
             {/* Confirmação ao ATIVAR o modo disfarce — a pessoa tem de perceber o
                 gesto e reconhecer que não se pode esquecer (não é personalizável). */}
             {showDisguiseConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50" onClick={() => setShowDisguiseConfirm(false)}>
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-[60]" onClick={() => setShowDisguiseConfirm(false)}>
                     <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                         <h3 className="font-semibold text-white mb-3 flex items-center gap-2 text-lg">
                             <span>🎭</span>
@@ -756,7 +756,7 @@ export const SettingsView = ({
 
             {/* Confirmação de importação */}
             {pendingImportFile && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={() => !importing && setPendingImportFile(null)}>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]" onClick={() => !importing && setPendingImportFile(null)}>
                     <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full" onClick={(e) => e.stopPropagation()}>
                         <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
                             <Icons.Upload className="w-5 h-5" />

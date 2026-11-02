@@ -30,7 +30,7 @@ export const DailyLogModal = ({
   const scaleForCycle = chosenStart != null ? (cycleMg.find(c => c.start === chosenStart && !c.manual) || null) : null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]" onClick={onClose}>
       <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">{t('modals.dailyLog.title')}</h3>

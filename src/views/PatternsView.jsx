@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog } from '../utils/helpers';
+import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog, meetsGoal } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -22,6 +22,10 @@ export function PatternsView({
     setPatternView
 }) {
     const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
+    // Meta de reduzir a frequência (consumos/dia), se a pessoa a tiver ativa.
+    // É ela que decide se a Tendência e as barras podem ter cor de juízo:
+    // sem meta, só descrição (regra do elogio).
+    const freqGoal = (goals || []).find(g => g.type === 'reduce_frequency' && !g.completed) || null;
     const metrics = useMetrics();
     const { t, i18n } = useTranslation();
     // Cartão de meta com a lista dos dias aberta (id da meta) — para se ver dia
@@ -403,20 +407,24 @@ export function PatternsView({
 
                                                     {/* Tendência (30 dias) */}
                                                     {trend && (
+                                                        // Cor só com meta de reduzir a frequência (regra do elogio):
+                                                        // a descer = verde (é a direção que a pessoa escolheu);
+                                                        // a subir = amarelo, como os avisos "fora da meta" do Início
+                                                        // (nunca vermelho). Sem meta, ou estável: neutro.
                                                         <div className={
-                                                            (trend.direction === 'increasing'
-                                                                ? 'bg-red-900/30 border-red-700/50'
-                                                                : trend.direction === 'decreasing'
-                                                                    ? ('bg-green-900/30 border-green-700/50')
+                                                            (freqGoal && trend.direction === 'decreasing'
+                                                                ? 'bg-green-900/30 border-green-700/50'
+                                                                : freqGoal && trend.direction === 'increasing'
+                                                                    ? 'bg-yellow-900/20 border-yellow-600/50'
                                                                     : 'bg-gray-700/30 border-gray-600'
                                                             ) + ' rounded-lg p-4 border'
                                                         }>
                                                             <div className="flex items-center justify-between mb-2">
                                                                 <div className={'text-xs font-semibold uppercase tracking-wide ' + (
-                                                                    trend.direction === 'increasing'
-                                                                        ? 'text-red-400'
-                                                                        : trend.direction === 'decreasing'
-                                                                            ? 'text-green-400'
+                                                                    freqGoal && trend.direction === 'decreasing'
+                                                                        ? 'text-green-400'
+                                                                        : freqGoal && trend.direction === 'increasing'
+                                                                            ? 'text-yellow-400'
                                                                             : 'text-gray-400'
                                                                 )}>
                                                                     {t('patterns.trend.title')}
@@ -786,16 +794,30 @@ export function PatternsView({
                                                                 const sortedDates = Object.keys(byDate).sort();
                                                                 const maxCount = Math.max(...Object.values(byDate));
 
-                                                                // Cor das barras pela QUANTIDADE de consumos do dia — igual à legenda:
-                                                                // 1-3 verde · 4-6 azul · 7-9 laranja · 10+ vermelho.
-                                                                // (Antes havia um "override" pela meta que deixava tudo verde quando a
-                                                                //  meta era folgada; removido para a cor acompanhar mesmo a quantidade.)
-                                                                const barColor = (count) => {
-                                                                    if (count >= 10) return 'bg-gradient-to-t from-red-500 to-red-400';
-                                                                    if (count > 6) return 'bg-gradient-to-t from-orange-500 to-orange-400';
-                                                                    if (count > 3) return 'bg-gradient-to-t from-blue-500 to-blue-400';
-                                                                    return 'bg-gradient-to-t from-green-500 to-green-400';
+                                                                // Cor das barras (regra do elogio):
+                                                                // - Dia com meta de reduzir a frequência em vigor → verde se cumpre,
+                                                                //   amarelo se passa (como a semana no Início; nunca vermelho).
+                                                                // - Sem meta (ou dia antes de a meta existir) → só quantidade, num
+                                                                //   só roxo como o mapa de calor (limites 3/6/9). Antes ia de verde
+                                                                //   (1-3) a vermelho (10+) para toda a gente, com ou sem meta.
+                                                                // A altura da barra mostra sempre a quantidade.
+                                                                const BAR_SHADES = ['#7c3aed40', '#7c3aed70', '#7c3aeda0', '#7c3aed'];
+                                                                const GOAL_OK = '#10b981';   // emerald-500
+                                                                const GOAL_OVER = '#eab308'; // yellow-500
+                                                                const dayTarget = (date) => {
+                                                                    if (!freqGoal) return NaN;
+                                                                    return parseFloat(goalTargetForDay(freqGoal, date));
                                                                 };
+                                                                const barColor = (count, date) => {
+                                                                    const tg = dayTarget(date);
+                                                                    if (Number.isFinite(tg)) return meetsGoal('reduce_frequency', count, tg) ? GOAL_OK : GOAL_OVER;
+                                                                    if (count >= 10) return BAR_SHADES[3];
+                                                                    if (count > 6) return BAR_SHADES[2];
+                                                                    if (count > 3) return BAR_SHADES[1];
+                                                                    return BAR_SHADES[0];
+                                                                };
+                                                                // Hoje: mesma cor da quantidade, com contorno claro.
+                                                                const TODAY_RING = '0 0 0 1.5px #c4b5fd';
 
                                                                 // Determinar quantos dias mostrar baseado no período
                                                                 let daysToShow = sortedDates.length;
@@ -825,12 +847,8 @@ export function PatternsView({
 
                                                                                         {/* Barra */}
                                                                                         <div
-                                                                                            className={'w-full rounded-t transition-all duration-300 ' + (
-                                                                                                isToday
-                                                                                                    ? 'bg-gradient-to-t from-yellow-500 to-orange-500'
-                                                                                                    : barColor(count)
-                                                                                            )}
-                                                                                            style={{ height: `${heightPx}px`, minHeight: '8px' }}
+                                                                                            className="w-full rounded-t transition-all duration-300"
+                                                                                            style={{ height: `${heightPx}px`, minHeight: '8px', background: barColor(count, date), boxShadow: isToday ? TODAY_RING : undefined }}
                                                                                         />
                                                                                     </div>
                                                                                 );
@@ -854,26 +872,38 @@ export function PatternsView({
 
                                                                         {/* Legenda */}
                                                                         <div className={'text-xs mt-2 pt-3 border-t flex items-center justify-center gap-4 flex-wrap ' + 'text-gray-400 border-gray-700'}>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-green-500 to-green-400"></div>
-                                                                                <span>1-3</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-blue-500 to-blue-400"></div>
-                                                                                <span>4-6</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-orange-500 to-orange-400"></div>
-                                                                                <span>7-9</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-red-500 to-red-400"></div>
-                                                                                <span>10+</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-1">
-                                                                                <div className="w-3 h-3 rounded bg-gradient-to-t from-yellow-500 to-orange-500"></div>
-                                                                                <span>{t('patterns.freq.today')}</span>
-                                                                            </div>
+                                                                            {(() => {
+                                                                                const anyGoalDay = recentDates.some(d => Number.isFinite(dayTarget(d)));
+                                                                                const anyFreeDay = recentDates.some(d => !Number.isFinite(dayTarget(d)));
+                                                                                const tgNow = freqGoal ? parseFloat(freqGoal.target) : NaN;
+                                                                                const en = i18n.language === 'en';
+                                                                                return (
+                                                                                    <>
+                                                                                        {anyGoalDay && (
+                                                                                            <>
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    <div className="w-3 h-3 rounded" style={{ background: GOAL_OK }}></div>
+                                                                                                    <span>{en ? 'within goal' : 'dentro da meta'}{Number.isFinite(tgNow) ? ` (≤${tgNow})` : ''}</span>
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    <div className="w-3 h-3 rounded" style={{ background: GOAL_OVER }}></div>
+                                                                                                    <span>{en ? 'over goal' : 'acima da meta'}</span>
+                                                                                                </div>
+                                                                                            </>
+                                                                                        )}
+                                                                                        {anyFreeDay && [['1-3', 0], ['4-6', 1], ['7-9', 2], ['10+', 3]].map(([label, i]) => (
+                                                                                            <div key={label} className="flex items-center gap-1">
+                                                                                                <div className="w-3 h-3 rounded" style={{ background: BAR_SHADES[i] }}></div>
+                                                                                                <span>{label}</span>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                        <div className="flex items-center gap-1">
+                                                                                            <div className="w-3 h-3 rounded" style={{ background: 'transparent', boxShadow: TODAY_RING }}></div>
+                                                                                            <span>{t('patterns.freq.today')}</span>
+                                                                                        </div>
+                                                                                    </>
+                                                                                );
+                                                                            })()}
                                                                         </div>
                                                                     </div>
                                                                 );
