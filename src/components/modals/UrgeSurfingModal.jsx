@@ -70,7 +70,7 @@ function TimerExercise({ onBack }) {
           <p className="text-sm text-gray-300">{t('urge.timerDoneDesc')}</p>
         </div>
       ) : (
-        <p className="text-xs text-purple-300 italic text-center px-6">{t('urge.timerQuote')}</p>
+        <p className="text-xs text-gray-400 italic text-center px-6">{t('urge.timerQuote')}</p>
       )}
       <div className="flex gap-3">
         {!done && (
@@ -138,7 +138,7 @@ function BreathingExercise({ onBack }) {
           style={{ backgroundColor: phase.color, transform: running ? `scale(${phase.scale})` : 'scale(1)', transition: `transform ${phase.duration}s ease-in-out` }}
         />
         <div className="absolute flex flex-col items-center">
-          <span className="text-4xl font-bold text-white">{countdown}</span>
+          <span className="text-4xl font-bold font-mono-theme text-white">{countdown}</span>
           <span className="text-xs font-medium mt-1" style={{ color: phase.color }}>{t(phase.label)}</span>
         </div>
       </div>
@@ -191,7 +191,7 @@ function NeedCheck({ onBack }) {
         ))}
       </div>
       {sel && (
-        <div className="bg-purple-900/30 border border-purple-700/50 rounded-xl p-4 text-sm text-purple-200 leading-relaxed">
+        <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-4 text-sm text-gray-200 leading-relaxed">
           💡 {pt ? sel.ptTip : sel.enTip}
         </div>
       )}
@@ -273,7 +273,7 @@ function MoveExercise({ onBack }) {
           </div>
         ))}
       </div>
-      <p className="text-xs text-purple-300 italic text-center px-4">
+      <p className="text-xs text-gray-400 italic text-center px-4">
         {pt ? 'Não tens de fazer tudo. Uma coisa já chega para partir o impulso.' : "You don't have to do all of it. One thing is enough to break the urge."}
       </p>
       <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300 text-center">{t('urge.backToMenu')}</button>

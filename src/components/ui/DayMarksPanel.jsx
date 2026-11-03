@@ -301,7 +301,7 @@ export const DayMarksPanel = React.memo(() => {
                 : `São ${pending.length} dias — demasiados de uma vez (máx. ${MAX_RANGE_DAYS}). Faz em bocados mais pequenos.`}
             </p>
           ) : pending.length > 0 ? (
-            <p className="text-[11px] text-indigo-300 mt-1">
+            <p className="text-[11px] text-white mt-1">
               {pending.length === 1 ? fmt(pending[0]) : `${fmt(pending[0])} → ${fmt(pending[pending.length - 1])} (${pending.length} ${isEN ? 'days' : 'dias'})`}
             </p>
           ) : (

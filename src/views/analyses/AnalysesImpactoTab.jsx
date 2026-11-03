@@ -538,8 +538,8 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                     <div className="space-y-3">
                                         {/* Impacto Imediato do Consumo (Evolução + Eficácia juntos) */}
                                         {(latency.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
-                                            <div className={('bg-gradient-to-br from-purple-900/20 to-green-900/20 border-purple-700/50') + ' rounded-lg p-4 border'}>
-                                                <div className={'text-sm font-semibold mb-4 ' + ('text-purple-300')}>{t('analyses.impactMoodTitle')}</div>
+                                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 border'}>
+                                                <div className={'text-sm font-semibold mb-4 ' + ('text-white')}>{t('analyses.impactMoodTitle')}</div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     {/* Evolução Temporal (0h → 30min/1h/2h) */}

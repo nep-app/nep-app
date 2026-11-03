@@ -335,7 +335,7 @@ export function HomeViewRefactored({
       </div>
 
       {consumptions.length === 0 && (
-        <div className="bg-purple-900/15 border border-purple-700/30 rounded-2xl p-6 text-center motion-safe:animate-fadeInUp">
+        <div className="bg-gray-800/40 border border-gray-700 rounded-2xl p-6 text-center motion-safe:animate-fadeInUp">
           <div className="text-4xl mb-2 inline-block motion-safe:animate-sway" aria-hidden="true">🌱</div>
           <h3 className="text-white font-semibold font-display text-lg mb-1 text-balance">{t('home.emptyTitle')}</h3>
           <p className="text-sm text-gray-300 leading-relaxed max-w-xs mx-auto">{t('home.emptyBody')}</p>
@@ -437,7 +437,7 @@ export function HomeViewRefactored({
           if (Number.isFinite(target)) return meetsGoal('reduce_frequency', count, target)
             ? 'bg-green-900/50 text-green-400 ring-1 ring-green-500/40'
             : 'bg-red-900/50 text-red-400 ring-1 ring-red-500/40';
-          return 'bg-purple-900/50 text-purple-300 ring-1 ring-purple-500/40';
+          return 'bg-gray-700/60 text-gray-200 ring-1 ring-gray-600';
         };
 
         return (
@@ -490,11 +490,11 @@ export function HomeViewRefactored({
       </div>
 
       {consumptions.length > 0 && (
-        <div className={(darkMode ? 'bg-gradient-to-br from-purple-900/20 to-pink-900/20' : 'bg-white') + ' rounded-xl p-4'}>
-          <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-purple-300' : 'text-gray-800')}>{t('home.recentConsumptions')}</h3>
+        <div className={(darkMode ? 'bg-gray-800/40' : 'bg-white') + ' rounded-xl p-4'}>
+          <h3 className={'font-semibold mb-3 ' + (darkMode ? 'text-white' : 'text-gray-800')}>{t('home.recentConsumptions')}</h3>
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {consumptions.slice(0, consumptionsToShow).map(c => (
-              <div key={c.id} className={'flex items-center justify-between py-2.5 px-3 rounded-lg ' + (darkMode ? 'bg-purple-950/30' : 'bg-gray-50')}>
+              <div key={c.id} className={'flex items-center justify-between py-2.5 px-3 rounded-lg ' + (darkMode ? 'bg-gray-800/40' : 'bg-gray-50')}>
                 <div className="flex-1">
                   <div className={'text-sm font-medium ' + (darkMode ? 'text-gray-200' : 'text-gray-800')}>
                     {formatDateTime(c.timestamp)}

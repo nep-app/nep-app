@@ -773,7 +773,7 @@ export function HistoryView({
                                                                 } else if (item.type === 'cycle') {
                                                                     const cycle = item.data;
                                                                     return (
-                                                                        <div key={`cycle-${cycle.id}`} className="bg-indigo-900/30 border-indigo-700/50 p-3 rounded-lg border">
+                                                                        <div key={`cycle-${cycle.id}`} className="bg-gray-800/40 border-gray-700 p-3 rounded-lg border">
                                                                             <div className="flex justify-between items-center mb-2">
                                                                                 <div className="text-sm font-medium text-white">
                                                                                     🌙 {(() => {
@@ -852,7 +852,7 @@ export function HistoryView({
                                                                                 {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses >= 50 ? `${w.waterGlasses}ml` : `${w.waterGlasses * 250}ml`}</span>}
                                                                                 {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
                                                                                 {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ {t('history.foodTag')}</span>}
-                                                                                {w.social && <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
+                                                                                {w.social && <span className="bg-gray-800/40 text-white px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
                                                                             </div>
                                                                             {w.emotions && w.emotions.length > 0 && (
                                                                                 <div className="mb-2">
@@ -889,7 +889,7 @@ export function HistoryView({
                                                                     const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
                                                                     const isExpanded = expandedAnalysis === `reflection-${r.id}`;
                                                                     return (
-                                                                        <div key={`r-${r.id}`} className="border-purple-500 bg-purple-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                        <div key={`r-${r.id}`} className="border-gray-700 bg-gray-800/40 border-l-4 pl-4 py-2 rounded-r-lg">
                                                                             <div className="flex justify-between items-start mb-1">
                                                                                 <div className="text-xs text-gray-400">
                                                                                     📝 {(() => {
@@ -905,7 +905,7 @@ export function HistoryView({
                                                                                     <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                                 </div>
                                                                             </div>
-                                                                            <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
+                                                                            <div className="text-sm font-medium mb-1 text-white">{r.question}</div>
                                                                             <div className="text-sm text-gray-300">{r.answer}</div>
                                                                             {analysis && (
                                                                                 <>
@@ -1348,9 +1348,9 @@ export function HistoryView({
                                                                     const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
                                                                     const isExpanded = expandedAnalysis === `reflection-${r.id}`;
                                                                     return (
-                                                                        <div key={`r-${r.id}`} className="border-purple-500 bg-purple-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                        <div key={`r-${r.id}`} className="border-gray-700 bg-gray-800/40 border-l-4 pl-4 py-2 rounded-r-lg">
                                                                             {/* Etiqueta: distinguir pelo NOME, não só pela cor. */}
-                                                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-purple-300 mb-1">
+                                                                            <div className="text-[11px] font-semibold uppercase tracking-wide text-white mb-1">
                                                                                 ✍️ {isEN ? 'Reflection' : 'Reflexão'}
                                                                             </div>
                                                                             <div className="flex justify-between items-start mb-1">
@@ -1368,7 +1368,7 @@ export function HistoryView({
                                                                                     <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                                 </div>
                                                                             </div>
-                                                                            <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
+                                                                            <div className="text-sm font-medium mb-1 text-white">{r.question}</div>
                                                                             <div className="text-sm text-gray-300">{r.answer}</div>
                                                                             {analysis && (
                                                                                 <>
@@ -1484,14 +1484,14 @@ export function HistoryView({
                                             {/* Blocos individuais para tabs específicas e tab "todos" */}
                                             {historyTopic !== 'diario' && filteredReflections.length > 0 && (
                                                 <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Brain className="w-4 h-4 text-purple-400" /> {t('history.sectionReflections')} ({filteredReflections.length})</h3>
+                                                    <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Brain className="w-4 h-4 text-white" /> {t('history.sectionReflections')} ({filteredReflections.length})</h3>
                                                     <div className="space-y-4">
                                                         {filteredReflections.slice(0, reflectionsToShow).map(r => {
                                                             const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
                                                                 const isExpanded = expandedAnalysis === `reflection-${r.id}`;
 
                                                                 return (
-                                                                <div key={r.id} className="border-purple-500 bg-purple-900/30 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                <div key={r.id} className="border-gray-700 bg-gray-800/40 border-l-4 pl-4 py-2 rounded-r-lg">
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className="text-xs text-gray-400">
                                                                             {(() => {
@@ -1504,7 +1504,7 @@ export function HistoryView({
                                                                         </div>
                                                                         <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
-                                                                    <div className="text-sm font-medium mb-1 text-purple-400">{r.question}</div>
+                                                                    <div className="text-sm font-medium mb-1 text-white">{r.question}</div>
                                                                     <div className="text-sm text-gray-300">{r.answer}</div>
 
                                                                     {analysis && (
@@ -1684,9 +1684,9 @@ export function HistoryView({
                                                                         {w.isAtypical && <span className="bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full">📌 {t('wellbeing.atypicalTag')}{w.atypicalReason ? ` · ${w.atypicalReason}` : ''}</span>}
                                                                         {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses >= 50 ? `${w.waterGlasses}ml` : `${w.waterGlasses * 250}ml`}</span>}
                                                                         {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
-                                                                        {(w.napDuration > 0) && <span className="bg-indigo-900/50 text-indigo-300 px-2 py-0.5 rounded-full">{t('wellbeing.napLabel')} {w.napDuration}min</span>}
+                                                                        {(w.napDuration > 0) && <span className="bg-gray-800/40 text-white px-2 py-0.5 rounded-full">{t('wellbeing.napLabel')} {w.napDuration}min</span>}
                                                                         {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ {t('history.foodTag')}</span>}
-                                                                        {w.social && <span className="bg-purple-900/50 text-purple-300 px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
+                                                                        {w.social && <span className="bg-gray-800/40 text-white px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
                                                                     </div>
                                                                     {w.emotions && w.emotions.length > 0 && (
                                                                         <div className="mb-2">
@@ -1729,7 +1729,7 @@ export function HistoryView({
 
                                                 {(filteredConsumptions.length > 0 || filteredDailyLogs.length > 0) && (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-purple-600" /> {t('history.headerLogs', { count: filteredConsumptions.length + filteredDailyLogs.length })}</h3>
+                                                        <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-white" /> {t('history.headerLogs', { count: filteredConsumptions.length + filteredDailyLogs.length })}</h3>
                                                         <div className="space-y-3">
                                                             {consumptionLogsSorted.slice(0, consumptionsToShow).map(item => {
                                                                     if (item.type === 'consumption') {
@@ -1811,7 +1811,7 @@ export function HistoryView({
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2">{t('history.sectionCycles')} ({filteredCycles.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredCycles.slice(0, cyclesHistoryToShow).map(cycle => (
-                                                                <div key={cycle.id} className="bg-indigo-900/30 border-indigo-700/50 p-3 rounded-lg border">
+                                                                <div key={cycle.id} className="bg-gray-800/40 border-gray-700 p-3 rounded-lg border">
                                                                     <div className="flex justify-between items-center mb-2">
                                                                         <div className="text-sm font-medium text-white">
                                                                             {(() => {

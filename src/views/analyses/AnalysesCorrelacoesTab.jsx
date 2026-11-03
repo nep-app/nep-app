@@ -2323,8 +2323,8 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                     </div>
                     {expandedSections.wellbeingDosage && <div className="space-y-3 mt-4">
                         {/* Explicação introdutória */}
-                        <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-lg p-3 border'}>
-                            <p className={'text-xs font-semibold mb-2 ' + ('text-purple-300')}>
+                        <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-3 border'}>
+                            <p className={'text-xs font-semibold mb-2 ' + ('text-white')}>
                                 💡 {i18n.language === 'en' ? 'About dosage vs frequency:' : 'Sobre dosagem vs frequência:'}
                             </p>
                             <p className={'text-xs ' + ('text-gray-400')}>
@@ -2383,7 +2383,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                     </div>
                                 </div>
                                 <div className="flex items-baseline gap-1 mb-1">
-                                    <span className="text-3xl font-black">{disp.average}</span>
+                                    <span className="text-3xl font-black font-mono-theme">{disp.average}</span>
                                     <span className="text-sm opacity-75">{disp.unit}</span>
                                 </div>
                                 <div className={'text-xs opacity-75 mb-2'}>
@@ -2417,7 +2417,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                     </div>
                                 </div>
                                 <div className="flex items-baseline gap-1 mb-2">
-                                    <span className="text-3xl font-black">{safe.average}</span>
+                                    <span className="text-3xl font-black font-mono-theme">{safe.average}</span>
                                     <span className="text-sm opacity-75">{safe.unit} {i18n.language === 'en' ? 'avg' : 'média'}</span>
                                 </div>
                                 <div className={'text-sm leading-relaxed mb-2 ' + ('text-gray-300')}>
@@ -2449,7 +2449,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                                     </div>
                                 </div>
                                 <div className="flex items-baseline gap-1 mb-2">
-                                    <span className="text-3xl font-black">{strat.average}</span>
+                                    <span className="text-3xl font-black font-mono-theme">{strat.average}</span>
                                     <span className="text-sm opacity-75">{strat.unit} {i18n.language === 'en' ? 'reduction' : 'redução'}</span>
                                 </div>
                                 <div className={'text-sm leading-relaxed mb-2 ' + ('text-gray-300')}>

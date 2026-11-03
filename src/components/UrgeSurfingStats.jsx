@@ -64,7 +64,7 @@ export function UrgeSurfingStats({ dateRange = null }) {
         </div>
       </div>
 
-      <p className="text-xs text-purple-200/90 leading-relaxed mt-3">{reinforce}</p>
+      <p className="text-xs text-gray-300 leading-relaxed mt-3">{reinforce}</p>
     </div>
   );
 }

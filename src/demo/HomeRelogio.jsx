@@ -508,13 +508,13 @@ function DayTimeline({ data, now, onClose, onEdit, onNewCycle, onDelete, canEdit
                 {it.kind === 'state' && (
                   <span className="inline-flex flex-wrap gap-1">
                     {(it.mood != null || it.energy != null) && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('demoHome.tlState', { mood: it.mood ?? '–', energy: it.energy ?? '–' })}</span>}
-                    {it.nap != null && <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/15 border border-indigo-400/30 text-indigo-100 text-xs">🛌 {t('demoHome.tlNap', { min: it.nap })}</span>}
+                    {it.nap != null && <span className="inline-block px-3 py-1 rounded-full bg-indigo-500/15 border border-gray-700 text-gray-200 text-xs">🛌 {t('demoHome.tlNap', { min: it.nap })}</span>}
                     {it.record?.exerciseType && <span className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/25 text-emerald-100 text-xs">🏃 {it.record.exerciseType}{it.record.exerciseDuration ? ` · ${it.record.exerciseDuration} min` : ''}</span>}
                     {it.record?.waterGlasses > 0 && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/10 border border-sky-400/25 text-sky-100 text-xs">💧 {it.record.waterGlasses} ml</span>}
                     {it.mood == null && it.energy == null && it.nap == null && !it.record?.exerciseType && !(it.record?.waterGlasses > 0) && <span className="inline-block px-3 py-1 rounded-full bg-sky-500/15 border border-sky-500/25 text-sky-100 text-xs">{t('home.wellbeing')}</span>}
                   </span>
                 )}
-                {it.kind === 'weigh' && <span className="inline-block px-3 py-1 rounded-full bg-violet-500/15 border border-violet-500/25 text-violet-100 text-xs">{weighText(it.w)}</span>}
+                {it.kind === 'weigh' && <span className="inline-block px-3 py-1 rounded-full bg-violet-500/15 border border-gray-700 text-gray-200 text-xs">{weighText(it.w)}</span>}
               </span>
               {/* Editar directamente daqui (consumos, sono, estado) */}
               <span className="flex gap-1 justify-end">
@@ -584,7 +584,7 @@ function WeekDots({ goals }) {
   const dot = (n) => {
     if (n === 0) return 'bg-gray-700/60 text-gray-500';
     if (Number.isFinite(target)) return meetsGoal('reduce_frequency', n, target) ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-yellow-500/20 text-yellow-200 ring-1 ring-yellow-400/40';
-    return 'bg-rose-500/20 text-rose-100 ring-1 ring-rose-400/40';
+    return 'bg-gray-700/60 text-gray-200 ring-1 ring-gray-600';
   };
   return (
     <section className="w-full px-1">

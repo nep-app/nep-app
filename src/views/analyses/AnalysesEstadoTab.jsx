@@ -339,25 +339,25 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {t('analyses.emotionalOverview')}
                         </h3>
                         <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div className={('bg-indigo-900/15 border-indigo-700/40') + ' rounded-lg p-4 border text-center'}>
-                                <div className={'text-3xl font-black mb-1 ' + ('text-green-400')}>
+                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 border text-center'}>
+                                <div className={'text-3xl font-black mb-1 ' + ('text-white')}>
                                     {emotionStats.positivePercent.toFixed(0)}%
                                 </div>
-                                <div className={'text-xs font-medium ' + ('text-green-300/70')}>
+                                <div className={'text-xs font-medium ' + ('text-gray-400')}>
                                     {t('analyses.positive')}
                                 </div>
-                                <div className={'text-xs mt-1 ' + ('text-green-400/60')}>
+                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>
                                     {emotionStats.positiveEmotions.length}
                                 </div>
                             </div>
-                            <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-lg p-4 border text-center'}>
-                                <div className={'text-3xl font-black mb-1 ' + ('text-purple-400')}>
+                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 border text-center'}>
+                                <div className={'text-3xl font-black mb-1 ' + ('text-white')}>
                                     {emotionStats.negativePercent.toFixed(0)}%
                                 </div>
-                                <div className={'text-xs font-medium ' + ('text-purple-300/70')}>
+                                <div className={'text-xs font-medium ' + ('text-gray-400')}>
                                     {t('analyses.negative')}
                                 </div>
-                                <div className={'text-xs mt-1 ' + ('text-purple-400/60')}>
+                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>
                                     {emotionStats.negativeEmotions.length}
                                 </div>
                             </div>
@@ -376,7 +376,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                 style={{width: emotionStats.positivePercent + '%'}}
                             />
                             <div
-                                className="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500"
+                                className="h-full bg-gray-400 transition-all duration-500"
                                 style={{width: emotionStats.negativePercent + '%'}}
                             />
                         </div>
@@ -398,7 +398,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                 <span className={'text-xs font-bold w-5 text-center ' + ('text-gray-600')}>#{idx + 1}</span>
                                                 <span className={'text-sm truncate ' + (
                                                     item.category === 'positive' ? ('text-green-400') :
-                                                    item.category === 'negative' ? ('text-purple-400') :
+                                                    item.category === 'negative' ? ('text-gray-300') :
                                                     ('text-gray-400')
                                                 )}>{translateEmotion(item.emotion)}</span>
                                             </div>
@@ -426,7 +426,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                             className={'h-full transition-all duration-500 ' + (
                                                                 stat.positivePercent >= 60 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
                                                                 stat.positivePercent >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                                                                'bg-gradient-to-r from-purple-500 to-indigo-500'
+                                                                'bg-gray-500'
                                                             )}
                                                             style={{width: stat.positivePercent + '%'}}
                                                         />
@@ -435,7 +435,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                 <span className={'text-xs w-12 text-right ' + (
                                                     stat.positivePercent >= 60 ? ('text-green-400') :
                                                     stat.positivePercent >= 40 ? ('text-yellow-400') :
-                                                    ('text-purple-400')
+                                                    ('text-gray-300')
                                                 )}>
                                                     {stat.positivePercent.toFixed(0)}%
                                                 </span>
@@ -540,16 +540,16 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {/* Emoções de BAIXO risco (menos consumo) */}
                                     {lowRiskEmotions.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-indigo-300')}>
+                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-white')}>
                                                 {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskEmotions.map(e => (
-                                                <div key={e.emotion} className={('bg-indigo-900/15 border-indigo-700/40') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={e.emotion} className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-indigo-200')}>{translateEmotion(e.emotion)}</span>
-                                                        <span className={('bg-indigo-800/40 text-indigo-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                                        <span className={'font-medium text-sm ' + ('text-gray-200')}>{translateEmotion(e.emotion)}</span>
+                                                        <span className={('bg-gray-800/40 text-gray-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-indigo-300/70')}>
+                                                    <div className={'text-xs ' + ('text-gray-400')}>
                                                         {t('analyses.lowRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
@@ -766,16 +766,16 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {/* Gatilhos de BAIXO risco (menos consumo) */}
                                     {lowRiskTriggers.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-indigo-300')}>
+                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-white')}>
                                                 {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskTriggers.map(tr => (
-                                                <div key={translateTrigger(tr.trigger)} className={('bg-indigo-900/15 border-indigo-700/40') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={translateTrigger(tr.trigger)} className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-green-300')}>{translateTrigger(tr.trigger)}</span>
-                                                        <span className={('bg-indigo-800/40 text-indigo-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
+                                                        <span className={'font-medium text-sm ' + ('text-white')}>{translateTrigger(tr.trigger)}</span>
+                                                        <span className={('bg-gray-800/40 text-gray-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-indigo-300/70')}>
+                                                    <div className={'text-xs ' + ('text-gray-400')}>
                                                         {t('analyses.lowRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
                                                     </div>
                                                 </div>
@@ -788,14 +788,14 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     </div>
 
                     {/* Consciencialização */}
-                    <div className={('bg-purple-900/20 border-purple-700/50') + ' rounded-xl p-6 border'}>
-                        <h3 className={'text-lg font-semibold mb-3 ' + ('text-purple-400')}>
+                    <div className={('bg-gray-800/40 border-gray-700') + ' rounded-xl p-6 border'}>
+                        <h3 className={'text-lg font-semibold mb-3 ' + ('text-white')}>
                             {t('analyses.awarenessSection')}
                         </h3>
-                        <p className={'text-sm mb-3 ' + ('text-purple-300')}>
+                        <p className={'text-sm mb-3 ' + ('text-white')}>
                             <strong>{triggerStats.cyclesWithTriggers}</strong> / {analysisCycles.length} ({((triggerStats.cyclesWithTriggers / analysisCycles.length) * 100).toFixed(0)}%)
                         </p>
-                        <p className={'text-sm ' + ('text-purple-300/80')}>
+                        <p className={'text-sm ' + ('text-gray-400')}>
                             {t('analyses.awarenessText')}
                         </p>
                     </div>
@@ -813,11 +813,11 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                         <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('analyses.exerciseSection')}</h3>
                         <div className="grid grid-cols-3 gap-4 mb-4">
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                                <div className={'text-2xl font-bold text-green-400'}>{exerciseStats.daysWithExercise}</div>
+                                <div className={'text-2xl font-bold font-mono-theme text-green-400'}>{exerciseStats.daysWithExercise}</div>
                                 <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.exerciseDays')}</div>
                             </div>
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                                <div className={'text-2xl font-bold text-green-400'}>{exerciseStats.exercisePercent.toFixed(0)}%</div>
+                                <div className={'text-2xl font-bold font-mono-theme text-green-400'}>{exerciseStats.exercisePercent.toFixed(0)}%</div>
                                 <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.exerciseOfLoggedDays')}</div>
                             </div>
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
@@ -903,7 +903,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                         <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('analyses.symptomsSection')}</h3>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                                <div className={'text-2xl font-bold text-orange-400'}>{symptomStats.allSymptoms.length}</div>
+                                <div className={'text-2xl font-bold font-mono-theme text-orange-400'}>{symptomStats.allSymptoms.length}</div>
                                 <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.symptomRecords')}</div>
                             </div>
                             <div className="bg-gray-700/50 rounded-lg p-3 text-center">

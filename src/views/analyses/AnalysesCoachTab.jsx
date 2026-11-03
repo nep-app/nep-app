@@ -200,7 +200,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     return (
         <div className="space-y-3">
             {/* Header */}
-            <div className={'bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-purple-700/50 rounded-xl p-5 border'}>
+            <div className={'bg-gray-800/40 border-gray-700 rounded-xl p-5 border'}>
                 <div className="flex items-center gap-3 mb-1">
                     <span className="text-3xl">💬</span>
                     <h3 className={'text-xl font-bold text-white'}>{t('coach.title')}</h3>
@@ -215,7 +215,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {/* Paragraph 1: Overview */}
                     <p>
                         {totalConsumptions > 0 ? (
-                            <>📊 <strong className={('text-purple-400')}>{t('coach.overviewLabel')}</strong>{' '}
+                            <>📊 <strong className={('text-white')}>{t('coach.overviewLabel')}</strong>{' '}
                             {t('coach.overviewText', {
                                 total: totalConsumptions,
                                 uses: t(totalConsumptions === 1 ? 'coach.use_singular' : 'coach.use_plural'),
@@ -493,7 +493,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     <> <span className={('text-cyan-400')}>{t('coach.sleepPatternInsight', { diff: (parseFloat(goodSleep) - parseFloat(difficultSleep)).toFixed(1) })}</span></>
                                 )}
                                 {goodMood && difficultMood && parseFloat(goodMood) > parseFloat(difficultMood) + 1.5 && (
-                                    <> <span className={('text-purple-400')}>{t('coach.moodPatternInsight', { diff: (parseFloat(goodMood) - parseFloat(difficultMood)).toFixed(1) })}</span></>
+                                    <> <span className={('text-white')}>{t('coach.moodPatternInsight', { diff: (parseFloat(goodMood) - parseFloat(difficultMood)).toFixed(1) })}</span></>
                                 )}
                             </p>
                         );
@@ -537,7 +537,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                📅 <strong className={('text-indigo-400')}>{t('coach.weeklyPatternLabel')}</strong>{' '}
+                                📅 <strong className={('text-white')}>{t('coach.weeklyPatternLabel')}</strong>{' '}
                                 {t('coach.weeklyHardDays', { day: dayNames[worstDay[0]], avg: worstDay[1].toFixed(1), bestDay: dayNames[bestDay[0]], bestAvg: bestDay[1].toFixed(1) })}
                                 {parseInt(worstDay[0]) >= 1 && parseInt(worstDay[0]) <= 5 ? (
                                     <> <span className={('text-yellow-400')}>{t('coach.weeklyWeekdayTip', { day: dayNames[worstDay[0]] })}</span></>
@@ -644,7 +644,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     ? t('coach.outliersTopDay', { date: new Date(top1.date + 'T12:00:00').toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1) })
                                     : t('coach.outliersTopDayN', { date: new Date(top1.date + 'T12:00:00').toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1), k: topDays.length })}
                                 {top1Emotions.length > 0 && (
-                                    <> <strong className={('text-purple-400')}>{top1Emotions.join(', ')}</strong>{top1Mood && <> ({top1Mood}/10)</>}.</>
+                                    <> <strong className={('text-white')}>{top1Emotions.join(', ')}</strong>{top1Mood && <> ({top1Mood}/10)</>}.</>
                                 )}
                                 {topDays.length > 1 && (
                                     <> {t('coach.outliersOtherPeaks')} {topDays.slice(1).map((d, i) => (
@@ -782,7 +782,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🌊 <strong className={('text-purple-400')}>{t('coach.cascadeLabel')}</strong>
+                                🌊 <strong className={('text-white')}>{t('coach.cascadeLabel')}</strong>
                                 {longestCascade >= 2 ? (
                                     <> {t('coach.cascadeDetected', { n: cascadeEvents, label: t(cascadeEvents === 1 ? 'coach.episode_singular' : 'coach.episode_plural'), longest: longestCascade, esperado: esperadoAoAcaso })}
                                     <> <span className={('text-gray-400')}>{t(acimaDoAcaso ? 'coach.cascadeAboveChance' : 'coach.cascadeWithinChance')}</span></>
@@ -1560,7 +1560,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                💤➡️😊 <strong className={('text-indigo-400')}>{t('coach.sleepMoodLabel')}</strong>{' '}
+                                💤➡️😊 <strong className={('text-white')}>{t('coach.sleepMoodLabel')}</strong>{' '}
                                 {t('coach.sleepMoodText')}
                                 {correlation > 0.4 ? (
                                     <> {t('coach.sleepMoodStrongPos', { r: correlation.toFixed(2) })}</>
@@ -1615,7 +1615,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                 {positivePercent >= 60 ? (
                                     <> <span className={('text-green-400')}>{t('coach.emotionalPositiveTip')}</span></>
                                 ) : positivePercent < 40 ? (
-                                    <> <span className={('text-purple-400')}>{t('coach.emotionalDifficultTip')}</span></>
+                                    <> <span className={('text-white')}>{t('coach.emotionalDifficultTip')}</span></>
                                 ) : null}
                             </p>
                         );
@@ -1735,7 +1735,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🧠 <strong className={('text-purple-400')}>{t('coach.emotionalProfileLabel')}</strong>{' '}
+                                🧠 <strong className={('text-white')}>{t('coach.emotionalProfileLabel')}</strong>{' '}
                                 {t('coach.emotionalProfileText', { level: emotionalDiversity, n: numTypes })}{' '}
                                 {dominantType && <>{t('coach.emotionalProfileDominant', { type: translateEmotionTypeName(dominantType[0]), n: dominantType[1] })}{' '}</>}
                                 {oscillationLevel === t('coach.emotionalOscillationHigh') ? t('coach.emotionalProfileOscillationHigh') : oscillationLevel === t('coach.emotionalOscillationModerate') ? t('coach.emotionalProfileOscillationMod') : t('coach.emotionalProfileOscillationLow')}
@@ -1809,7 +1809,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     <p>
                         {allNotes.length > 0 ? (
                             <>
-                                📝 <strong className={('text-purple-400')}>{t('coach.notesLabel', { n: sentimentAnalysis.noteCount })}</strong>
+                                📝 <strong className={('text-white')}>{t('coach.notesLabel', { n: sentimentAnalysis.noteCount })}</strong>
                                 {(() => {
                                     // Calcular sentimento com base na DISTRIBUIÇÃO em vez da média
                                     const dist = sentimentAnalysis.distribution;
@@ -1862,7 +1862,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     return (
                                         <>
                                             <br/>
-                                            🔍 <strong className={('text-indigo-300')}>{t('coach.notesPatternsLabel')}</strong>
+                                            🔍 <strong className={('text-white')}>{t('coach.notesPatternsLabel')}</strong>
                                             {realOverall === 'positive' ? (
                                                 <> {t('coach.notesPositiveTone', { positivePct: positivePercent, negativePct: negativePercent })}</>
                                             ) : realOverall === 'negative' ? (
@@ -1879,7 +1879,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     );
                                 })()}
                                 <br/>
-                                💭 <strong className={('text-purple-300')}>{t('coach.notesThemesLabel')}</strong>
+                                💭 <strong className={('text-white')}>{t('coach.notesThemesLabel')}</strong>
                                 {(() => {
                                     const topThemes = Object.entries(sentimentThemes)
                                         .filter(([_, data]) => data.count > 2)
@@ -1980,7 +1980,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🔬 <strong className={('text-indigo-400')}>{t('coach.clustersLabel')}</strong>
+                                🔬 <strong className={('text-white')}>{t('coach.clustersLabel')}</strong>
                                 {clusters.altaPressao.length > 0 && (
                                     <> <strong className={('text-amber-300')}>{t('coach.clustersHighPressure', { n: clusters.altaPressao.length })}</strong></>
                                 )}
@@ -1988,7 +1988,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     <> <strong className={('text-yellow-400')}>{t('coach.clustersParadox', { n: clusters.paradoxo.length })}</strong></>
                                 )}
                                 {clusters.equilibrio.length > 0 && (
-                                    <> <strong className={('text-indigo-300')}>{t('coach.clustersBalance', { n: clusters.equilibrio.length })}</strong></>
+                                    <> <strong className={('text-white')}>{t('coach.clustersBalance', { n: clusters.equilibrio.length })}</strong></>
                                 )}
                             </p>
                         );
@@ -2043,7 +2043,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🔍 <strong className={('text-indigo-400')}>{t('coach.consumptionImpactLabel')}</strong>{' '}
+                                🔍 <strong className={('text-white')}>{t('coach.consumptionImpactLabel')}</strong>{' '}
                                 {t('coach.consumptionImpactText')}
                                 {moodCorr !== null && Math.abs(moodCorr) >= 0.3 && (
                                     <>
@@ -2248,13 +2248,13 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     )}
 
                     {/* You Are in Control */}
-                    <p className={'font-medium ' + ('text-purple-300')}>
+                    <p className={'font-medium ' + ('text-white')}>
                         💪 <strong>{t('coach.controlLabel')}</strong> {t('coach.controlText')}
-                        <span className={('text-purple-400')}> {t('coach.controlTip')}</span>
+                        <span className={('text-white')}> {t('coach.controlTip')}</span>
                     </p>
 
                     {/* Closing */}
-                    <p className={'font-medium pt-2 border-t ' + ('border-gray-700 text-purple-400')}>
+                    <p className={'font-medium pt-2 border-t ' + ('border-gray-700 text-white')}>
                         🤝 <strong>{t('coach.closingLabel')}</strong> {t('coach.closingText')}
                         <span> {t('coach.closingHarmReduction')}</span>
                         <br/><br/>

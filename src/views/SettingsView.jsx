@@ -280,7 +280,7 @@ export const SettingsView = ({
 
             {/* ── Início, cores e notificações (tudo junto) ── */}
             <Section
-                icon={<Icons.Bell className="w-5 h-5 text-purple-400" />}
+                icon={<Icons.Bell className="w-5 h-5 text-gray-400" />}
                 title={t('settings.screenTitle')}
             >
                 {/* A página inicial não aparece no demo (lá é sempre o relógio). */}
@@ -336,7 +336,7 @@ export const SettingsView = ({
                     href={COMMUNITY_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all font-medium flex items-center justify-center gap-2"
+                    className="w-full bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-all font-medium flex items-center justify-center gap-2"
                 >
                     <span>💬</span>
                     {pt ? 'Abrir a Comunidade' : 'Open the Community'}
@@ -351,7 +351,7 @@ export const SettingsView = ({
 
             {/* ── Os meus dados (abre/fecha): sincronizar + exportar/backup/importar ── */}
             <Section
-                icon={<Icons.RefreshCw className="w-5 h-5 text-purple-400" />}
+                icon={<Icons.RefreshCw className="w-5 h-5 text-gray-400" />}
                 title={pt ? 'Os meus dados' : 'My data'}
                 subtitle={pt
                     ? 'Como são guardados, cópia de segurança, sincronizar e recuperar.'
@@ -481,7 +481,7 @@ export const SettingsView = ({
 
             {/* ── Segurança e bloqueio (bloqueio automático + modo disfarce juntos) ── */}
             <Section
-                icon={<Icons.Shield className="w-5 h-5 text-purple-400" />}
+                icon={<Icons.Shield className="w-5 h-5 text-gray-400" />}
                 title={pt ? 'Segurança e bloqueio' : 'Security & lock'}
                 subtitle={pt ? 'Bloqueio automático e modo disfarce.' : 'Auto-lock and disguise mode.'}
             >
@@ -560,7 +560,7 @@ export const SettingsView = ({
 
             {/* ── Conta (no fim, abre/fecha) ── */}
             <Section
-                icon={<Icons.User className="w-5 h-5 text-purple-400" />}
+                icon={<Icons.User className="w-5 h-5 text-gray-400" />}
                 title={t('settings.account')}
             >
                 <div className="space-y-3 text-gray-300">
@@ -590,7 +590,7 @@ export const SettingsView = ({
 
             {/* ── Sobre, ajuda e legal (tudo no mesmo dropdown) ── */}
             <Section
-                icon={<Icons.Info className="w-5 h-5 text-purple-400" />}
+                icon={<Icons.Info className="w-5 h-5 text-gray-400" />}
                 title={pt ? 'Sobre, ajuda e legal' : 'About, help & legal'}
             >
                 <div className="space-y-4 text-sm text-gray-300">
@@ -608,7 +608,7 @@ export const SettingsView = ({
                     {/* Como usar */}
                     <div className="pt-2 border-t border-gray-700">
                         <p className="font-medium text-gray-200 mb-2 flex items-center gap-2">
-                            <Icons.Info className="w-4 h-4 text-purple-400" />
+                            <Icons.Info className="w-4 h-4 text-gray-400" />
                             {t('settings.guideHeader')}
                         </p>
                         <GuideAccordion />
@@ -635,7 +635,7 @@ export const SettingsView = ({
                     {/* Legal e ética */}
                     <div className="pt-2 border-t border-gray-700">
                         <p className="font-medium text-gray-200 mb-2 flex items-center gap-2">
-                            <Icons.FileText className="w-4 h-4 text-purple-400" />
+                            <Icons.FileText className="w-4 h-4 text-gray-400" />
                             {pt ? 'Legal e ética' : 'Legal & ethics'}
                         </p>
                         <div className="space-y-2">
@@ -666,10 +666,10 @@ export const SettingsView = ({
             </Section>
 
             {/* ── Privacidade e segurança (no fundo, sem repetir) ── */}
-            <div className="bg-purple-900/20 rounded-xl p-4 border border-purple-700/50">
+            <div className="bg-gray-800/40 rounded-xl p-4 border border-gray-700">
                 <div className="flex items-start gap-2">
-                    <Icons.Shield className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-purple-300">
+                    <Icons.Shield className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-white">
                         <p className="font-medium mb-1">{t('settings.privacy')}</p>
                         <p className="text-xs opacity-90">{t('settings.privacyText')}</p>
                     </div>
@@ -692,7 +692,7 @@ export const SettingsView = ({
                                 : 'From now on, the app opens as a normal calculator. To enter NEP you must always do this gesture:'}
                         </p>
 
-                        <div className="bg-gray-900/50 border border-purple-700/50 rounded-lg p-4 text-sm text-white mb-3 leading-relaxed">
+                        <div className="bg-gray-900/50 border border-gray-700 rounded-lg p-4 text-sm text-white mb-3 leading-relaxed">
                             <p className="font-semibold mb-1">📱 {pt ? 'Calculadora' : 'Calculator'}</p>
                             <p className="whitespace-pre-line">{pt
                                 ? '1) Carrega em AC 3 vezes seguidas.\n2) Escreve o teu PIN — vai aparecer escondido (••••).\n3) Carrega em "=".'

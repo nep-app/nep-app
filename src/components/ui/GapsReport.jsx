@@ -205,7 +205,7 @@ export const GapsReport = React.memo(({ onFillGap }) => {
   });
 
   return (
-    <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border-purple-700/50 rounded-xl p-4 border">
+    <div className="bg-gray-800/40 border-gray-700 rounded-xl p-4 border">
       {/* Cabeçalho clicável: o contador fica sempre à vista, o detalhe abre só se quiser. */}
       <button
         type="button"

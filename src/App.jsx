@@ -1318,7 +1318,7 @@ export function AuthenticatedApp() {
                                             )}
                                         </div>
                                     ) : streaks.max > 0 && (
-                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-semibold shadow-sm">
+                                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-700 text-white text-xs font-semibold shadow-sm">
                                             <span>💪</span>
                                             <span>{t('home.record')}: {streaks.max} {t('common.day', {count: streaks.max})}</span>
                                         </div>
@@ -1326,7 +1326,7 @@ export function AuthenticatedApp() {
 
                                     {/* Mensagem de Hoje - ABAIXO do streak */}
                                     <div className="text-right space-y-1">
-                                        <p className='text-xs font-semibold text-purple-300'>
+                                        <p className='text-xs font-semibold text-gray-400'>
                                             💜 {t('home.dailyMessage')}
                                         </p>
                                         <p className='text-xs italic max-w-xs text-white'>

@@ -199,7 +199,7 @@ export const WellbeingModal = ({
                   <div key={i} className="text-xs text-green-300">🏃 {e}</div>
                 ))}
                 {todayNapTotal > 0 && (
-                  <div className="text-xs text-indigo-300">🛌 {t('wellbeing.napToday', { count: todayNaps.length, min: todayNapTotal })}</div>
+                  <div className="text-xs text-white">🛌 {t('wellbeing.napToday', { count: todayNaps.length, min: todayNapTotal })}</div>
                 )}
                 {todaySymptomsList.length > 0 && (
                   <div className="flex flex-wrap gap-1 items-center pt-0.5">

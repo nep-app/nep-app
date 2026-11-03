@@ -4,15 +4,23 @@
 
 /* Temas de experiência do modo demo (src/demo/themes.js). Sem o atributo,
    nada disto se aplica — a app real não é tocada. */
-/* Texto corrido: letra redonda e suave. A "de máquina" (JetBrains Mono)
-   fica para o que é maior: títulos pequenos, botões, números. */
+/* Três letras, três papéis:
+   - Unbounded: títulos de ecrã (h1, h2);
+   - Nunito: tudo o que se lê — texto, títulos de cartões, botões, links;
+   - JetBrains Mono (a "de máquina"): só números e horas (.font-mono-theme,
+     .tabular-nums, .font-mono). Antes também ia para h3/h4 e para todos os
+     botões: os títulos pareciam botões e os textos corridos dos botões
+     liam-se mais devagar (ex.: Exercícios para o Impulso). */
 html[data-demo-font="vv"] body {
   font-family: 'Nunito', system-ui, sans-serif;
 }
 html[data-demo-font="vv"] h3,
-html[data-demo-font="vv"] h4,
-html[data-demo-font="vv"] button,
-html[data-demo-font="vv"] .font-mono-theme {
+html[data-demo-font="vv"] h4 {
+  font-weight: 700;
+}
+html[data-demo-font="vv"] .font-mono-theme,
+html[data-demo-font="vv"] .tabular-nums,
+html[data-demo-font="vv"] .font-mono {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
 }
 html[data-demo-font="vv"] h1,
