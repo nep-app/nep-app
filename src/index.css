@@ -34,6 +34,7 @@ html[data-demo-font="vv"] .font-display {
    roxo do mapa de calor e das barras, muito transparente. Dá vida sem dizer
    se é bom ou mau. Não depende do tema (é sempre este roxo). */
 .card-tint {
-  background-color: rgb(124 58 237 / 0.12);
-  border-color: rgb(124 58 237 / 0.35);
+  /* lilás "batido": pouca cor, quase cinzento (antes 0.12/0.35 era forte demais) */
+  background-color: rgb(169 139 240 / 0.07);
+  border-color: rgb(169 139 240 / 0.18);
 }

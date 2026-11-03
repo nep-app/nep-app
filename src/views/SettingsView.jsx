@@ -666,7 +666,7 @@ export const SettingsView = ({
             </Section>
 
             {/* ── Privacidade e segurança (no fundo, sem repetir) ── */}
-            <div className="card-tint rounded-xl p-4 border border-gray-700">
+            <div className="bg-gray-800/40 border-gray-700 rounded-xl p-4 border border-gray-700">
                 <div className="flex items-start gap-2">
                     <Icons.Shield className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-white">
