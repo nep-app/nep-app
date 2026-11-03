@@ -377,20 +377,58 @@ export function PatternsView({
                                                     {atypicalBanner}
 
                                                     {/* Métricas essenciais */}
-                                                    <div className="grid grid-cols-3 gap-3">
-                                                        <div className={'card-tint-2' + ' rounded-lg p-4 text-center border'}>
+                                                    <div className="grid grid-cols-3 divide-x divide-gray-700 border-y border-gray-700 py-2">
+                                                        <div className="px-2 py-1 text-center">
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricTotal')}</div>
                                                             <div className={'text-white' + ' text-2xl font-bold font-mono-theme'}>{totalConsumptions}x</div>
                                                         </div>
-                                                        <div className={'card-tint-2' + ' rounded-lg p-4 text-center border'}>
+                                                        <div className="px-2 py-1 text-center">
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgDay')}</div>
                                                             <div className={goalTone('reduce_frequency', freqGoal, avgPerDay) + ' text-2xl font-bold font-mono-theme'}>{avgPerDay}</div>
                                                         </div>
-                                                        <div className={'card-tint-2' + ' rounded-lg p-4 text-center border'}>
+                                                        <div className="px-2 py-1 text-center">
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgInterval')}</div>
                                                             <div className={goalTone('increase_interval', intervalGoal, avgInterval) + ' text-2xl font-bold font-mono-theme'}>{avgInterval}h</div>
                                                         </div>
+
                                                     </div>
+                                                        {/* Esta semana: 7 barrinhas num só roxo apagado (sem verde/amarelo: a pedido
+                                                            da Teresa). Com meta de frequência, uma linha tracejada marca o limite — a
+                                                            pessoa vê se passou sem a cor julgar. Dia marcado "não registei" = "?",
+                                                            não um zero. */}
+                                                        {(() => {
+                                                            const unknown = metrics?.unloggedDates || new Set();
+                                                            const days = Array.from({ length: 7 }, (_, i) => {
+                                                                const d = subtractDays(new Date(), 6 - i);
+                                                                const k = safeToISODate(d);
+                                                                return { k, n: rollup[k]?.count || 0, unk: unknown.has(k), label: i === 6 ? t('home.today') : d.toLocaleDateString(i18n.language, { weekday: 'short' }).replace(/\.$/, '') };
+                                                            });
+                                                            const tg = freqGoal ? parseFloat(freqGoal.target) : NaN;
+                                                            const top = Math.max(1, ...days.map(d => d.n), Number.isFinite(tg) ? tg : 0);
+                                                            return (
+                                                                <div>
+                                                                    <div className="flex justify-between text-[10px] font-mono-theme tracking-widest uppercase text-gray-500 mb-1.5">
+                                                                        <span>{i18n.language === 'en' ? 'This week' : 'Esta semana'}</span>
+                                                                        {Number.isFinite(tg) && <span>{i18n.language === 'en' ? 'goal' : 'meta'} ≤{tg}</span>}
+                                                                    </div>
+                                                                    <div className="relative grid grid-cols-7 gap-1.5 items-end h-14">
+                                                                        {days.map(d => (
+                                                                            <div key={d.k} className="h-full flex items-end">
+                                                                                <div className="w-full rounded-t" style={{ height: d.unk ? '100%' : `${Math.max(4, (d.n / top) * 100)}%`, background: d.unk ? 'transparent' : 'rgb(124 58 237 / 0.45)', border: d.unk ? '1px dashed rgb(255 255 255 / 0.2)' : 'none' }} />
+                                                                            </div>
+                                                                        ))}
+                                                                        {Number.isFinite(tg) && (
+                                                                            <div className="absolute left-0 right-0 border-t border-dashed border-gray-400/60 pointer-events-none" style={{ bottom: `${(tg / top) * 100}%` }} />
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="grid grid-cols-7 gap-1.5 mt-1 text-center text-[10px] text-gray-500">
+                                                                        {days.map(d => (
+                                                                            <span key={d.k}><b className="block font-mono-theme text-[11px] text-gray-200">{d.unk ? '?' : d.n}</b>{d.label}</span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
 
                                                     {/* Tendência (30 dias) */}
                                                     {trend && (
@@ -925,8 +963,8 @@ export function PatternsView({
                                                             </h3>
 
                                                             {/* Main stats */}
-                                                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                                                <div className={'bg-gray-800/40 border-gray-700' + ' rounded-lg p-4 border'}>
+                                                            <div className="grid grid-cols-2 divide-x divide-gray-700 border-y border-gray-700 py-3 mb-4">
+                                                                <div className="pr-4">
                                                                     <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-gray-400'}>
                                                                         {t('patterns.goals.totalCompliances')}
                                                                     </div>
@@ -943,7 +981,7 @@ export function PatternsView({
                                                                     </div>
                                                                 </div>
 
-                                                                <div className={'bg-gray-800/40 border-gray-700' + ' rounded-lg p-4 border'}>
+                                                                <div className="pl-4">
                                                                     <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-gray-400'}>
                                                                         {t('patterns.goals.avgPerDay')}
                                                                     </div>
@@ -962,11 +1000,11 @@ export function PatternsView({
                                                             </div>
 
                                                             {/* Per-goal breakdown */}
-                                                            <div className={'bg-gray-700/30' + ' rounded-lg p-4'}>
+                                                            <div>
                                                                 <div className={'text-xs font-semibold mb-3 uppercase tracking-wide ' + ('text-gray-400')}>
                                                                     {t('patterns.goals.breakdown')}
                                                                 </div>
-                                                                <div className="space-y-2">
+                                                                <div className="divide-y divide-gray-700">
                                                                     {goalsAnalysis.goalBreakdown.map(goal => {
                                                                         const goalTypeLabels = {
                                                                             'reduce_frequency': t('patterns.goals.types.reduce_frequency'),
@@ -987,7 +1025,7 @@ export function PatternsView({
                                                                             'first_not_before': t('patterns.goals.explain.first_not_before', { target: goal.target })
                                                                         };
                                                                         return (
-                                                                            <div key={goal.id} className={'bg-gray-700/50 border-gray-600' + ' rounded-lg p-3 border'}>
+                                                                            <div key={goal.id} className="py-3">
                                                                                 <div className="flex items-center justify-between mb-2">
                                                                                     <div className="flex-1">
                                                                                         <div className={'text-sm font-medium mb-1 ' + ('text-white')}>

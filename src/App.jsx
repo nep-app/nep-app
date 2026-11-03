@@ -1572,26 +1572,28 @@ export function AuthenticatedApp() {
                             />
                         </Suspense>
 
-                        <div className='bg-gray-800 fixed bottom-0 left-0 right-0 shadow-xl rounded-t-3xl pt-3 px-3 z-50' style={{paddingBottom:'max(12px, env(safe-area-inset-bottom))'}}>
+                        {/* Barra de baixo fina: sem botões cheios; só o separador onde estás tem cor
+                            (roxo). Antes eram 5 botões grandes com fundo. */}
+                        <div className='bg-gray-900/95 backdrop-blur border-t border-gray-700 fixed bottom-0 left-0 right-0 pt-1 px-2 z-50' style={{paddingBottom:'max(6px, env(safe-area-inset-bottom))'}}>
                             <div className="max-w-2xl mx-auto">
                                 <div className="grid grid-cols-5 gap-1">
-                                    <button onClick={() => setCurrentView('home')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
+                                    <button onClick={() => setCurrentView('home')} aria-current={currentView === 'home' ? 'page' : undefined} className={'py-1.5 px-1 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'home' ? 'text-[#b49cf5]' : 'text-gray-400 hover:text-gray-200')}>
                                         <Icons.Heart className="w-5 h-5" />
                                                         <div className="text-xs font-medium mt-1">{t('nav.home')}</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('patterns')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
+                                    <button onClick={() => setCurrentView('patterns')} aria-current={currentView === 'patterns' ? 'page' : undefined} className={'py-1.5 px-1 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'patterns' ? 'text-[#b49cf5]' : 'text-gray-400 hover:text-gray-200')}>
                                         <Icons.BarChart3 className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">{t('nav.patterns')}</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('analyses')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'analyses' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
+                                    <button onClick={() => setCurrentView('analyses')} aria-current={currentView === 'analyses' ? 'page' : undefined} className={'py-1.5 px-1 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'analyses' ? 'text-[#b49cf5]' : 'text-gray-400 hover:text-gray-200')}>
                                         <Icons.Activity className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">{t('nav.analyses')}</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('history')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
+                                    <button onClick={() => setCurrentView('history')} aria-current={currentView === 'history' ? 'page' : undefined} className={'py-1.5 px-1 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'history' ? 'text-[#b49cf5]' : 'text-gray-400 hover:text-gray-200')}>
                                         <Icons.BookOpen className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">{t('nav.history')}</div>
                                     </button>
-                                    <button onClick={() => setCurrentView('settings')} className={'p-2 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
+                                    <button onClick={() => setCurrentView('settings')} aria-current={currentView === 'settings' ? 'page' : undefined} className={'py-1.5 px-1 rounded-xl transition-colors flex flex-col items-center ' + (currentView === 'settings' ? 'text-[#b49cf5]' : 'text-gray-400 hover:text-gray-200')}>
                                         <Icons.Settings className="w-5 h-5" />
                                         <div className="text-xs font-medium mt-1">{t('nav.settings')}</div>
                                     </button>
