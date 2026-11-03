@@ -73,6 +73,7 @@
 
 * **Ramo Principal:** `claude/branch-naming-docs-CwjcE` (versão ativa de produção).
 * **Build & Host:** Build gera para `/docs`. Workflow `.github/workflows/main.yml` publica em GitHub Pages.
+* **⚠️ Publicar = push SÓ para os ramos de produção** (`claude/branch-naming-docs-CwjcE` e `claude/user-experience-design-review-rmp9px`). Fazer push de outro ramo `claude/**` ao mesmo tempo (ex.: o ramo de trabalho da sessão) lança outro deploy que **cancela o de produção** e depois falha (o ambiente do Pages não aceita esse ramo). Se acontecer: disparar o `main.yml` à mão no ramo de produção.
 * **⚠️ Instabilidade no GitHub Pages:** O build costuma passar, mas o *publish* pode falhar. Solução: Disparar manualmente o `main.yml` (workflow_dispatch) até ficar verde.
 * **⚠️ Firestore Rules (`firestore.rules`):** Alterações no ficheiro no repositório **NÃO têm efeito automático**. É obrigatório publicar manualmente no Firebase Console (Firestore → Regras).
 * **⚠️ Segredos do GitHub:** `VITE_FIREBASE_VAPID_KEY` (build) e `FIREBASE_SERVICE_ACCOUNT` (cron de lembretes).

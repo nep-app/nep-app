@@ -26,6 +26,16 @@ export function PatternsView({
     // É ela que decide se a Tendência e as barras podem ter cor de juízo:
     // sem meta, só descrição (regra do elogio).
     const freqGoal = (goals || []).find(g => g.type === 'reduce_frequency' && !g.completed) || null;
+    // Meta de aumentar o intervalo entre consumos (horas), se ativa.
+    const intervalGoal = (goals || []).find(g => g.type === 'increase_interval' && !g.completed) || null;
+    // Cor de um número comparado com uma meta da pessoa (regra do elogio):
+    // verde se cumpre, amarelo se não (como no Início; nunca vermelho).
+    // Sem meta, ou sem valor: branco, só descrição.
+    const goalTone = (type, goal, value) => {
+        if (!goal) return 'text-white';
+        const ok = meetsGoal(type, parseFloat(value), parseFloat(goal.target));
+        return ok == null ? 'text-white' : ok ? 'text-green-400' : 'text-yellow-400';
+    };
     const metrics = useMetrics();
     const { t, i18n } = useTranslation();
     // Cartão de meta com a lista dos dias aberta (id da meta) — para se ver dia
@@ -173,6 +183,10 @@ export function PatternsView({
                                             for (let i = 1; i < sorted.length; i++) {
                                                 const t1 = new Date(sorted[i].timestamp).getTime(), t0 = new Date(sorted[i-1].timestamp).getTime();
                                                 if (gapCrossesDays(t0, t1, excludedDates)) continue; // passa por dia sem registo → não se sabe
+                                                // Só intervalos dentro do mesmo dia, como a meta "aumentar intervalo"
+                                                // conta. Antes entrava também a noite (último de um dia → primeiro do
+                                                // seguinte), o que inchava a média: dava ~24h ÷ consumos por dia.
+                                                if (getDateKeyFromItem(sorted[i]) !== getDateKeyFromItem(sorted[i-1])) continue;
                                                 intervals.push((t1 - t0) / 3600000);
                                             }
                                             const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
@@ -397,11 +411,11 @@ export function PatternsView({
                                                         </div>
                                                         <div className={'bg-gray-800/40 border border-gray-700' + ' rounded-lg p-4 text-center border'}>
                                                             <div className={'text-xs mb-1 ' + 'text-gray-300'}>{t('patterns.dashboard.metricAvgDay')}</div>
-                                                            <div className={'text-white' + ' text-2xl font-bold font-mono-theme'}>{avgPerDay}</div>
+                                                            <div className={goalTone('reduce_frequency', freqGoal, avgPerDay) + ' text-2xl font-bold font-mono-theme'}>{avgPerDay}</div>
                                                         </div>
                                                         <div className={'bg-gray-800/40 border border-gray-700' + ' rounded-lg p-4 text-center border'}>
                                                             <div className={'text-xs mb-1 ' + 'text-gray-300'}>{t('patterns.dashboard.metricAvgInterval')}</div>
-                                                            <div className={'text-white' + ' text-2xl font-bold font-mono-theme'}>{avgInterval}h</div>
+                                                            <div className={goalTone('increase_interval', intervalGoal, avgInterval) + ' text-2xl font-bold font-mono-theme'}>{avgInterval}h</div>
                                                         </div>
                                                     </div>
 
@@ -2504,6 +2518,7 @@ export function PatternsView({
                                             for (let i = 1; i < sorted.length; i++) {
                                                 const t1 = new Date(sorted[i].timestamp).getTime(), t0 = new Date(sorted[i-1].timestamp).getTime();
                                                 if (gapCrossesDays(t0, t1, excludedDates)) continue; // passa por dia sem registo → não se sabe
+                                                if (getDateKeyFromItem(sorted[i]) !== getDateKeyFromItem(sorted[i-1])) continue; // só dentro do mesmo dia (como a meta)
                                                 intervals.push({ hours: (t1 - t0) / 3600000, date: sorted[i].date });
                                             }
 
@@ -2604,8 +2619,13 @@ export function PatternsView({
                                                                 {i18n.language === 'en' ? 'No intervals (requires ≥2 uses)' : 'Sem intervalos (necessário ≥2 consumos)'}
                                                             </div>
                                                         ) : (() => {
-                                                            const goodIntervals = intervals.filter(i => i.hours >= 2);
-                                                            const shortIntervals = intervals.filter(i => i.hours < 2);
+                                                            // Limite: a meta de intervalo da pessoa, se tiver; senão 2h, só como
+                                                            // divisória descritiva (sem verde/laranja nem ✅/⚠️ — regra do elogio).
+                                                            const ivTarget = intervalGoal ? parseFloat(intervalGoal.target) : NaN;
+                                                            const hasIvGoal = Number.isFinite(ivTarget);
+                                                            const ivThr = hasIvGoal ? ivTarget : 2;
+                                                            const goodIntervals = intervals.filter(i => i.hours >= ivThr);
+                                                            const shortIntervals = intervals.filter(i => i.hours < ivThr);
                                                             const avgInterval = intervals.reduce((sum, i) => sum + i.hours, 0) / intervals.length;
                                                             const maxInterval = Math.max(...intervals.map(i => i.hours));
                                                             const goodPercent = ((goodIntervals.length / intervals.length) * 100).toFixed(0);
@@ -2629,46 +2649,58 @@ export function PatternsView({
                                                                     </div>
 
                                                                     <div className="space-y-3">
-                                                                        {/* Bons intervalos (≥2h) */}
-                                                                        <div className={`${'bg-green-900/20 border border-green-700/50'} rounded-lg p-4`}>
-                                                                            <div className="flex items-center justify-between mb-2">
-                                                                                <div className={`text-sm font-medium flex items-center gap-2 ${'text-green-400'}`}>
-                                                                                    <span>✅</span>
-                                                                                    <span>{t('patterns.structural.goodIntervals')}</span>
-                                                                                </div>
-                                                                                <div className={`text-sm font-bold ${'text-green-400'}`}>
-                                                                                    {goodIntervals.length} ({goodPercent}%)
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className={`${'bg-gray-700'} rounded-full h-3 overflow-hidden`}>
-                                                                                <div className="bg-gray-400 h-full transition-all duration-500" style={{width: goodPercent + '%'}}></div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {/* Intervalos curtos (<2h) */}
-                                                                        <div className={`${'bg-orange-900/20 border border-orange-700/50'} rounded-lg p-4`}>
-                                                                            <div className="flex items-center justify-between mb-2">
-                                                                                <div className={`text-sm font-medium flex items-center gap-2 ${'text-orange-400'}`}>
-                                                                                    <span>⚠️</span>
-                                                                                    <span>{t('patterns.structural.shortIntervals')}</span>
-                                                                                </div>
-                                                                                <div className={`text-sm font-bold ${'text-orange-400'}`}>
-                                                                                    {shortIntervals.length} ({shortPercent}%)
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className={`${'bg-gray-700'} rounded-full h-3 overflow-hidden`}>
-                                                                                <div className="bg-orange-500 h-full transition-all duration-500" style={{width: shortPercent + '%'}}></div>
-                                                                            </div>
-                                                                        </div>
+                                                                        {/* Intervalos que chegam / não chegam ao limite (meta da pessoa ou 2h) */}
+                                                                            {[
+                                                                                { key: 'good', n: goodIntervals.length, pct: goodPercent, ok: true },
+                                                                                { key: 'short', n: shortIntervals.length, pct: shortPercent, ok: false },
+                                                                            ].map(row => {
+                                                                                const en = i18n.language === 'en';
+                                                                                const label = hasIvGoal
+                                                                                    ? (row.ok ? (en ? `Reach your goal (≥${ivThr}h)` : `Chegam à tua meta (≥${ivThr}h)`) : (en ? `Below your goal (<${ivThr}h)` : `Abaixo da tua meta (<${ivThr}h)`))
+                                                                                    : (row.ok ? (en ? '2h or more' : '2h ou mais') : (en ? 'Under 2h' : 'Menos de 2h'));
+                                                                                const tone = !hasIvGoal ? 'text-gray-200' : row.ok ? 'text-green-400' : 'text-yellow-400';
+                                                                                const box = !hasIvGoal ? 'bg-gray-800/40 border border-gray-700' : row.ok ? 'bg-green-900/20 border border-green-700/50' : 'bg-yellow-900/20 border border-yellow-700/50';
+                                                                                const bar = !hasIvGoal ? 'bg-gray-400' : row.ok ? 'bg-green-500' : 'bg-yellow-500';
+                                                                                return (
+                                                                                    <div key={row.key} className={box + ' rounded-lg p-4'}>
+                                                                                        <div className="flex items-center justify-between mb-2">
+                                                                                            <div className={'text-sm font-medium flex items-center gap-2 ' + tone}>
+                                                                                                {hasIvGoal && <span>{row.ok ? '✅' : '⚠️'}</span>}
+                                                                                                <span>{label}</span>
+                                                                                            </div>
+                                                                                            <div className={'text-sm font-bold font-mono-theme ' + tone}>
+                                                                                                {row.n} ({row.pct}%)
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        <div className="bg-gray-700 rounded-full h-3 overflow-hidden">
+                                                                                            <div className={bar + ' h-full transition-all duration-500'} style={{width: row.pct + '%'}}></div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
                                                                     </div>
 
-                                                                    <div className={`${'bg-gray-800/40 border-gray-700'} rounded-lg p-3 mt-4 border`}>
-                                                                        <p className={`text-xs leading-relaxed ${'text-gray-300'}`}>
-                                                                            {goodPercent >= 50
-                                                                                ? t('patterns.structural.intervalTipGood')
-                                                                                : t('patterns.structural.intervalTipBad')}
-                                                                        </p>
-                                                                    </div>
+                                                                    {/* Frase de leitura só com meta de intervalo (regra do elogio). Antes dizia a
+
+                                                                        toda a gente "Ótimo! Continua assim!" ou "Foca-te em aumentar o tempo". */}
+
+                                                                    {hasIvGoal && (
+
+                                                                        <div className="bg-gray-800/40 border-gray-700 rounded-lg p-3 mt-4 border">
+
+                                                                            <p className="text-xs leading-relaxed text-gray-300">
+
+                                                                                {i18n.language === 'en'
+
+                                                                                    ? (goodPercent >= 50 ? `More than half of the intervals reach your goal (${ivThr}h).` : `Fewer than half of the intervals reach your goal (${ivThr}h).`)
+
+                                                                                    : (goodPercent >= 50 ? `Mais de metade dos intervalos chegam à tua meta (${ivThr}h).` : `Menos de metade dos intervalos chegam à tua meta (${ivThr}h).`)}
+
+                                                                            </p>
+
+                                                                        </div>
+
+                                                                    )}
                                                                 </>
                                                             );
                                                         })()}

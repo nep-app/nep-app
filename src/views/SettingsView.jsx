@@ -336,7 +336,7 @@ export const SettingsView = ({
                     href={COMMUNITY_URL}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full bg-gray-700 text-white py-3 rounded-lg hover:bg-gray-600 transition-all font-medium flex items-center justify-center gap-2"
+                    className="w-full bg-transparent border-2 border-purple-500 text-purple-300 py-3 rounded-lg hover:bg-purple-500/10 transition-all font-medium flex items-center justify-center gap-2"
                 >
                     <span>💬</span>
                     {pt ? 'Abrir a Comunidade' : 'Open the Community'}
