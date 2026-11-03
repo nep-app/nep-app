@@ -191,6 +191,7 @@ export function applyDemoTheme(id) {
   for (const k of applied) root.style.removeProperty(k);
   applied = [];
   root.removeAttribute('data-demo-font');
+  root.removeAttribute('data-app-theme');
 
   const theme = DEMO_THEMES.find(t => t.id === id);
   if (!theme || !theme.bg) return; // "Atual": sem variáveis, cores originais
@@ -199,6 +200,8 @@ export function applyDemoTheme(id) {
   for (const [k, v] of Object.entries(vars)) root.style.setProperty(k, v);
   applied = Object.keys(vars);
   if (theme.font) root.setAttribute('data-demo-font', theme.font);
+  // Para afinações só deste tema no CSS (ex.: botões roxos no Riso).
+  root.setAttribute('data-app-theme', theme.id);
   root.style.colorScheme = theme.light ? 'light' : 'dark';
   applied.push('color-scheme');
 }

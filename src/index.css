@@ -46,3 +46,15 @@ html[data-demo-font="vv"] .font-display {
   background-color: rgb(124 58 237 / 0.12);
   border-color: rgb(124 58 237 / 0.35);
 }
+
+/* Tema Riso: os BOTÕES cheios (que eram cor-de-rosa) passam a roxo, a pedido
+   da Teresa. Só os botões (e o que está dentro deles, ex.: a pílula dos
+   gaps): o título NEP, os textos e o resto do tema ficam como estão. */
+html[data-app-theme="riso"] :is(button, a, [role="button"]):is(.bg-purple-500, .bg-purple-600, .bg-purple-700, .bg-violet-500, .bg-indigo-500, .bg-indigo-600),
+html[data-app-theme="riso"] button :is(.bg-purple-500, .bg-purple-600, .bg-purple-700) {
+  background-color: #7c4ddb;
+  border-color: #9b7be8;
+}
+html[data-app-theme="riso"] :is(button, a, [role="button"]):is(.bg-purple-500, .bg-purple-600, .bg-purple-700, .bg-violet-500, .bg-indigo-500, .bg-indigo-600):hover {
+  background-color: #6a3fc4;
+}

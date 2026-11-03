@@ -1,7 +1,7 @@
 {
   "name": "nep-app",
   "private": true,
-  "version": "6.97.4",
+  "version": "6.97.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
