@@ -1243,7 +1243,20 @@ export function AuthenticatedApp() {
             return (
                 <div className='min-h-screen dark bg-gray-900 p-4 transition-colors pb-24 overflow-x-hidden'>
                     <div className="max-w-2xl mx-auto">
-                        {compactHeader ? (
+                        {compactHeader && currentView !== 'home' ? (
+                        // Fora do Início: cabeçalho de UMA linha (N·E·P + data + dias). O
+                        // cartão completo ocupava ~1/8 do ecrã em todos os separadores, e a
+                        // barra de baixo já diz onde estás. O contador de dias fica.
+                        <div className='flex items-center justify-between gap-2 px-1 mb-2 text-xs'>
+                            <span className='font-display font-black text-base leading-none tracking-tight'>
+                                <span className='text-purple-400'>N</span><span className='text-pink-400'>E</span><span className='text-blue-400'>P</span>
+                            </span>
+                            <span className='text-gray-400 whitespace-nowrap'>
+                                {new Date().toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })}
+                                {streaks.current > 0 ? ` · 🔥 ${streaks.current} ${t('common.day', { count: streaks.current })}` : ''}
+                            </span>
+                        </div>
+                        ) : compactHeader ? (
                         // Cabeçalho COMPACTO do Início relógio: o mesmo título N·E·P com as
                         // palavras à frente e o slogan, em menos de metade da altura. A
                         // Mensagem de Hoje é a primeira do cartão de mensagens, em baixo.

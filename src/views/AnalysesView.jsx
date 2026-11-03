@@ -11,6 +11,7 @@ import { AnalysesEstadoTab } from './analyses/AnalysesEstadoTab';
 import { AnalysesCorrelacoesTab } from './analyses/AnalysesCorrelacoesTab';
 import { AnalysesImpactoTab } from './analyses/AnalysesImpactoTab';
 import { UrgeSurfingStats } from '../components/UrgeSurfingStats';
+import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 
 const { getDateRangeForPeriod, filterByDateRange } = analyticsService;
 
@@ -93,69 +94,30 @@ export function AnalysesView({
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             <h2 className="text-2xl font-bold text-white">{t('nav.analyses')}</h2>
 
-            {/* Selector de período */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
-                <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm font-semibold text-white">{t('analyses.periodLabel')}</div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setPatternsPeriodOffset(prev => prev + 1)}
-                            disabled={patternsPeriodOffset >= 100 || patternsPeriod === 'tudo'}
-                            className={(patternsPeriodOffset >= 100 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded' : 'p-1.5 rounded hover:bg-gray-700'}
-                        >
-                            <Icons.ChevronLeft className="w-4 h-4 text-white" />
-                        </button>
-                        <button
-                            onClick={() => setPatternsPeriodOffset(prev => Math.max(0, prev - 1))}
-                            disabled={patternsPeriodOffset === 0 || patternsPeriod === 'tudo'}
-                            className={(patternsPeriodOffset === 0 || patternsPeriod === 'tudo') ? 'opacity-30 cursor-not-allowed p-1.5 rounded' : 'p-1.5 rounded hover:bg-gray-700'}
-                        >
-                            <Icons.ChevronRight className="w-4 h-4 text-white" />
-                        </button>
-                    </div>
-                </div>
-                <div className="grid grid-cols-4 gap-1.5 pb-2">
-                    {['hoje', 'semana', 'mes', 'tudo'].map(period => (
-                        <button
-                            key={period}
-                            onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }}
-                            className={'px-1 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}
-                        >
-                            {period === 'hoje' && t('analyses.periodHoje')}
-                            {period === 'semana' && t('analyses.periodSemana')}
-                            {period === 'mes' && t('analyses.periodMes')}
-                            {period === 'tudo' && t('analyses.periodTudo')}
-                        </button>
-                    ))}
-                </div>
-                {patternsPeriod !== 'tudo' && (
-                    <div className="text-xs mt-2 text-center text-gray-400">
-                        {new Date(dateRange.start + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })}
-                        {' - '}
-                        {new Date(dateRange.end + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </div>
-                )}
-            </div>
+            {/* Período e vistas: uma linha de texto + pílulas (ver PeriodBar). */}
+            <PeriodBar
+                periods={[['hoje', 'analyses.periodHoje'], ['semana', 'analyses.periodSemana'], ['mes', 'analyses.periodMes'], ['tudo', 'analyses.periodTudo']].map(([id, k]) => ({ id, label: t(k) }))}
+                value={patternsPeriod}
+                onChange={(id) => { setPatternsPeriod(id); setPatternsPeriodOffset(0); }}
+                rangeLabel={patternsPeriod !== 'tudo'
+                    ? new Date(dateRange.start + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })
+                      + ' – ' + new Date(dateRange.end + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })
+                    : null}
+                onOlder={() => setPatternsPeriodOffset(prev => prev + 1)}
+                onNewer={() => setPatternsPeriodOffset(prev => Math.max(0, prev - 1))}
+                canOlder={patternsPeriodOffset < 100}
+                canNewer={patternsPeriodOffset > 0}
+            />
 
             <div className="space-y-4">
-                {/* Sub-tab navigation */}
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                    {['correlacoes', 'estado', 'impacto', 'coach'].map(subView => (
-                        <button
-                            key={subView}
-                            onClick={() => setAnalysisSubView(subView)}
-                            className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (analysisSubView === subView ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}
-                        >
-                            {subView === 'correlacoes' && t('analyses.tabCorrelacoes')}
-                            {subView === 'estado' && t('analyses.tabEstado')}
-                            {subView === 'impacto' && t('analyses.tabImpacto')}
-                            {subView === 'coach' && t('analyses.tabCoach')}
-                        </button>
-                    ))}
-                </div>
+                <ViewTabs
+                    tabs={[['correlacoes', 'analyses.tabCorrelacoes'], ['estado', 'analyses.tabEstado'], ['impacto', 'analyses.tabImpacto'], ['coach', 'analyses.tabCoach']].map(([id, k]) => ({ id, label: t(k) }))}
+                    value={analysisSubView}
+                    onChange={setAnalysisSubView}
+                />
 
                 {atypicalCount > 0 && (
                     <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-yellow-400 flex items-center gap-2">

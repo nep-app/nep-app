@@ -13,6 +13,7 @@ import { periodInfoForClosing, typicalMgPerDose, balanceAverage } from '../utils
 import { GapsReport } from '../components/ui/GapsReport';
 import { DayMarksPanel } from '../components/ui/DayMarksPanel';
 import { EMOTION_EN } from '../constants/emotions';
+import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 
@@ -573,8 +574,8 @@ export function HistoryView({
                         })()}
                     </div>
                     <div className="flex gap-2 ml-2 flex-shrink-0">
-                        <button onClick={() => openEditWeighing(w)} aria-label={isEN ? 'Edit' : 'Editar'} className="text-blue-400 hover:text-blue-300"><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>
-                        <button onClick={() => deleteItem('weighings', w.id)} aria-label={isEN ? 'Delete' : 'Apagar'} className="text-red-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                        <button onClick={() => openEditWeighing(w)} aria-label={isEN ? 'Edit' : 'Editar'} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>
+                        <button onClick={() => deleteItem('weighings', w.id)} aria-label={isEN ? 'Delete' : 'Apagar'} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                 </div>
             </div>
@@ -599,8 +600,8 @@ export function HistoryView({
                         </div>
                     </div>
                     <div className="flex gap-2 ml-2 flex-shrink-0">
-                        {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} aria-label={isEN ? 'Edit' : 'Editar'} className="text-blue-400 hover:text-blue-300"><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>}
-                        <button onClick={() => deleteItem('dailyLogs', log.id)} aria-label={isEN ? 'Delete' : 'Apagar'} className="text-red-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" aria-hidden="true" /></button>
+                        {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} aria-label={isEN ? 'Edit' : 'Editar'} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-4 h-4" aria-hidden="true" /></button>}
+                        <button onClick={() => deleteItem('dailyLogs', log.id)} aria-label={isEN ? 'Delete' : 'Apagar'} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" aria-hidden="true" /></button>
                     </div>
                 </div>
             </div>
@@ -608,7 +609,7 @@ export function HistoryView({
     };
 
     return (
-                                <div className="space-y-6">
+                                <div className="space-y-4">
                                     <h2 className="text-2xl font-bold text-white">{t('history.title')}</h2>
 
                                     {editingWeighing && (
@@ -653,45 +654,28 @@ export function HistoryView({
                                         três situações, cada uma a dizer o que tira e o que deixa. */}
                                     <DayMarksPanel />
 
-                                    {/* Temporal Filters */}
-                                    <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
-                                        <div className="flex flex-col gap-2 mb-3">
-                                            <div className="grid grid-cols-4 gap-1.5">
-                                                {['hoje', 'semana', 'mes', 'tudo'].map(period => (
-                                                    <button key={period} onClick={() => { setHistoryPeriod(period); setHistoryPeriodOffset(0); }} className={'px-1 py-2 rounded-lg font-medium transition-colors text-xs whitespace-nowrap ' + (historyPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
-                                                        {t(`patterns.periods.${period}`)}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            {historyPeriod !== 'tudo' && (
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => setHistoryPeriodOffset(historyPeriodOffset + 1)} className="text-purple-600 p-2 rounded-lg transition-colors hover:bg-gray-700">
-                                                        <Icons.ChevronLeft className="w-5 h-5" />
-                                                    </button>
-                                                    <span className="text-sm font-medium min-w-[120px] text-center text-gray-300">{getPeriodLabel(historyPeriod, historyPeriodOffset)}</span>
-                                                    <button onClick={() => setHistoryPeriodOffset(Math.max(0, historyPeriodOffset - 1))} disabled={historyPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (historyPeriodOffset === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-purple-600 hover:bg-gray-700')}>
-                                                        <Icons.ChevronRight className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Topic Filters */}
-                                    <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {[
-                                            { id: 'todos', label: t('history.filterAll') },
-                                            { id: 'consumos', label: t('history.filterLogs') },
-                                            { id: 'ciclos', label: t('history.filterCycles') },
-                                            { id: 'estado', label: t('history.filterWellbeing') },
-                                            { id: 'diario', label: t('history.filterDiary') },
-                                            { id: 'pesagens', label: isEN ? '⚖️ Doses' : '⚖️ Dosagens' }
-                                        ].map(topic => (
-                                            <button key={topic.id} onClick={() => setHistoryTopic(topic.id)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap text-sm ' + (historyTopic === topic.id ? 'bg-indigo-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
-                                                {topic.label}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    {/* Período e tipo de registo: uma linha de texto + pílulas (ver PeriodBar). */}
+                            <PeriodBar
+                                periods={['hoje', 'semana', 'mes', 'tudo'].map(id => ({ id, label: t(`patterns.periods.${id}`) }))}
+                                value={historyPeriod}
+                                onChange={(id) => { setHistoryPeriod(id); setHistoryPeriodOffset(0); }}
+                                rangeLabel={historyPeriod !== 'tudo' ? getPeriodLabel(historyPeriod, historyPeriodOffset) : null}
+                                onOlder={() => setHistoryPeriodOffset(historyPeriodOffset + 1)}
+                                onNewer={() => setHistoryPeriodOffset(Math.max(0, historyPeriodOffset - 1))}
+                                canNewer={historyPeriodOffset > 0}
+                            />
+                            <ViewTabs
+                                tabs={[
+                                    { id: 'todos', label: t('history.filterAll') },
+                                    { id: 'consumos', label: t('history.filterLogs') },
+                                    { id: 'ciclos', label: t('history.filterCycles') },
+                                    { id: 'estado', label: t('history.filterWellbeing') },
+                                    { id: 'diario', label: t('history.filterDiary') },
+                                    { id: 'pesagens', label: isEN ? '⚖️ Doses' : '⚖️ Dosagens' }
+                                ]}
+                                value={historyTopic}
+                                onChange={setHistoryTopic}
+                            />
 
                                     {!hasData ? (
                                         <div className="bg-white rounded-xl p-6 border border-gray-200 text-center text-gray-500">
@@ -705,24 +689,58 @@ export function HistoryView({
                                                     <h3 className="font-semibold text-white mb-4 flex items-center gap-2">{t('history.headerAll', { count: filteredConsumptions.length + filteredDailyLogs.length + filteredCycles.length + filteredWellbeing.length + filteredReflections.length + filteredThoughts.length })}</h3>
                                                     <div className="space-y-3">
                                                         {(() => {
-                                                            return allItemsSorted
-                                                                .slice(0, allItemsToShow)
+                                                            // Agrupado por dia: um título por dia (Hoje / Ontem / dia da semana)
+                                                            // em vez de repetir a data completa em cada cartão.
+                                                            const visible = allItemsSorted.slice(0, allItemsToShow);
+                                                            const dayOf = (it) => (it.data && (it.data.date || safeToISODate(it.data.timestamp))) || safeToISODate(it.timestamp) || '';
+                                                            const perDay = {};
+                                                            visible.forEach(it => { const k = dayOf(it); perDay[k] = (perDay[k] || 0) + 1; });
+                                                            const todayK = safeToISODate(new Date());
+                                                            const yd = new Date(); yd.setDate(yd.getDate() - 1);
+                                                            const yesterdayK = safeToISODate(yd);
+                                                            const dayTitle = (k) => {
+                                                                if (k === todayK) return isEN ? 'Today' : 'Hoje';
+                                                                if (k === yesterdayK) return isEN ? 'Yesterday' : 'Ontem';
+                                                                const d = safeDate(k + 'T12:00:00');
+                                                                return d ? d.toLocaleDateString(i18n.language, { weekday: 'long' }) : k;
+                                                            };
+                                                            let lastDay = null;
+                                                            return visible
+                                                                .flatMap(it => {
+                                                                    const k = dayOf(it);
+                                                                    if (k === lastDay) return [it];
+                                                                    lastDay = k;
+                                                                    return [{ type: '__day', key: k }, it];
+                                                                })
                                                                 .map(item => {
+                                                                if (item.type === '__day') {
+                                                                    const d = safeDate(item.key + 'T12:00:00');
+                                                                    const n = perDay[item.key] || 0;
+                                                                    return (
+                                                                        <div key={`day-${item.key}`} className="flex items-baseline justify-between pt-4 first:pt-0 pb-1 border-b border-gray-700">
+                                                                            <span className="text-sm font-bold text-white capitalize">{dayTitle(item.key)}</span>
+                                                                            <span className="text-xs text-gray-400">
+                                                                                <span className="font-mono-theme">{d ? d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) : ''}</span>
+                                                                                {' · '}{n} {isEN ? (n === 1 ? 'record' : 'records') : (n === 1 ? 'registo' : 'registos')}
+                                                                            </span>
+                                                                        </div>
+                                                                    );
+                                                                }
                                                                 if (item.type === 'consumption') {
                                                                     const c = item.data;
                                                                     return (
-                                                                        <div key={`c-${c.id}`} className="bg-gray-700 border-gray-600 p-3 rounded-lg border">
+                                                                        <div key={`c-${c.id}`} className="px-1 py-2">
                                                                             <div className="flex justify-between items-center">
                                                                                 <div>
                                                                                     <div className="font-medium text-white">
-                                                                                        💊 {formatDateTime(c.timestamp)}
+                                                                                        💊 <span className="font-mono-theme">{safeDate(c.timestamp)?.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' }) || formatDateTime(c.timestamp)}</span>
                                                                                     </div>
                                                                                     {c.substances?.length > 0 && <div className="text-sm mt-1 text-gray-200">{formatSubstances(c.substances)}</div>}
 {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
                                                                                 </div>
                                                                                 <div className="flex gap-2 ml-2">
-                                                                                    <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>
-                                                                                    <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                    <button onClick={() => openEditConsumption(c)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-4 h-4" /></button>
+                                                                                    <button onClick={() => deleteItem('consumptions', c.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" /></button>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -737,12 +755,12 @@ export function HistoryView({
                                                                                         💊 {(() => {
                                                                                             const d = safeDate(log.date || log.timestamp);
                                                                                             if (!d) return t('history.invalidDate');
-                                                                                            const dateStr = d.toLocaleDateString(i18n.language);
+                                                                                            // O dia já está no título do grupo: aqui só a hora.
                                                                                             if (log.timestamp) {
                                                                                                 const ts = safeDate(log.timestamp);
-                                                                                                if (ts) return `${dateStr} - ${ts.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}`;
+                                                                                                if (ts) return ts.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'});
                                                                                             }
-                                                                                            return dateStr;
+                                                                                            return isEN ? 'Day total' : 'Total do dia';
                                                                                         })()}
                                                                                     </div>
                                                                                     <div className="flex items-center gap-3">
@@ -764,8 +782,8 @@ export function HistoryView({
                                                                                     )}
                                                                                 </div>
                                                                                 <div className="flex gap-2 ml-2">
-                                                                                    {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>}
-                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                    {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-4 h-4" /></button>}
+                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" /></button>
                                                                                 </div>
                                                                             </div>
                                                                         </div>
@@ -778,12 +796,12 @@ export function HistoryView({
                                                                                 <div className="text-sm font-medium text-white">
                                                                                     🌙 {(() => {
                                                                                         const d = safeDate(cycle.timestamp);
-                                                                                        return d ? `${d.toLocaleDateString(i18n.language)} ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : t('history.invalidDate');
+                                                                                        return d ? d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'}) : t('history.invalidDate'); // dia no título do grupo
                                                                                     })()}
                                                                                 </div>
                                                                                 <div className="flex gap-2">
-                                                                                    <button onClick={() => openEditCycle(cycle)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>
-                                                                                    <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                    <button onClick={() => openEditCycle(cycle)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-3 h-3" /></button>
+                                                                                    <button onClick={() => deleteItem('cycles', cycle.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                                 </div>
                                                                             </div>
                                                                             {cycle.bedtime && (
@@ -821,14 +839,13 @@ export function HistoryView({
                                                                                     💚 {(() => {
                                                                                         const d = safeDate(w.timestamp || w.date);
                                                                                         if (!d) return t('history.invalidDate');
-                                                                                        const dateStr = d.toLocaleDateString(i18n.language);
-                                                                                        const timeStr = w.timestamp ? ` - ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
-                                                                                        return dateStr + timeStr;
+                                                                                        // O dia já está no título do grupo: aqui só a hora.
+                                                                                        return w.timestamp ? d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'}) : '';
                                                                                     })()}
                                                                                 </div>
                                                                                 <div className="flex gap-2">
-                                                                                    {openEditWellbeingLog && <button onClick={() => openEditWellbeingLog(w)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
-                                                                                    <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                    {openEditWellbeingLog && <button onClick={() => openEditWellbeingLog(w)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                                 </div>
                                                                             </div>
                                                                             {(w.mood || w.energy) && (
@@ -895,14 +912,13 @@ export function HistoryView({
                                                                                     📝 {(() => {
                                                                                         const d = safeDate(r.timestamp || r.date);
                                                                                         if (!d) return t('history.invalidDate');
-                                                                                        const dateStr = d.toLocaleDateString(i18n.language);
-                                                                                        const timeStr = r.timestamp ? ` ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
-                                                                                        return dateStr + timeStr;
+                                                                                        // O dia já está no título do grupo: aqui só a hora.
+                                                                                        return r.timestamp ? d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'}) : '';
                                                                                     })()}
                                                                                 </div>
                                                                                 <div className="flex gap-2">
-                                                                                    {openEditReflection && <button onClick={() => openEditReflection(r)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
-                                                                                    <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                    {openEditReflection && <button onClick={() => openEditReflection(r)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('reflections', r.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="text-sm font-medium mb-1 text-white">{r.question}</div>
@@ -954,14 +970,13 @@ export function HistoryView({
                                                                                     📝 {(() => {
                                                                                         const d = safeDate(thought.timestamp || thought.date);
                                                                                         if (!d) return t('history.invalidDate');
-                                                                                        const dateStr = d.toLocaleDateString(i18n.language);
-                                                                                        const timeStr = thought.timestamp ? ` ${d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'})}` : '';
-                                                                                        return dateStr + timeStr;
+                                                                                        // O dia já está no título do grupo: aqui só a hora.
+                                                                                        return thought.timestamp ? d.toLocaleTimeString(i18n.language, {hour: '2-digit', minute: '2-digit'}) : '';
                                                                                     })()}
                                                                                 </div>
                                                                                 <div className="flex gap-2">
-                                                                                    {openEditThought && <button onClick={() => openEditThought(thought)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
-                                                                                    <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                    {openEditThought && <button onClick={() => openEditThought(thought)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('thoughts', thought.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="text-sm text-gray-300">{thought.content}</div>
@@ -1364,8 +1379,8 @@ export function HistoryView({
                                                                                     })()}
                                                                                 </div>
                                                                                 <div className="flex gap-2">
-                                                                                    {openEditReflection && <button onClick={() => openEditReflection(r)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
-                                                                                    <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                    {openEditReflection && <button onClick={() => openEditReflection(r)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('reflections', r.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="text-sm font-medium mb-1 text-white">{r.question}</div>
@@ -1427,8 +1442,8 @@ export function HistoryView({
                                                                                     })()}
                                                                                 </div>
                                                                                 <div className="flex gap-2">
-                                                                                    {openEditThought && <button onClick={() => openEditThought(thought)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
-                                                                                    <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                                    {openEditThought && <button onClick={() => openEditThought(thought)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                                    <button onClick={() => deleteItem('thoughts', thought.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                                 </div>
                                                                             </div>
                                                                             <div className="text-sm text-gray-300">{thought.content}</div>
@@ -1502,7 +1517,7 @@ export function HistoryView({
                                                                                 return dateStr + timeStr;
                                                                             })()}
                                                                         </div>
-                                                                        <button onClick={() => deleteItem('reflections', r.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                        <button onClick={() => deleteItem('reflections', r.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
                                                                     <div className="text-sm font-medium mb-1 text-white">{r.question}</div>
                                                                     <div className="text-sm text-gray-300">{r.answer}</div>
@@ -1583,7 +1598,7 @@ export function HistoryView({
                                                                                 return dateStr + timeStr;
                                                                             })()}
                                                                         </div>
-                                                                        <button onClick={() => deleteItem('thoughts', thought.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                        <button onClick={() => deleteItem('thoughts', thought.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                     </div>
                                                                     <div className="text-sm text-gray-300">{thought.content}</div>
 
@@ -1660,8 +1675,8 @@ export function HistoryView({
                                                                             })()}
                                                                         </div>
                                                                         <div className="flex gap-2">
-                                                                            {openEditWellbeingLog && <button onClick={() => openEditWellbeingLog(w)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>}
-                                                                            <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                            {openEditWellbeingLog && <button onClick={() => openEditWellbeingLog(w)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-3 h-3" /></button>}
+                                                                            <button onClick={() => deleteItem('wellbeingLogs', w.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                         </div>
                                                                     </div>
                                                                     {(w.mood || w.energy) && (
@@ -1745,8 +1760,8 @@ export function HistoryView({
 {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
                                                                                     </div>
                                                                                     <div className="flex gap-2 ml-2">
-                                                                                        <button onClick={() => openEditConsumption(c)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>
-                                                                                        <button onClick={() => deleteItem('consumptions', c.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                        <button onClick={() => openEditConsumption(c)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-4 h-4" /></button>
+                                                                                        <button onClick={() => deleteItem('consumptions', c.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" /></button>
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
@@ -1785,8 +1800,8 @@ export function HistoryView({
                                                                                         )}
                                                                                     </div>
                                                                                     <div className="flex gap-2 ml-2">
-                                                                                    {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-4 h-4" /></button>}
-                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                                                    {openEditDailyLog && <button onClick={() => openEditDailyLog(log)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-4 h-4" /></button>}
+                                                                                    <button onClick={() => deleteItem('dailyLogs', log.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-4 h-4" /></button>
                                                                                 </div>
                                                                                 </div>
                                                                             </div>
@@ -1820,8 +1835,8 @@ export function HistoryView({
                                                                             })()}
                                                                         </div>
                                                                         <div className="flex gap-2">
-                                                                            <button onClick={() => openEditCycle(cycle)} className="text-blue-500 hover:text-blue-600"><Icons.Edit className="w-3 h-3" /></button>
-                                                                            <button onClick={() => deleteItem('cycles', cycle.id)} className="text-red-600 hover:text-red-700"><Icons.Trash2 className="w-3 h-3" /></button>
+                                                                            <button onClick={() => openEditCycle(cycle)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-3 h-3" /></button>
+                                                                            <button onClick={() => deleteItem('cycles', cycle.id)} className="text-gray-500 hover:text-red-400"><Icons.Trash2 className="w-3 h-3" /></button>
                                                                         </div>
                                                                     </div>
                                                                     {cycle.bedtime && (

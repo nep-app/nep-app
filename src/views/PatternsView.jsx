@@ -9,6 +9,7 @@ import { themeClasses } from '../utils/classNames';
 import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog, meetsGoal } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
+import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievement } = analyticsService;
@@ -93,42 +94,24 @@ export function PatternsView({
     }, [consumptions, wellbeingLogs, cycles, dailyLogs, patternsPeriod, patternsPeriodOffset, metrics?.unloggedDates, metrics?.dailySummary]);
 
     return (
-                                <div className="space-y-6">
+                                <div className="space-y-4">
                                     <h2 className="text-2xl font-bold text-white">{t('patterns.title')}</h2>
 
-                                    {/* Temporal Filters */}
-                                    <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border overflow-hidden">
-                                        <div className="flex flex-col gap-2 mb-1">
-                                            {/* Os 4 sempre numa linha */}
-                                            <div className="grid grid-cols-4 gap-1.5">
-                                                {['hoje', 'semana', 'mes', 'tudo'].map(period => (
-                                                    <button key={period} onClick={() => { setPatternsPeriod(period); setPatternsPeriodOffset(0); }} className={'px-1 py-2 rounded-lg font-medium transition-colors text-xs whitespace-nowrap ' + (patternsPeriod === period ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
-                                                        {t('patterns.periods.' + period)}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            {patternsPeriod !== 'tudo' && (
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <button onClick={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)} className="text-purple-600 p-2 rounded-lg transition-colors hover:bg-gray-700">
-                                                        <Icons.ChevronLeft className="w-5 h-5" />
-                                                    </button>
-                                                    <span className="text-sm font-medium text-center text-gray-300">{getPeriodLabel(patternsPeriod, patternsPeriodOffset)}</span>
-                                                    <button onClick={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))} disabled={patternsPeriodOffset === 0} className={'p-2 rounded-lg transition-colors ' + (patternsPeriodOffset === 0 ? 'text-gray-600 cursor-not-allowed' : 'text-purple-600 hover:bg-gray-700')}>
-                                                        <Icons.ChevronRight className="w-5 h-5" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-
-                                    <div className="flex gap-2 overflow-x-auto pb-2">
-                                        {['dashboard', 'progress', 'temporal', 'estrutural'].map(view => (
-                                            <button key={view} onClick={() => setPatternView(view)} className={'px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ' + (patternView === view ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600')}>
-                                                {t('patterns.views.' + view)}
-                                            </button>
-                                        ))}
-                                    </div>
+                                    {/* Período e vistas: uma linha de texto + pílulas (ver PeriodBar). */}
+                            <PeriodBar
+                                periods={['hoje', 'semana', 'mes', 'tudo'].map(id => ({ id, label: t('patterns.periods.' + id) }))}
+                                value={patternsPeriod}
+                                onChange={(id) => { setPatternsPeriod(id); setPatternsPeriodOffset(0); }}
+                                rangeLabel={patternsPeriod !== 'tudo' ? getPeriodLabel(patternsPeriod, patternsPeriodOffset) : null}
+                                onOlder={() => setPatternsPeriodOffset(patternsPeriodOffset + 1)}
+                                onNewer={() => setPatternsPeriodOffset(Math.max(0, patternsPeriodOffset - 1))}
+                                canNewer={patternsPeriodOffset > 0}
+                            />
+                            <ViewTabs
+                                tabs={['dashboard', 'progress', 'temporal', 'estrutural'].map(id => ({ id, label: t('patterns.views.' + id) }))}
+                                value={patternView}
+                                onChange={setPatternView}
+                            />
 
                                     {(() => {
                                         // Usar dados pré-computados do useMemo (evita recomputação em cada render)
