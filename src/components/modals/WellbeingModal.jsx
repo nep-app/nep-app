@@ -34,6 +34,38 @@ export const WellbeingModal = ({
   });
   useModalKeyboard(isOpen, onClose, onSubmit);
 
+  // ===== REGISTO RÁPIDO (dois toques) =====
+  // Toque 1: a grelha (energia × agradável/desagradável) dá o humor E a
+  // energia de uma vez, nos mesmos números de 1 a 10 de sempre (as Análises
+  // continuam iguais). Toque 2: Guardar. O resto do formulário fica em
+  // "Mais detalhes". Nenhum canto é verde nem vermelho: nenhum estado é o
+  // certo. Sem tocar na grelha, humor/energia ficam em branco (não se
+  // inventa um 5).
+  const [details, setDetails] = useState(false);
+  useEffect(() => { if (isOpen) setDetails(!!editingId); }, [isOpen, editingId]);
+  const moodN = wellbeingForm.mood === '' || wellbeingForm.mood == null ? null : parseInt(wellbeingForm.mood);
+  const energyN = wellbeingForm.energy === '' || wellbeingForm.energy == null ? null : parseInt(wellbeingForm.energy);
+  const hasPoint = Number.isFinite(moodN) && Number.isFinite(energyN);
+  const setFromPad = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    setWellbeingForm(f => ({ ...f, mood: String(1 + Math.round(x * 9)), energy: String(1 + Math.round((1 - y) * 9)) }));
+  };
+  const [dragging, setDragging] = useState(false);
+  // Palavras da lista da app, arrumadas pelo canto da grelha.
+  const QUADRANT_WORDS = {
+    tl: ['😰 Ansioso/a', '😤 Irritado/a', '😫 Frustrado/a', '😓 Stressado/a', '😩 Overwhelmed', '😕 Confuso/a', '😔 Inseguro/a'],
+    tr: ['🎉 Entusiasmado/a', '💪 Motivado/a', '😊 Feliz', '😊 Divertido/a', '💯 Confiante', '🌈 Otimista', '🌟 Produtiva/o'],
+    bl: ['😢 Triste', '😴 Cansado/a', '🥺 Solitário/a', '😞 Apático/a', '🔌 Desconectado/a', '😖 Culpado/a', '😣 Arrependido/a'],
+    br: ['😌 Calmo/a', '🧘 Em paz', '🙏 Grato/a', '🥰 Amado/a', '🤝 Apoiado/a', '✨ Resiliente', '🌱 Orgulhoso/a'],
+  };
+  const ALWAYS_WORDS = ['🔥 Com craving', '😐 Ambivalente', '⚡ Okay', '🤗 Vulnerável'];
+  const quadrant = hasPoint ? ((energyN >= 6 ? 't' : 'b') + (moodN >= 6 ? 'r' : 'l')) : null;
+  const quickWords = allEmotions
+    ? EMOTIONS_LIST
+    : [...new Set([...(quadrant ? QUADRANT_WORDS[quadrant] : []), ...ALWAYS_WORDS, ...chosenEmotions])];
+
   const selectedDate = wellbeingForm.datetime
     ? wellbeingForm.datetime.split('T')[0]
     : getTodayKey();
@@ -152,6 +184,75 @@ export const WellbeingModal = ({
           </button>
         </div>
         <div className="space-y-4">
+      <div className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <span className="text-sm font-medium text-gray-300">{i18n.language === 'en' ? 'Tap where you are' : 'Toca onde estás'}</span>
+          <span className="text-xs text-gray-400 font-mono-theme">
+            {hasPoint
+              ? (i18n.language === 'en' ? `Mood ${moodN}/10 · Energy ${energyN}/10` : `Humor ${moodN}/10 · Energia ${energyN}/10`)
+              : (i18n.language === 'en' ? 'mood × energy' : 'humor × energia')}
+          </span>
+        </div>
+        <div className="space-y-1">
+          <div
+            role="application"
+            aria-label={i18n.language === 'en' ? 'Mood and energy grid' : 'Grelha de humor e energia'}
+            className="relative w-full max-w-[280px] mx-auto aspect-square rounded-2xl border border-gray-700 cursor-crosshair select-none"
+            style={{
+              touchAction: 'none',
+              background: 'radial-gradient(circle at 0% 0%, rgb(255 72 176 / 0.35), transparent 62%), radial-gradient(circle at 100% 0%, rgb(169 139 240 / 0.38), transparent 62%), radial-gradient(circle at 0% 100%, rgb(110 193 255 / 0.30), transparent 62%), radial-gradient(circle at 100% 100%, rgb(0 169 157 / 0.35), transparent 62%), rgb(255 255 255 / 0.03)'
+            }}
+            onPointerDown={(e) => { setDragging(true); try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* sem captura */ } setFromPad(e); }}
+            onPointerMove={(e) => { if (dragging) setFromPad(e); }}
+            onPointerUp={() => setDragging(false)}
+            onPointerCancel={() => setDragging(false)}
+          >
+            <span className="absolute left-1/2 top-2 bottom-2 w-px bg-white/10" />
+            <span className="absolute top-1/2 left-2 right-2 h-px bg-white/10" />
+            <span className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] text-gray-400 whitespace-nowrap">↑ {i18n.language === 'en' ? 'more energy' : 'mais energia'}</span>
+            <span className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[10px] text-gray-400 whitespace-nowrap">↓ {i18n.language === 'en' ? 'less energy' : 'menos energia'}</span>
+            <span className="absolute top-2 left-2 text-[11px] text-gray-300">{i18n.language === 'en' ? 'tense' : 'tenso/a'}</span>
+            <span className="absolute top-2 right-2 text-[11px] text-gray-300">{i18n.language === 'en' ? 'up' : 'em alta'}</span>
+            <span className="absolute bottom-2 left-2 text-[11px] text-gray-300">{i18n.language === 'en' ? 'down' : 'em baixo'}</span>
+            <span className="absolute bottom-2 right-2 text-[11px] text-gray-300">{i18n.language === 'en' ? 'calm' : 'calmo/a'}</span>
+            {hasPoint && (
+              <span
+                className="absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-white border-[3px] border-gray-900 shadow pointer-events-none"
+                style={{ left: `${((moodN - 1) / 9) * 100}%`, top: `${(1 - (energyN - 1) / 9) * 100}%` }}
+              />
+            )}
+          </div>
+          <div className="flex justify-between text-[10px] text-gray-500 max-w-[280px] mx-auto">
+            <span>{i18n.language === 'en' ? 'unpleasant' : 'desagradável'}</span>
+            <span>{i18n.language === 'en' ? 'pleasant' : 'agradável'}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {quickWords.map(e => {
+            const on = chosenEmotions.includes(e);
+            return (
+              <button
+                key={e}
+                type="button"
+                onClick={() => toggleEmotion(e)}
+                aria-pressed={on}
+                className={'px-2.5 py-1 rounded-full text-xs border transition-colors ' + (on ? 'bg-blue-600 border-blue-300 text-white font-semibold' : 'bg-gray-700 border-gray-600 text-gray-200 hover:border-gray-400')}
+              >
+                {on ? '✓ ' : ''}{showEmotion(e)}
+              </button>
+            );
+          })}
+          <button type="button" onClick={() => setAllEmotions(v => !v)} className="px-2.5 py-1 rounded-full text-xs border border-dashed border-gray-500 text-gray-300">
+            {allEmotions ? t('modals.wellbeing.emotionsLess') : t('modals.wellbeing.emotionsMore')}
+          </button>
+        </div>
+        <button type="button" onClick={() => setDetails(v => !v)} aria-expanded={details} className="text-sm text-gray-300 underline underline-offset-4">
+          {details
+            ? (i18n.language === 'en' ? 'Fewer details ▴' : 'Menos detalhes ▴')
+            : (i18n.language === 'en' ? 'More details (date, water, nap, symptoms, notes…) ▾' : 'Mais detalhes (data, água, sesta, sintomas, notas…) ▾')}
+        </button>
+      </div>
+{details && (<>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.wellbeing.dateLabel')}</label>
             <input
@@ -385,28 +486,7 @@ export const WellbeingModal = ({
               placeholder={t('modals.wellbeing.notesPlaceholder')}
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.wellbeing.emotionsLabel')}</label>
-            <div className="flex flex-wrap gap-1.5">
-              {[...new Set([...(allEmotions ? EMOTIONS_LIST : topEmotions), ...chosenEmotions])].map(e => {
-                const on = chosenEmotions.includes(e);
-                return (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => toggleEmotion(e)}
-                    aria-pressed={on}
-                    className={'px-2.5 py-1 rounded-full text-xs border transition-colors ' + (on ? 'bg-blue-600 border-blue-300 text-white font-semibold ring-2 ring-blue-300/60' : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')}
-                  >
-                    {on ? '✓ ' : ''}{showEmotion(e)}
-                  </button>
-                );
-              })}
-              <button type="button" onClick={() => setAllEmotions(v => !v)} className="px-2.5 py-1 rounded-full text-xs border border-dashed border-gray-500 text-gray-300">
-                {allEmotions ? t('modals.wellbeing.emotionsLess') : t('modals.wellbeing.emotionsMore')}
-              </button>
-            </div>
-          </div>
+</>)}
           <button
             onClick={onSubmit}
             className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 text-white py-3 rounded-lg hover:from-blue-600 hover:to-cyan-600 transition-all font-medium"
