@@ -964,12 +964,12 @@ export function PatternsView({
 
                                                             {/* Main stats */}
                                                             <div className="grid grid-cols-2 divide-x divide-gray-700 border-y border-gray-700 py-3 mb-4">
-                                                                <div className="pr-4">
-                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-gray-400'}>
+                                                                <div className="px-2 text-center">
+                                                                    <div className="text-xs font-semibold mb-1 uppercase tracking-wide text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">
                                                                         {t('patterns.goals.totalCompliances')}
                                                                     </div>
-                                                                    <div className="flex items-baseline gap-1">
-                                                                        <span className={'text-3xl font-black ' + 'text-white'}>
+                                                                    <div className="flex items-baseline justify-center gap-1">
+                                                                        <span className="text-3xl font-black font-mono-theme text-white">
                                                                             {goalsAnalysis.totalAchievements}
                                                                         </span>
                                                                         <span className={'text-sm ' + ('text-gray-400')}>
@@ -981,12 +981,12 @@ export function PatternsView({
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="pl-4">
-                                                                    <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-gray-400'}>
+                                                                <div className="px-2 text-center">
+                                                                    <div className="text-xs font-semibold mb-1 uppercase tracking-wide text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">
                                                                         {t('patterns.goals.avgPerDay')}
                                                                     </div>
-                                                                    <div className="flex items-baseline gap-1">
-                                                                        <span className={'text-3xl font-black ' + 'text-white'}>
+                                                                    <div className="flex items-baseline justify-center gap-1">
+                                                                        <span className="text-3xl font-black font-mono-theme text-white">
                                                                             {goalsAnalysis.avgAchievementsPerDay}
                                                                         </span>
                                                                         <span className={'text-sm ' + ('text-gray-400')}>
