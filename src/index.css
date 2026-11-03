@@ -29,3 +29,11 @@ html[data-demo-font="vv"] .font-display {
   font-family: 'Unbounded', system-ui, sans-serif;
   letter-spacing: -0.01em;
 }
+
+/* Fundo "roxo apagado" para cartões e números SEM juízo (sem meta): o mesmo
+   roxo do mapa de calor e das barras, muito transparente. Dá vida sem dizer
+   se é bom ou mau. Não depende do tema (é sempre este roxo). */
+.card-tint {
+  background-color: rgb(124 58 237 / 0.12);
+  border-color: rgb(124 58 237 / 0.35);
+}

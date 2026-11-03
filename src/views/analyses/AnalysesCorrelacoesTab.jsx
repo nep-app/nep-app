@@ -2323,7 +2323,7 @@ export const AnalysesCorrelacoesTab = React.memo(function AnalysesCorrelacoesTab
                     </div>
                     {expandedSections.wellbeingDosage && <div className="space-y-3 mt-4">
                         {/* Explicação introdutória */}
-                        <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-3 border'}>
+                        <div className={('card-tint') + ' rounded-lg p-3 border'}>
                             <p className={'text-xs font-semibold mb-2 ' + ('text-white')}>
                                 💡 {i18n.language === 'en' ? 'About dosage vs frequency:' : 'Sobre dosagem vs frequência:'}
                             </p>

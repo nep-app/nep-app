@@ -200,7 +200,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     return (
         <div className="space-y-3">
             {/* Header */}
-            <div className={'bg-gray-800/40 border-gray-700 rounded-xl p-5 border'}>
+            <div className={'card-tint rounded-xl p-5 border'}>
                 <div className="flex items-center gap-3 mb-1">
                     <span className="text-3xl">💬</span>
                     <h3 className={'text-xl font-bold text-white'}>{t('coach.title')}</h3>

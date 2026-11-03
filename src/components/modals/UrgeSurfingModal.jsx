@@ -191,7 +191,7 @@ function NeedCheck({ onBack }) {
         ))}
       </div>
       {sel && (
-        <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-4 text-sm text-gray-200 leading-relaxed">
+        <div className="card-tint border rounded-xl p-4 text-sm text-gray-200 leading-relaxed">
           💡 {pt ? sel.ptTip : sel.enTip}
         </div>
       )}

@@ -339,7 +339,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {t('analyses.emotionalOverview')}
                         </h3>
                         <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 border text-center'}>
+                            <div className={('card-tint') + ' rounded-lg p-4 border text-center'}>
                                 <div className={'text-3xl font-black mb-1 ' + ('text-white')}>
                                     {emotionStats.positivePercent.toFixed(0)}%
                                 </div>
@@ -350,7 +350,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {emotionStats.positiveEmotions.length}
                                 </div>
                             </div>
-                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 border text-center'}>
+                            <div className={('card-tint') + ' rounded-lg p-4 border text-center'}>
                                 <div className={'text-3xl font-black mb-1 ' + ('text-white')}>
                                     {emotionStats.negativePercent.toFixed(0)}%
                                 </div>
@@ -544,10 +544,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                 {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskEmotions.map(e => (
-                                                <div key={e.emotion} className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={e.emotion} className={('card-tint') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <span className={'font-medium text-sm ' + ('text-gray-200')}>{translateEmotion(e.emotion)}</span>
-                                                        <span className={('bg-gray-800/40 text-gray-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                                        <span className={('card-tint text-gray-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-gray-400')}>
                                                         {t('analyses.lowRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
@@ -770,10 +770,10 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                 {t('analyses.lowRisk')}
                                             </div>
                                             {lowRiskTriggers.map(tr => (
-                                                <div key={translateTrigger(tr.trigger)} className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-3 border mb-2'}>
+                                                <div key={translateTrigger(tr.trigger)} className={('card-tint') + ' rounded-lg p-3 border mb-2'}>
                                                     <div className="flex items-center justify-between mb-1">
                                                         <span className={'font-medium text-sm ' + ('text-white')}>{translateTrigger(tr.trigger)}</span>
-                                                        <span className={('bg-gray-800/40 text-gray-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
+                                                        <span className={('card-tint text-gray-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
                                                     </div>
                                                     <div className={'text-xs ' + ('text-gray-400')}>
                                                         {t('analyses.lowRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
@@ -788,7 +788,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     </div>
 
                     {/* Consciencialização */}
-                    <div className={('bg-gray-800/40 border-gray-700') + ' rounded-xl p-6 border'}>
+                    <div className={('card-tint') + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-3 ' + ('text-white')}>
                             {t('analyses.awarenessSection')}
                         </h3>

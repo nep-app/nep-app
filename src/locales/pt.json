@@ -1338,7 +1338,8 @@
     "Celebração": "Celebração"
   },
   "gaps": {
-    "title": "Preencher Gaps (Últimos 7 dias)",
+    "title": "Preencher gaps",
+    "titlePeriod": "7 dias",
     "allFilled": "✓ Tudo preenchido",
     "gapCount": "{{count}} gap",
     "gapsCount": "{{count}} gaps",

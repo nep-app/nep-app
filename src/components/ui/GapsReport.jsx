@@ -205,7 +205,7 @@ export const GapsReport = React.memo(({ onFillGap }) => {
   });
 
   return (
-    <div className="bg-gray-800/40 border-gray-700 rounded-xl p-4 border">
+    <div className="card-tint rounded-xl p-4 border">
       {/* Cabeçalho clicável: o contador fica sempre à vista, o detalhe abre só se quiser. */}
       <button
         type="button"
@@ -213,15 +213,18 @@ export const GapsReport = React.memo(({ onFillGap }) => {
         aria-expanded={isOpen}
         className={'w-full flex items-center justify-between gap-2 text-left' + (isOpen ? ' mb-3' : '')}
       >
-        <h3 className="text-lg font-bold text-white flex items-center gap-2">
-          <Icons.AlertCircle className="w-5 h-5 text-yellow-400" />
-          {t('gaps.title')}
+        {/* Numa linha só: título curto + período pequeno. É para se ver: o contador
+            vai numa pílula rosa ("carrega aqui"). */}
+        <h3 className="text-base font-bold text-white flex items-center gap-2 min-w-0 whitespace-nowrap">
+          <Icons.AlertCircle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
+          <span className="truncate">{t('gaps.title')}</span>
+          <span className="text-xs font-normal text-gray-400">· {t('gaps.titlePeriod')}</span>
         </h3>
         <span className="flex items-center gap-2 flex-shrink-0">
           {totalGaps === 0 ? (
             <span className="text-sm font-medium text-green-400">{t('gaps.allFilled')}</span>
           ) : (
-            <span className="text-sm font-medium text-yellow-400">{totalGaps === 1 ? t('gaps.gapCount', { count: totalGaps }) : t('gaps.gapsCount', { count: totalGaps })}</span>
+            <span className="text-xs font-bold text-white bg-purple-600 rounded-full px-2.5 py-1 whitespace-nowrap">{totalGaps === 1 ? t('gaps.gapCount', { count: totalGaps }) : t('gaps.gapsCount', { count: totalGaps })}</span>
           )}
           {isOpen
             ? <Icons.ChevronUp className="w-4 h-4 text-gray-300" />

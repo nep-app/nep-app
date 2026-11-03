@@ -1338,7 +1338,8 @@
     "Celebração": "Celebration"
   },
   "gaps": {
-    "title": "Fill Gaps (Last 7 days)",
+    "title": "Fill gaps",
+    "titlePeriod": "7 days",
     "allFilled": "✓ All filled",
     "gapCount": "{{count}} gap",
     "gapsCount": "{{count}} gaps",

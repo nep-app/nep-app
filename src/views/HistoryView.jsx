@@ -791,7 +791,7 @@ export function HistoryView({
                                                                 } else if (item.type === 'cycle') {
                                                                     const cycle = item.data;
                                                                     return (
-                                                                        <div key={`cycle-${cycle.id}`} className="bg-gray-800/40 border-gray-700 p-3 rounded-lg border">
+                                                                        <div key={`cycle-${cycle.id}`} className="card-tint p-3 rounded-lg border">
                                                                             <div className="flex justify-between items-center mb-2">
                                                                                 <div className="text-sm font-medium text-white">
                                                                                     🌙 {(() => {
@@ -869,7 +869,7 @@ export function HistoryView({
                                                                                 {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses >= 50 ? `${w.waterGlasses}ml` : `${w.waterGlasses * 250}ml`}</span>}
                                                                                 {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
                                                                                 {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ {t('history.foodTag')}</span>}
-                                                                                {w.social && <span className="bg-gray-800/40 text-white px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
+                                                                                {w.social && <span className="card-tint text-white px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
                                                                             </div>
                                                                             {w.emotions && w.emotions.length > 0 && (
                                                                                 <div className="mb-2">
@@ -906,7 +906,7 @@ export function HistoryView({
                                                                     const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
                                                                     const isExpanded = expandedAnalysis === `reflection-${r.id}`;
                                                                     return (
-                                                                        <div key={`r-${r.id}`} className="border-gray-700 bg-gray-800/40 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                        <div key={`r-${r.id}`} className="border-gray-700 card-tint border-l-4 pl-4 py-2 rounded-r-lg">
                                                                             <div className="flex justify-between items-start mb-1">
                                                                                 <div className="text-xs text-gray-400">
                                                                                     📝 {(() => {
@@ -1363,7 +1363,7 @@ export function HistoryView({
                                                                     const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
                                                                     const isExpanded = expandedAnalysis === `reflection-${r.id}`;
                                                                     return (
-                                                                        <div key={`r-${r.id}`} className="border-gray-700 bg-gray-800/40 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                        <div key={`r-${r.id}`} className="border-gray-700 card-tint border-l-4 pl-4 py-2 rounded-r-lg">
                                                                             {/* Etiqueta: distinguir pelo NOME, não só pela cor. */}
                                                                             <div className="text-[11px] font-semibold uppercase tracking-wide text-white mb-1">
                                                                                 ✍️ {isEN ? 'Reflection' : 'Reflexão'}
@@ -1506,7 +1506,7 @@ export function HistoryView({
                                                                 const isExpanded = expandedAnalysis === `reflection-${r.id}`;
 
                                                                 return (
-                                                                <div key={r.id} className="border-gray-700 bg-gray-800/40 border-l-4 pl-4 py-2 rounded-r-lg">
+                                                                <div key={r.id} className="border-gray-700 card-tint border-l-4 pl-4 py-2 rounded-r-lg">
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className="text-xs text-gray-400">
                                                                             {(() => {
@@ -1699,9 +1699,9 @@ export function HistoryView({
                                                                         {w.isAtypical && <span className="bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded-full">📌 {t('wellbeing.atypicalTag')}{w.atypicalReason ? ` · ${w.atypicalReason}` : ''}</span>}
                                                                         {(w.waterGlasses > 0) && <span className="bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">💧 {w.waterGlasses >= 50 ? `${w.waterGlasses}ml` : `${w.waterGlasses * 250}ml`}</span>}
                                                                         {w.exerciseType && <span className="bg-green-900/50 text-green-300 px-2 py-0.5 rounded-full">🏃 {w.exerciseType}{w.exerciseDuration ? ` · ${w.exerciseDuration}min` : ''}</span>}
-                                                                        {(w.napDuration > 0) && <span className="bg-gray-800/40 text-white px-2 py-0.5 rounded-full">{t('wellbeing.napLabel')} {w.napDuration}min</span>}
+                                                                        {(w.napDuration > 0) && <span className="card-tint text-white px-2 py-0.5 rounded-full">{t('wellbeing.napLabel')} {w.napDuration}min</span>}
                                                                         {w.food && <span className="bg-orange-900/50 text-orange-300 px-2 py-0.5 rounded-full">🍽️ {t('history.foodTag')}</span>}
-                                                                        {w.social && <span className="bg-gray-800/40 text-white px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
+                                                                        {w.social && <span className="card-tint text-white px-2 py-0.5 rounded-full">👥 {t('history.socialTag')}</span>}
                                                                     </div>
                                                                     {w.emotions && w.emotions.length > 0 && (
                                                                         <div className="mb-2">
@@ -1826,7 +1826,7 @@ export function HistoryView({
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2">{t('history.sectionCycles')} ({filteredCycles.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredCycles.slice(0, cyclesHistoryToShow).map(cycle => (
-                                                                <div key={cycle.id} className="bg-gray-800/40 border-gray-700 p-3 rounded-lg border">
+                                                                <div key={cycle.id} className="card-tint p-3 rounded-lg border">
                                                                     <div className="flex justify-between items-center mb-2">
                                                                         <div className="text-sm font-medium text-white">
                                                                             {(() => {

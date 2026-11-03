@@ -375,29 +375,19 @@ export function PatternsView({
                                             return (
                                                 <div className="space-y-4">
                                                     {atypicalBanner}
-                                                    {/* Mini-resumo contextual */}
-                                                    <div className={'bg-gray-800/40 border-gray-700' + ' rounded-lg p-4 border'}>
-                                                        <p className={'text-sm leading-relaxed ' + 'text-gray-200'}>
-                                                            {(() => {
-                                                                const unit = totalConsumptions === 1 ? (i18n.language === 'en' ? 'use' : 'consumo') : (i18n.language === 'en' ? 'uses' : 'consumos');
-                                                                const intervalPart = avgInterval > 0 ? t('patterns.dashboard.summaryInterval', { avg: avgInterval }) : '';
-                                                                return t('patterns.dashboard.summary', { count: totalConsumptions, unit, avg: avgPerDay, interval: intervalPart });
-                                                            })()}
-                                                        </p>
-                                                    </div>
 
                                                     {/* Métricas essenciais */}
                                                     <div className="grid grid-cols-3 gap-3">
-                                                        <div className={'bg-gray-800/40 border border-gray-700' + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>{t('patterns.dashboard.metricTotal')}</div>
+                                                        <div className={'card-tint border' + ' rounded-lg p-4 text-center border'}>
+                                                            <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricTotal')}</div>
                                                             <div className={'text-white' + ' text-2xl font-bold font-mono-theme'}>{totalConsumptions}x</div>
                                                         </div>
-                                                        <div className={'bg-gray-800/40 border border-gray-700' + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>{t('patterns.dashboard.metricAvgDay')}</div>
+                                                        <div className={'card-tint border' + ' rounded-lg p-4 text-center border'}>
+                                                            <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgDay')}</div>
                                                             <div className={goalTone('reduce_frequency', freqGoal, avgPerDay) + ' text-2xl font-bold font-mono-theme'}>{avgPerDay}</div>
                                                         </div>
-                                                        <div className={'bg-gray-800/40 border border-gray-700' + ' rounded-lg p-4 text-center border'}>
-                                                            <div className={'text-xs mb-1 ' + 'text-gray-300'}>{t('patterns.dashboard.metricAvgInterval')}</div>
+                                                        <div className={'card-tint border' + ' rounded-lg p-4 text-center border'}>
+                                                            <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgInterval')}</div>
                                                             <div className={goalTone('increase_interval', intervalGoal, avgInterval) + ' text-2xl font-bold font-mono-theme'}>{avgInterval}h</div>
                                                         </div>
                                                     </div>
@@ -413,7 +403,7 @@ export function PatternsView({
                                                                 ? 'bg-green-900/30 border-green-700/50'
                                                                 : freqGoal && trend.direction === 'increasing'
                                                                     ? 'bg-yellow-900/20 border-yellow-600/50'
-                                                                    : 'bg-gray-700/30 border-gray-600'
+                                                                    : 'card-tint'
                                                             ) + ' rounded-lg p-4 border'
                                                         }>
                                                             <div className="flex items-center justify-between mb-2">
@@ -709,19 +699,19 @@ export function PatternsView({
                                                         if (riskScore >= 70) {
                                                             riskLevel = t('patterns.riskLevel.high');
                                                             riskColor = 'text-white';
-                                                            riskBg = 'bg-gray-800/40';
+                                                            riskBg = 'card-tint';
                                                             riskBorder = 'border-gray-700';
                                                             riskEmoji = '📊';
                                                         } else if (riskScore >= 55) {
                                                             riskLevel = t('patterns.riskLevel.moderate');
                                                             riskColor = 'text-white';
-                                                            riskBg = 'bg-gray-800/40';
+                                                            riskBg = 'card-tint';
                                                             riskBorder = 'border-gray-700';
                                                             riskEmoji = '📊';
                                                         } else {
                                                             riskLevel = t('patterns.riskLevel.low');
                                                             riskColor = 'text-white';
-                                                            riskBg = 'bg-gray-800/40';
+                                                            riskBg = 'card-tint';
                                                             riskBorder = 'border-gray-700';
                                                             riskEmoji = '📊';
                                                         }
@@ -910,7 +900,7 @@ export function PatternsView({
 
                                                     {/* Insights Summary */}
                                                     {insights.length > 0 && (
-                                                        <div className={'bg-gray-800/40 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                        <div className={'card-tint' + ' rounded-xl p-6 border'}>
                                                             <h3 className={'font-semibold ' + ('text-white') + ' mb-4 flex items-center gap-2'}>
                                                                 <span className="text-xl">💡</span>
                                                                 {t('patterns.identified')}
@@ -936,7 +926,7 @@ export function PatternsView({
 
                                                             {/* Main stats */}
                                                             <div className="grid grid-cols-2 gap-3 mb-4">
-                                                                <div className={'bg-gray-800/40 border-gray-700' + ' rounded-lg p-4 border'}>
+                                                                <div className={'card-tint' + ' rounded-lg p-4 border'}>
                                                                     <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-gray-400'}>
                                                                         {t('patterns.goals.totalCompliances')}
                                                                     </div>
@@ -953,7 +943,7 @@ export function PatternsView({
                                                                     </div>
                                                                 </div>
 
-                                                                <div className={'bg-gray-800/40 border-gray-700' + ' rounded-lg p-4 border'}>
+                                                                <div className={'card-tint' + ' rounded-lg p-4 border'}>
                                                                     <div className={'text-xs font-semibold mb-1 uppercase tracking-wide ' + 'text-gray-400'}>
                                                                         {t('patterns.goals.avgPerDay')}
                                                                     </div>
@@ -1667,7 +1657,7 @@ export function PatternsView({
                                                 <div className="space-y-4">
                                                     {atypicalBanner}
                                                     {/* Period comparison header */}
-                                                    <div className={'bg-gray-800/40 border-gray-700' + ' rounded-xl p-6 border'}>
+                                                    <div className={'card-tint' + ' rounded-xl p-6 border'}>
                                                         <div className="flex items-center justify-between mb-4">
                                                             <h3 className={'text-xl font-bold ' + ('text-white')}>
                                                                 {t('patterns.progress.title')}
@@ -1960,7 +1950,7 @@ export function PatternsView({
                                                             </h3>
                                                             <div className="space-y-3">
                                                                 {progressData.negativeEmotions && (
-                                                                    <div className={'bg-gray-800/40 border-gray-700' + ' rounded-lg p-3 border'}>
+                                                                    <div className={'card-tint' + ' rounded-lg p-3 border'}>
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😔</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-gray-400'}>
@@ -2138,7 +2128,7 @@ export function PatternsView({
                                                     )}
 
                                                     {/* Summary insights */}
-                                                    <div className={('bg-gray-800/40 border-gray-700') + ' rounded-xl p-6 border'}>
+                                                    <div className={('card-tint') + ' rounded-xl p-6 border'}>
                                                         <h3 className={'text-lg font-semibold mb-3 ' + ('text-white')}>
                                                             {t('patterns.progress.summaryTitle')}
                                                         </h3>
@@ -2312,28 +2302,28 @@ export function PatternsView({
 
                                                     return (
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={('card-tint') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌅</div>
                                                                 <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.manha')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>6h-12h</div>
                                                                 <div className={'text-xl font-bold font-mono-theme ' + 'text-white'}>{manhaPercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.manha}x</div>
                                                             </div>
-                                                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={('card-tint') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">☀️</div>
                                                                 <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.tarde')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>12h-18h</div>
                                                                 <div className={'text-xl font-bold font-mono-theme ' + 'text-white'}>{tardePercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.tarde}x</div>
                                                             </div>
-                                                            <div className={'bg-gray-800/40 border-gray-700' + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={'card-tint' + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">🌙</div>
                                                                 <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.noite')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>18h-24h</div>
                                                                 <div className={'text-xl font-bold font-mono-theme ' + ('text-white')}>{noitePercent}%</div>
                                                                 <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.noite}x</div>
                                                             </div>
-                                                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 text-center border'}>
+                                                            <div className={('card-tint') + ' rounded-lg p-4 text-center border'}>
                                                                 <div className="text-2xl mb-2">⭐</div>
                                                                 <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.madrugada')}</div>
                                                                 <div className={'text-xs mb-2 ' + 'text-gray-500'}>0h-6h</div>
@@ -2546,7 +2536,7 @@ export function PatternsView({
                                                             <div className={('bg-gray-800 border-gray-700') + ' rounded-xl p-4 border'}>
                                                                 <div className="flex items-center justify-between mb-3">
                                                                     <h3 className={'font-semibold ' + ('text-white')}>{t('patterns.structural.weeklyDosage')}</h3>
-                                                                    <div className={'text-xs px-2 py-1 rounded-full ' + ('bg-gray-800/40 text-white')}>{sortedWeeks.length} {sortedWeeks.length === 1 ? t('patterns.structural.week') : t('patterns.structural.weeks')}</div>
+                                                                    <div className={'text-xs px-2 py-1 rounded-full ' + ('card-tint text-white')}>{sortedWeeks.length} {sortedWeeks.length === 1 ? t('patterns.structural.week') : t('patterns.structural.weeks')}</div>
                                                                 </div>
                                                                 <div className="grid grid-cols-2 gap-3 mb-4">
                                                                     <div className={'text-center p-3 rounded-lg ' + ('bg-gray-700/50')}>
@@ -2617,15 +2607,15 @@ export function PatternsView({
                                                             return (
                                                                 <>
                                                                     <div className="grid grid-cols-3 gap-3 mb-4">
-                                                                        <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`${'card-tint border'} rounded-lg p-3 text-center border`}>
                                                                             <div className={`text-2xl font-bold font-mono-theme ${'text-white'}`}>{intervals.length}</div>
                                                                             <div className={`text-xs ${'text-gray-300'}`}>Total</div>
                                                                         </div>
-                                                                        <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`${'card-tint border'} rounded-lg p-3 text-center border`}>
                                                                             <div className={`text-2xl font-bold font-mono-theme ${'text-white'}`}>{avgInterval.toFixed(1)}h</div>
                                                                             <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.average')}</div>
                                                                         </div>
-                                                                        <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3 text-center border`}>
+                                                                        <div className={`${'card-tint border'} rounded-lg p-3 text-center border`}>
                                                                             <div className={`text-2xl font-bold font-mono-theme ${'text-white'}`}>{maxInterval.toFixed(1)}h</div>
                                                                             <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.maximum')}</div>
                                                                         </div>
@@ -2642,7 +2632,7 @@ export function PatternsView({
                                                                                     ? (row.ok ? (en ? `Reach your goal (≥${ivThr}h)` : `Chegam à tua meta (≥${ivThr}h)`) : (en ? `Below your goal (<${ivThr}h)` : `Abaixo da tua meta (<${ivThr}h)`))
                                                                                     : (row.ok ? (en ? '2h or more' : '2h ou mais') : (en ? 'Under 2h' : 'Menos de 2h'));
                                                                                 const tone = !hasIvGoal ? 'text-gray-200' : row.ok ? 'text-green-400' : 'text-yellow-400';
-                                                                                const box = !hasIvGoal ? 'bg-gray-800/40 border border-gray-700' : row.ok ? 'bg-green-900/20 border border-green-700/50' : 'bg-yellow-900/20 border border-yellow-700/50';
+                                                                                const box = !hasIvGoal ? 'card-tint border' : row.ok ? 'bg-green-900/20 border border-green-700/50' : 'bg-yellow-900/20 border border-yellow-700/50';
                                                                                 const bar = !hasIvGoal ? 'bg-gray-400' : row.ok ? 'bg-green-500' : 'bg-yellow-500';
                                                                                 return (
                                                                                     <div key={row.key} className={box + ' rounded-lg p-4'}>
@@ -2669,7 +2659,7 @@ export function PatternsView({
 
                                                                     {hasIvGoal && (
 
-                                                                        <div className="bg-gray-800/40 border-gray-700 rounded-lg p-3 mt-4 border">
+                                                                        <div className="card-tint rounded-lg p-3 mt-4 border">
 
                                                                             <p className="text-xs leading-relaxed text-gray-300">
 
@@ -2781,19 +2771,19 @@ export function PatternsView({
 
                                                                 {/* Estatísticas Gerais */}
                                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                                                                    <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3 text-center border`}>
+                                                                    <div className={`${'card-tint border'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold font-mono-theme ${'text-white'}`}>{dailyDosageRecords.length}</div>
                                                                         <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.records')}</div>
                                                                     </div>
-                                                                    <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3 text-center border`}>
+                                                                    <div className={`${'card-tint border'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold font-mono-theme ${'text-white'}`}>{avgDosage.toFixed(1)}mg</div>
                                                                         <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.average')}</div>
                                                                     </div>
-                                                                    <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3 text-center border`}>
+                                                                    <div className={`${'card-tint border'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold font-mono-theme ${'text-white'}`}>{maxDosage}mg</div>
                                                                         <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.maximum')}</div>
                                                                     </div>
-                                                                    <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3 text-center border`}>
+                                                                    <div className={`${'card-tint border'} rounded-lg p-3 text-center border`}>
                                                                         <div className={`text-2xl font-bold font-mono-theme ${'text-white'}`}>{minDosage}mg</div>
                                                                         <div className={`text-xs ${'text-gray-300'}`}>{t('patterns.structural.minimum')}</div>
                                                                     </div>
@@ -2826,7 +2816,7 @@ export function PatternsView({
                                                                     </div>
 
                                                                     {ranges.baixa > 0 && (
-                                                                        <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3`}>
+                                                                        <div className={`${'card-tint border'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${'text-white'}`}>
                                                                                     {t('patterns.structural.dosageLow', { threshold: Math.round(lowThreshold) })}
@@ -2842,7 +2832,7 @@ export function PatternsView({
                                                                     )}
 
                                                                     {ranges.media > 0 && (
-                                                                        <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3`}>
+                                                                        <div className={`${'card-tint border'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${'text-white'}`}>
                                                                                     {t('patterns.structural.dosageMed', { low: Math.round(lowThreshold), high: Math.round(highThreshold) })}
@@ -2858,7 +2848,7 @@ export function PatternsView({
                                                                     )}
 
                                                                     {ranges.alta > 0 && (
-                                                                        <div className={`${'bg-gray-800/40 border border-gray-700'} rounded-lg p-3`}>
+                                                                        <div className={`${'card-tint border'} rounded-lg p-3`}>
                                                                             <div className="flex items-center justify-between mb-2">
                                                                                 <div className={`text-sm font-medium ${'text-white'}`}>
                                                                                     {t('patterns.structural.dosageHigh', { threshold: Math.round(highThreshold) })}
