@@ -403,7 +403,7 @@ export function PatternsView({
                                                                 ? 'bg-green-900/30 border-green-700/50'
                                                                 : freqGoal && trend.direction === 'increasing'
                                                                     ? 'bg-yellow-900/20 border-yellow-600/50'
-                                                                    : 'card-tint'
+                                                                    : 'bg-gray-700/30 border-gray-600'
                                                             ) + ' rounded-lg p-4 border'
                                                         }>
                                                             <div className="flex items-center justify-between mb-2">
@@ -699,20 +699,20 @@ export function PatternsView({
                                                         if (riskScore >= 70) {
                                                             riskLevel = t('patterns.riskLevel.high');
                                                             riskColor = 'text-white';
-                                                            riskBg = 'card-tint';
-                                                            riskBorder = '';
+                                                            riskBg = 'bg-gray-800/40';
+                                                            riskBorder = 'border-gray-700';
                                                             riskEmoji = '📊';
                                                         } else if (riskScore >= 55) {
                                                             riskLevel = t('patterns.riskLevel.moderate');
                                                             riskColor = 'text-white';
-                                                            riskBg = 'card-tint';
-                                                            riskBorder = '';
+                                                            riskBg = 'bg-gray-800/40';
+                                                            riskBorder = 'border-gray-700';
                                                             riskEmoji = '📊';
                                                         } else {
                                                             riskLevel = t('patterns.riskLevel.low');
                                                             riskColor = 'text-white';
-                                                            riskBg = 'card-tint';
-                                                            riskBorder = '';
+                                                            riskBg = 'bg-gray-800/40';
+                                                            riskBorder = 'border-gray-700';
                                                             riskEmoji = '📊';
                                                         }
 
