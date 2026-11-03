@@ -378,15 +378,15 @@ export function PatternsView({
 
                                                     {/* Métricas essenciais */}
                                                     <div className="grid grid-cols-3 gap-3">
-                                                        <div className={'card-tint' + ' rounded-lg p-4 text-center border'}>
+                                                        <div className={'card-tint-2' + ' rounded-lg p-4 text-center border'}>
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricTotal')}</div>
                                                             <div className={'text-white' + ' text-2xl font-bold font-mono-theme'}>{totalConsumptions}x</div>
                                                         </div>
-                                                        <div className={'card-tint' + ' rounded-lg p-4 text-center border'}>
+                                                        <div className={'card-tint-2' + ' rounded-lg p-4 text-center border'}>
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgDay')}</div>
                                                             <div className={goalTone('reduce_frequency', freqGoal, avgPerDay) + ' text-2xl font-bold font-mono-theme'}>{avgPerDay}</div>
                                                         </div>
-                                                        <div className={'card-tint' + ' rounded-lg p-4 text-center border'}>
+                                                        <div className={'card-tint-2' + ' rounded-lg p-4 text-center border'}>
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgInterval')}</div>
                                                             <div className={goalTone('increase_interval', intervalGoal, avgInterval) + ' text-2xl font-bold font-mono-theme'}>{avgInterval}h</div>
                                                         </div>

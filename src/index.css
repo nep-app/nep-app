@@ -34,8 +34,15 @@ html[data-demo-font="vv"] .font-display {
    roxo do mapa de calor e das barras, muito transparente. Dá vida sem dizer
    se é bom ou mau. Não depende do tema (é sempre este roxo). */
 .card-tint {
-  /* o roxo que a Teresa escolheu (cartões do Histórico na v6.97.1);
-     usar em POUCOS sítios. */
+  /* O roxo "apagadinho" preferido da Teresa: o do cartão de registo de mg
+     no Histórico (pink-900/30, que no tema Riso é lilás). Usar em POUCOS
+     sítios: hoje só no "Preencher gaps". */
+  @apply bg-pink-900/30 border-pink-700/50;
+}
+
+/* O segundo roxo (um pouco mais forte), também em POUCOS sítios: hoje só
+   nos três quadrados do Dashboard dos Padrões. */
+.card-tint-2 {
   background-color: rgb(124 58 237 / 0.12);
   border-color: rgb(124 58 237 / 0.35);
 }
