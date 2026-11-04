@@ -103,8 +103,8 @@ export function AnalysesView({
                 value={patternsPeriod}
                 onChange={(id) => { setPatternsPeriod(id); setPatternsPeriodOffset(0); }}
                 rangeLabel={patternsPeriod !== 'tudo'
-                    ? new Date(dateRange.start + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })
-                      + ' – ' + new Date(dateRange.end + 'T12:00:00').toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })
+                    ? new Date(dateRange.start).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short' })
+                      + ' – ' + new Date(dateRange.end).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })
                     : null}
                 onOlder={() => setPatternsPeriodOffset(prev => prev + 1)}
                 onNewer={() => setPatternsPeriodOffset(prev => Math.max(0, prev - 1))}

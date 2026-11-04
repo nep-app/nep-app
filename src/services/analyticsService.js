@@ -52,14 +52,37 @@ export const calculatePearsonCorrelation = (data, xKey, yKey) => {
     const clean = data.filter(d => d[xKey] != null && d[yKey] != null && !isNaN(d[xKey]) && !isNaN(d[yKey]));
     if (clean.length < MIN_CORRELATION_N) return null;
     const n = clean.length;
-    const sumX = clean.reduce((sum, d) => sum + d[xKey], 0);
-    const sumY = clean.reduce((sum, d) => sum + d[yKey], 0);
-    const sumXY = clean.reduce((sum, d) => sum + d[xKey] * d[yKey], 0);
-    const sumX2 = clean.reduce((sum, d) => sum + d[xKey] * d[xKey], 0);
-    const sumY2 = clean.reduce((sum, d) => sum + d[yKey] * d[yKey], 0);
-    const numerator = n * sumXY - sumX * sumY;
-    const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
-    return denominator === 0 ? null : numerator / denominator;
+    const xs = clean.map(d => Number(d[xKey]));
+    const ys = clean.map(d => Number(d[yKey]));
+
+    // ⚠️ SOMAS CENTRADAS (tira-se a média primeiro).
+    // A fórmula antiga (n·Σxy − Σx·Σy) subtrai dois números enormes quase iguais.
+    // Com decimais, o computador arredonda, e 20 valores IGUAIS (ex.: 7,3 h de
+    // sono todos os dias) davam um "resto" minúsculo em vez de zero: saía NaN
+    // ou um r inventado. A proteção `denominador === 0` nunca apanhava esse caso.
+    const meanX = xs.reduce((s, v) => s + v, 0) / n;
+    const meanY = ys.reduce((s, v) => s + v, 0) / n;
+    let sxx = 0, syy = 0, sxy = 0, sumX2 = 0, sumY2 = 0;
+    for (let i = 0; i < n; i++) {
+        const dx = xs[i] - meanX;
+        const dy = ys[i] - meanY;
+        sxx += dx * dx;
+        syy += dy * dy;
+        sxy += dx * dy;
+        sumX2 += xs[i] * xs[i];
+        sumY2 += ys[i] * ys[i];
+    }
+
+    // Se uma das variáveis (quase) não varia, não há correlação para medir:
+    // a app diz "não sei" (null) em vez de inventar um número. O limite é
+    // RELATIVO ao tamanho dos valores, para servir tanto a horas como a mg.
+    const VAR_MIN_REL = 1e-12;
+    if (sxx <= VAR_MIN_REL * sumX2 || syy <= VAR_MIN_REL * sumY2) return null;
+
+    const r = sxy / Math.sqrt(sxx * syy);
+    if (!Number.isFinite(r)) return null;
+    // Arredondamentos podem dar 1,0000000000000002 — fica dentro de [−1, 1].
+    return Math.max(-1, Math.min(1, r));
 };
 
 // ===== DATE RANGE & FILTERING =====

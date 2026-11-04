@@ -39,6 +39,11 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     for (let i = 1; i < last20.length; i++) {
       const t1 = new Date(last20[i].timestamp).getTime(), t0 = new Date(last20[i-1].timestamp).getTime();
       if (gapCrossesDays(t0, t1, excludedDates)) continue;
+      // Só intervalos dentro do mesmo dia, como a meta "aumentar intervalo"
+      // conta (analyticsService). Antes entrava a noite (último de um dia →
+      // primeiro do seguinte) e a % da meta saía inchada: consumos às 9h,
+      // 11h e 13h davam ~7,7h de média e a meta de 3h a 100%.
+      if (getDateKeyFromItem(last20[i]) !== getDateKeyFromItem(last20[i - 1])) continue;
       intervals.push({ hours: (t1 - t0) / 3600000, date: last20[i].date, timestamp: last20[i].timestamp });
     }
     if (intervals.length === 0) return null;
@@ -56,6 +61,8 @@ export const useAnalysis = (consumptions, wellbeingLogs, reflections, cycles, go
     const last = new Date(sorted[0].timestamp);
     const secondLast = new Date(sorted[1].timestamp);
     if (gapCrossesDays(secondLast.getTime(), last.getTime(), excludedDates)) return null;
+    // O "último intervalo" que passa pela noite não é um intervalo do dia: não se mostra.
+    if (getDateKeyFromItem(sorted[0]) !== getDateKeyFromItem(sorted[1])) return null;
     const diffMs = last - secondLast;
     const hours = diffMs / (1000 * 60 * 60);
     return { hours: hours.toFixed(1), isShort: hours < 2 };

@@ -6,6 +6,20 @@ import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContai
 
 const WellbeingChart = lazy(() => import('../../components/WellbeingChart'));
 
+// O dia de calendário N dias antes/depois de 'YYYY-MM-DD', em hora local (ao
+// meio-dia, para a mudança de hora não saltar de dia). "Ontem" é sempre D-1 —
+// nunca "o registo anterior", que pode estar a uma semana de distância.
+const somaDias = (key, n) => {
+    const d = new Date(`${key}T12:00:00`);
+    if (isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() + n);
+    return safeToISODate(d);
+};
+
+// ⚠️ ZERO NÃO É VAZIO: sono 0 = "Não dormi", uma noite real. Só falta o valor
+// quando o campo não existe ou vem vazio.
+const temSono = (x) => !!x && x.sleep != null && x.sleep !== '' && !isNaN(parseFloat(x.sleep));
+
 export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
     analysisConsumptions,
     analysisWellbeing,
@@ -36,7 +50,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                 dailyData[date] = { sleep: null, exercise: null, food: null, social: null, mood: null, energy: null, consumptions: 0 };
             }
 
-            if (w.sleep) dailyData[date].sleep = parseInt(w.sleep);
+            if (temSono(w)) dailyData[date].sleep = parseInt(w.sleep);
             if (w.exerciseType || (w.exerciseDuration > 0) || w.exercise) dailyData[date].exercise = 1;
             if (w.food) dailyData[date].food = parseInt(w.food);
             if (w.social) dailyData[date].social = parseInt(w.social);
@@ -65,7 +79,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
             if (isNaN(mg) || mg <= 0) return;
 
             if (!dosageData[itemDate]) {
-                dosageData[itemDate] = { totalMg: 0, sleep: dailyData[itemDate]?.sleep || null, mood: dailyData[itemDate]?.mood || null, energy: dailyData[itemDate]?.energy || null };
+                dosageData[itemDate] = { totalMg: 0, sleep: dailyData[itemDate]?.sleep ?? null, mood: dailyData[itemDate]?.mood || null, energy: dailyData[itemDate]?.energy || null };
             }
 
             dosageData[itemDate].totalMg += mg;
@@ -146,20 +160,25 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
             }
 
             // 2. ANTECEDENTES 24-48h (padrões antes de consumir)
+            // "Ontem" e "anteontem" são os dias de calendário D-1 e D-2. Antes
+            // eram os dois registos anteriores na lista — que, com dias sem
+            // registo pelo meio, podiam ser de há uma semana e passavam por
+            // "as 48h antes". Se falta um desses dias, este dia não entra.
             const sortedDates = Object.keys(dailyData).sort();
-            sortedDates.forEach((date, idx) => {
+            sortedDates.forEach((date) => {
                 const today = dailyData[date];
                 const todayCons = today.consumptions || 0;
 
-                if (todayCons > 0 && idx >= 2) {
+                if (todayCons > 0) {
                     // Olhar para os 2 dias anteriores
-                    const yesterday = dailyData[sortedDates[idx - 1]];
-                    const dayBefore = dailyData[sortedDates[idx - 2]];
+                    const yesterday = dailyData[somaDias(date, -1)];
+                    const dayBefore = dailyData[somaDias(date, -2)];
 
                     if (yesterday?.mood && dayBefore?.mood) {
                         // Detectar tendência de declínio de humor
                         const moodDecline = parseInt(dayBefore.mood) - parseInt(yesterday.mood) > 1;
-                        const poorSleepStreak = yesterday.sleep && parseInt(yesterday.sleep) <= 5 && dayBefore.sleep && parseInt(dayBefore.sleep) <= 5;
+                        // Sono 0 ("não dormi") conta como noite curta; sem valor, não se sabe.
+                        const poorSleepStreak = yesterday.sleep != null && parseInt(yesterday.sleep) <= 5 && dayBefore.sleep != null && parseInt(dayBefore.sleep) <= 5;
 
                         if (moodDecline) {
                             experimentalFeatures.antecedents.push({

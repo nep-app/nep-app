@@ -3,10 +3,29 @@ import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
 import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
-import { safeToISODate, getTodayKey, gapCrossesDays } from '../../utils/helpers';
+import { safeToISODate, getTodayKey, gapCrossesDays, datesInRange } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 
 const { getDateRangeForPeriod, filterByDateRange } = analyticsService;
+
+// O dia de calendário N dias depois (ou antes, com N negativo) de 'YYYY-MM-DD',
+// em hora local. Ao meio-dia para a mudança de hora (verão/inverno) não
+// empurrar o resultado para outro dia. "Ontem" e "amanhã" são SEMPRE estes —
+// nunca "o registo anterior/seguinte", que pode estar a uma semana de distância.
+const somaDias = (key, n) => {
+    const d = new Date(`${key}T12:00:00`);
+    if (isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() + n);
+    return safeToISODate(d);
+};
+const diaSeguinte = (key) => somaDias(key, 1);
+const diaAnterior = (key) => somaDias(key, -1);
+
+// Este registo tem horas de sono? ⚠️ ZERO NÃO É VAZIO: `sleep: 0` é "Não
+// dormi", uma noite real de 0 h. Só falta o valor quando o campo não existe
+// (ou vem vazio). Com `c.sleep &&` as noites sem dormir desapareciam das
+// contas — e eram justamente as que mais pesam.
+const temSono = (x) => !!x && x.sleep != null && x.sleep !== '' && !isNaN(parseFloat(x.sleep));
 
 export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     analysisConsumptions,
@@ -142,6 +161,21 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
     const { t, i18n } = useTranslation();
 
+    // ⚠️ TODOS OS HOOKS ANTES DO "return" ANTECIPADO. Este useState estava
+    // depois do `if (!coachData) return` — ao passar de um período sem dados
+    // para um com dados, o React via um hook a mais do que no render anterior
+    // e a página rebentava ("Rendered more hooks than during the previous
+    // render"). Os hooks têm de ser chamados sempre, pela mesma ordem.
+    const [openSections, setOpenSections] = useState({
+        resumo: true,
+        dias: false,
+        horarios: false,
+        sono: false,
+        emocoes: false,
+        avancado: false,
+        sintese: false,
+    });
+
     if (!coachData) {
         return (<div className={('bg-gray-800 border-gray-700 text-gray-400') + ' rounded-xl p-6 border text-center'}>{t('coach.noData')}</div>);
     }
@@ -177,15 +211,6 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
         sentimentScore,
     } = coachData;
 
-    const [openSections, setOpenSections] = useState({
-        resumo: true,
-        dias: false,
-        horarios: false,
-        sono: false,
-        emocoes: false,
-        avancado: false,
-        sintese: false,
-    });
     const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
     const sectionBtn = (id, icon, title) => (
         <button
@@ -232,37 +257,49 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {(() => {
                         if (analysisConsumptions.length < 14) return null;
 
-                        // Usar o fim do período seleccionado como referência, não a data real de hoje
-                        const periodEnd = new Date(getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset).end || new Date());
-                        const last7Days = analysisConsumptions.filter(c => {
-                            const cDate = new Date(c.timestamp);
-                            const diffDays = (periodEnd - cDate) / (1000 * 60 * 60 * 24);
-                            return diffDays <= 7;
+                        // ⚠️ MÉDIA POR DIA DE CALENDÁRIO, NÃO POR "DIA COM CONSUMO".
+                        // Antes dividia-se pelos dias em que houve consumo: uma semana
+                        // com 3 dias a zero dava a mesma média que uma semana sem
+                        // pausas. E o dia de hoje (ainda a meio) entrava nos 7 dias,
+                        // a puxar a média para baixo só por não ter acabado.
+                        // Agora: as duas janelas são dias de calendário seguidos que
+                        // acabam ONTEM (ou no fim do período escolhido, se já passou).
+                        // Ficam de fora os dias que a app não conhece: antes do
+                        // primeiro registo, fora do período, "não registei os
+                        // consumos" e atípicos (os consumos desses dias já vêm
+                        // tirados, por isso contá-los como dia a zero seria inventar).
+                        const range = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+                        const ontem = somaDias(getTodayKey(), -1);
+                        const fimPeriodo = range.end ? safeToISODate(range.end) : null;
+                        const lastDay = fimPeriodo && fimPeriodo < ontem ? fimPeriodo : ontem;
+                        const inicioPeriodo = range.start ? safeToISODate(range.start) : null;
+                        const todasAsDatas = [
+                            ...(consumptions || []), ...analysisWellbeing, ...analysisCycles, ...analysisDailyLogs,
+                        ].map(x => x.date || safeToISODate(x.timestamp)).filter(Boolean);
+                        if (todasAsDatas.length === 0) return null;
+                        const primeiroRegisto = todasAsDatas.reduce((a, b) => (b < a ? b : a));
+                        const desde = inicioPeriodo && inicioPeriodo > primeiroRegisto ? inicioPeriodo : primeiroRegisto;
+                        const foraDias = new Set([...(unloggedDates || []), ...(excludedDays || [])]);
+                        const diasValidos = (de, ate) => datesInRange(de < desde ? desde : de, ate).filter(d => !foraDias.has(d));
+
+                        const last7Keys = diasValidos(somaDias(lastDay, -6), lastDay);
+                        const prev21Keys = diasValidos(somaDias(lastDay, -27), somaDias(lastDay, -7));
+                        // Poucos dias conhecidos numa das janelas → não se compara.
+                        if (last7Keys.length < 5 || prev21Keys.length < 14) return null;
+
+                        const consPorDia = {};
+                        analysisConsumptions.forEach(c => {
+                            const d = c.date || safeToISODate(c.timestamp);
+                            if (d) consPorDia[d] = (consPorDia[d] || 0) + 1;
                         });
+                        const somaLast7 = last7Keys.reduce((a, d) => a + (consPorDia[d] || 0), 0);
+                        const somaPrev21 = prev21Keys.reduce((a, d) => a + (consPorDia[d] || 0), 0);
 
-                        const previous21Days = analysisConsumptions.filter(c => {
-                            const cDate = new Date(c.timestamp);
-                            const diffDays = (periodEnd - cDate) / (1000 * 60 * 60 * 24);
-                            return diffDays > 7 && diffDays <= 28;
-                        });
+                        if (somaLast7 < 3 || somaPrev21 < 10) return null;
 
-                        if (last7Days.length < 3 || previous21Days.length < 10) return null;
-
-                        // Agrupar por dia
-                        const last7ByDate = {};
-                        last7Days.forEach(c => {
-                            if (!last7ByDate[c.date]) last7ByDate[c.date] = 0;
-                            last7ByDate[c.date]++;
-                        });
-
-                        const prev21ByDate = {};
-                        previous21Days.forEach(c => {
-                            if (!prev21ByDate[c.date]) prev21ByDate[c.date] = 0;
-                            prev21ByDate[c.date]++;
-                        });
-
-                        const avgLast7 = Object.values(last7ByDate).reduce((a, b) => a + b, 0) / Object.keys(last7ByDate).length;
-                        const avgPrev21 = Object.values(prev21ByDate).reduce((a, b) => a + b, 0) / Object.keys(prev21ByDate).length;
+                        const avgLast7 = somaLast7 / last7Keys.length;
+                        const avgPrev21 = somaPrev21 / prev21Keys.length;
+                        if (!(avgPrev21 > 0)) return null;
 
                         const percentChange = ((avgLast7 - avgPrev21) / avgPrev21 * 100).toFixed(0);
 
@@ -470,7 +507,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         // Calcular médias
                         const calcAvgSleep = (days) => {
-                            const sleepData = days.flatMap(([_, d]) => d.cycles.filter(c => c.sleep && !isNaN(parseFloat(c.sleep))).map(c => parseFloat(c.sleep)));
+                            const sleepData = days.flatMap(([_, d]) => d.cycles.filter(temSono).map(c => parseFloat(c.sleep)));
                             return sleepData.length > 0 ? (sleepData.reduce((a, b) => a + b, 0) / sleepData.length).toFixed(1) : null;
                         };
 
@@ -938,7 +975,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             const lateDates = new Set(lateConsumptions.map(c => c.date));
                             const cyclesWithLate = analysisCycles.filter(cycle => {
                                 const cDate = cycle.date || safeToISODate(cycle.timestamp);
-                                return lateDates.has(cDate) && cycle.sleep;
+                                return lateDates.has(cDate) && temSono(cycle);
                             });
 
                             const lowSleepCount = cyclesWithLate.filter(c => parseFloat(c.sleep) < 6).length;
@@ -1031,17 +1068,20 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             if (!dailyProfile[wDate]) dailyProfile[wDate] = { consumptions: 0, prevSleep: null, prevMood: null, prevEnergy: null };
                         });
 
-                        // Para cada dia, pegar bem-estar do dia ANTERIOR
+                        // Para cada dia, pegar bem-estar do dia ANTERIOR — o dia de
+                        // calendário antes (D-1), não "o registo anterior": se não
+                        // houve registo ontem, este dia fica sem "véspera" em vez de
+                        // ir buscar o de há uma semana.
                         const sortedDates = Object.keys(dailyProfile).sort();
-                        for (let i = 1; i < sortedDates.length; i++) {
-                            const yesterday = sortedDates[i - 1];
+                        for (let i = 0; i < sortedDates.length; i++) {
+                            const yesterday = diaAnterior(sortedDates[i]);
                             const yesterdayWellbeing = analysisWellbeing.find(w => {
                                 const wDate = w.date || safeToISODate(w.timestamp);
                                 return wDate === yesterday;
                             });
 
                             if (yesterdayWellbeing) {
-                                dailyProfile[sortedDates[i]].prevSleep = yesterdayWellbeing.sleep ? parseFloat(yesterdayWellbeing.sleep) : null;
+                                dailyProfile[sortedDates[i]].prevSleep = temSono(yesterdayWellbeing) ? parseFloat(yesterdayWellbeing.sleep) : null;
                                 dailyProfile[sortedDates[i]].prevMood = yesterdayWellbeing.mood ? parseInt(yesterdayWellbeing.mood) : null;
                                 dailyProfile[sortedDates[i]].prevEnergy = yesterdayWellbeing.energy ? parseInt(yesterdayWellbeing.energy) : null;
                             }
@@ -1101,7 +1141,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         // Adicionar dados de cycles (sono noturno + sesta do mesmo dia)
                         analysisCycles.forEach(c => {
-                            if (c.sleep && c.bedtime) {
+                            if (temSono(c) && c.bedtime) {
                                 const date = c.date || safeToISODate(c.timestamp);
                                 const napMins = analysisWellbeing
                                     .filter(w => (w.date || safeToISODate(w.timestamp)) === date)
@@ -1117,7 +1157,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         // Adicionar dados de wellbeing (se não houver em cycles — legado)
                         analysisWellbeing.forEach(w => {
-                            if (w.sleep) {
+                            if (temSono(w)) {
                                 const date = w.date || safeToISODate(w.timestamp);
                                 if (!allSleepData.some(s => s.date === date)) {
                                     const napMins = analysisWellbeing
@@ -1528,30 +1568,28 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             if (!dailyData[wDate]) dailyData[wDate] = { sleep: null, mood: null };
                             if (w.mood) dailyData[wDate].mood = parseInt(w.mood);
                             // Legacy: some old wellbeing records have sleep field
-                            if (w.sleep && !dailyData[wDate].sleep) dailyData[wDate].sleep = parseFloat(w.sleep);
+                            if (temSono(w) && dailyData[wDate].sleep == null) dailyData[wDate].sleep = parseFloat(w.sleep);
                         });
 
                         // Sleep from cycles (primary source — wellbeing rarely has sleep)
                         analysisCycles.forEach(c => {
                             const cDate = c.date || safeToISODate(c.timestamp);
-                            if (!cDate || !c.sleep) return;
+                            if (!cDate || !temSono(c)) return;
                             if (!dailyData[cDate]) dailyData[cDate] = { sleep: null, mood: null };
                             dailyData[cDate].sleep = parseFloat(c.sleep);
                         });
 
-                        const sortedDates = Object.keys(dailyData).sort();
+                        // O sono do ciclo D é a noite de D-1 para D (D = dia em que
+                        // acordou). O humor que vem a seguir a essa noite é o do
+                        // PRÓPRIO dia D. Antes juntava-se o sono de D ao humor do
+                        // registo seguinte (até 2 dias depois) — ou seja, à noite
+                        // errada, e às vezes com um dia inteiro pelo meio.
                         const nextDaySleepMood = [];
-
-                        for (let i = 0; i < sortedDates.length - 1; i++) {
-                            const today = dailyData[sortedDates[i]];
-                            const tomorrow = dailyData[sortedDates[i + 1]];
-                            // Only use if dates are truly consecutive (≤2 days apart to avoid gaps)
-                            const dayGap = (new Date(sortedDates[i + 1]) - new Date(sortedDates[i])) / 86400000;
-                            if (dayGap > 2) continue;
-                            if (today.sleep !== null && tomorrow.mood !== null) {
-                                nextDaySleepMood.push({ sleep: today.sleep, mood: tomorrow.mood });
+                        Object.values(dailyData).forEach(d => {
+                            if (d.sleep !== null && d.mood !== null) {
+                                nextDaySleepMood.push({ sleep: d.sleep, mood: d.mood });
                             }
-                        }
+                        });
 
                         if (nextDaySleepMood.length < 2) return null;
 
@@ -1940,7 +1978,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         analysisCycles.forEach(cycle => {
                             const cDate = cycle.date || safeToISODate(cycle.timestamp);
-                            if (dailyData[cDate] && cycle.sleep) {
+                            if (dailyData[cDate] && temSono(cycle)) {
                                 dailyData[cDate].sono = parseFloat(cycle.sleep);
                             }
                         });
@@ -2017,10 +2055,14 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const sortedDates = Object.keys(dailyConsumptionData).sort();
                         const nextDayData = [];
 
-                        // Correlacionar consumo de hoje com bem-estar de amanhã
-                        for (let i = 0; i < sortedDates.length - 1; i++) {
+                        // Correlacionar consumo de hoje com bem-estar de amanhã.
+                        // "Amanhã" é o dia de calendário seguinte (D+1), não o
+                        // próximo dia com registo: se D+1 não tem humor/energia
+                        // (ou é "não registei"/atípico), este dia não entra.
+                        for (let i = 0; i < sortedDates.length; i++) {
                             const today = dailyConsumptionData[sortedDates[i]];
-                            const tomorrow = dailyConsumptionData[sortedDates[i + 1]];
+                            const tomorrow = dailyConsumptionData[diaSeguinte(sortedDates[i])];
+                            if (!tomorrow) continue;
                             if (today.consumptions > 0 && (tomorrow.mood !== null || tomorrow.energy !== null)) {
                                 nextDayData.push({
                                     consumptions: today.consumptions,
@@ -2170,10 +2212,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         if (difficultDays > 0) optimizationAreas.push(t('coach.optFrequency', { n: difficultThreshold }));
 
-                        if (analysisCycles.length > 0) {
-                            const avgSleep = analysisCycles
-                                .filter(c => c.sleep)
-                                .reduce((sum, c) => sum + parseFloat(c.sleep), 0) / analysisCycles.filter(c => c.sleep).length;
+                        const ciclosComSono = analysisCycles.filter(temSono);
+                        if (ciclosComSono.length > 0) {
+                            const avgSleep = ciclosComSono.reduce((sum, c) => sum + parseFloat(c.sleep), 0) / ciclosComSono.length;
                             if (avgSleep < 7) optimizationAreas.push(t('coach.optSleep'));
                         }
 

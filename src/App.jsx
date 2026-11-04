@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFirebaseAuth } from './utils/firebase';
-import { getTodayKey, toLocalDatetimeInput, genId, safeToISODate, goalCountsFrom, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo } from './utils/helpers';
+import { getTodayKey, toLocalDatetimeInput, genId, safeToISODate, goalCountsFrom, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo, meetsGoal } from './utils/helpers';
 import * as analyticsService from './services/analyticsService';
 import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV, parseImportJSON } from './services/exportService';
 import * as Icons from './components/Icons';
@@ -1182,10 +1182,12 @@ export function AuthenticatedApp() {
                 // melhores: isso é assumir que menos consumo = melhor. Se ela
                 // própria definiu a meta, reconhecer o progresso é apoiar a
                 // escolha dela, não impor uma direcção.
-                const wantsLongerIntervals = (goals || []).some(g => g.type === 'increase_interval' && g.active !== false);
-                if (wantsLongerIntervals && consumptions.length >= 2) {
+                const intervalGoalMsg = (goals || []).find(g => g.type === 'increase_interval' && g.active !== false && !g.completed);
+                if (intervalGoalMsg && consumptions.length >= 2) {
                     const lastIntervalData = metrics.lastInterval;
-                    if (lastIntervalData && !lastIntervalData.isShort) {
+                    // Elogio só se o último intervalo (dentro do dia) chega à meta DELA
+                    // (antes era um limite fixo de 2h, fosse qual fosse a meta).
+                    if (lastIntervalData && meetsGoal('increase_interval', parseFloat(lastIntervalData.hours), parseFloat(intervalGoalMsg.target)) === true) {
                         messages.push(t('feedback.intervalGood', { hours: lastIntervalData.hours }));
                     }
                 }
