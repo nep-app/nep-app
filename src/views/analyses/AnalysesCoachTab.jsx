@@ -215,7 +215,8 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     const sectionBtn = (id, icon, title) => (
         <button
             onClick={() => toggleSection(id)}
-            className={'w-full flex items-center justify-between px-5 py-3 rounded-xl border font-semibold text-left ' + (openSections[id] ? 'bg-gray-700/60 border-gray-600 text-white' : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-500')}
+            aria-expanded={!!openSections[id]}
+            className={'w-full flex items-center justify-between px-4 py-3 font-semibold text-left transition-colors ' + (openSections[id] ? 'text-white' : 'text-gray-300 hover:text-white')}
         >
             <span className="flex items-center gap-2"><span>{icon}</span> {title}</span>
             <span className="text-xs" style={{ display: 'inline-block', transform: openSections[id] ? 'rotate(180deg)' : 'none' }}>▼</span>
@@ -225,7 +226,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     return (
         <div className="space-y-3">
             {/* Header */}
-            <div className={'bg-gray-800/40 border-gray-700 rounded-xl p-5 border'}>
+            <div className="px-1">
                 <div className="flex items-center gap-3 mb-1">
                     <span className="text-3xl">💬</span>
                     <h3 className={'text-xl font-bold text-white'}>{t('coach.title')}</h3>
@@ -233,10 +234,13 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                 <p className={'text-xs text-gray-400'}>{t('coach.subtitle')}</p>
             </div>
 
+            {/* Todas as secções numa só caixa, separadas por linhas finas (antes
+                cada título e cada conteúdo tinham a sua própria caixa). */}
+            <div className="rounded-xl border border-gray-700 bg-gray-800 divide-y divide-gray-700">
             {/* ── SECÇÃO 1: RESUMO ── */}
             {sectionBtn('resumo', '📊', i18n.language === 'en' ? 'Overview' : 'Resumo')}
             {openSections.resumo && (
-                <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
+                <div className={'!border-t-0 px-4 pb-5 pt-1 space-y-4 leading-relaxed text-gray-200'}>
                     {/* Paragraph 1: Overview */}
                     <p>
                         {totalConsumptions > 0 ? (
@@ -461,7 +465,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             {/* ── SECÇÃO 2: DIAS E PADRÕES ── */}
             {sectionBtn('dias', '📅', i18n.language === 'en' ? 'Days & Patterns' : 'Dias e Padrões')}
             {openSections.dias && (
-                <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
+                <div className={'!border-t-0 px-4 pb-5 pt-1 space-y-4 leading-relaxed text-gray-200'}>
                     {/* Good vs Difficult Days */}
                     {(() => {
                         if (totalConsumptions === 0) return null;
@@ -836,7 +840,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             {/* ── SECÇÃO 3: HORÁRIOS E RISCOS ── */}
             {sectionBtn('horarios', '⏰', i18n.language === 'en' ? 'Timing & Risks' : 'Horários e Riscos')}
             {openSections.horarios && (
-                <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
+                <div className={'!border-t-0 px-4 pb-5 pt-1 space-y-4 leading-relaxed text-gray-200'}>
                     {(() => {
                     const _horarioBlocks = [
 
@@ -1133,7 +1137,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             {/* ── SECÇÃO 4: SONO ── */}
             {sectionBtn('sono', '💤', i18n.language === 'en' ? 'Sleep' : 'Sono')}
             {openSections.sono && (
-                <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
+                <div className={'!border-t-0 px-4 pb-5 pt-1 space-y-4 leading-relaxed text-gray-200'}>
                     {/* Sleep Score */}
                     {(() => {
                         // Combinar dados de sono de cycles e wellbeing
@@ -1618,7 +1622,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             {/* ── SECÇÃO 5: EMOÇÕES E BEM-ESTAR ── */}
             {sectionBtn('emocoes', '🌈', i18n.language === 'en' ? 'Emotions & Wellbeing' : 'Emoções e Bem-estar')}
             {openSections.emocoes && (
-                <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
+                <div className={'!border-t-0 px-4 pb-5 pt-1 space-y-4 leading-relaxed text-gray-200'}>
                     {/* Emotional State */}
                     {(() => {
                         if (analysisWellbeing.length === 0) return null;
@@ -1964,7 +1968,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             {/* ── SECÇÃO 6: ANÁLISE AVANÇADA ── */}
             {sectionBtn('avancado', '🔬', i18n.language === 'en' ? 'Advanced Analysis' : 'Análise Avançada')}
             {openSections.avancado && (
-                <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
+                <div className={'!border-t-0 px-4 pb-5 pt-1 space-y-4 leading-relaxed text-gray-200'}>
                     {/* Behavior Clusters */}
                     {(() => {
                         if (analysisConsumptions.length < 10 || analysisCycles.length < 5) return null;
@@ -2176,7 +2180,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             {/* ── SECÇÃO 7: SÍNTESE ── */}
             {sectionBtn('sintese', '💭', i18n.language === 'en' ? 'Summary & Reflection' : 'Síntese e Conclusão')}
             {openSections.sintese && (
-                <div className={'bg-gray-800 border-gray-700 rounded-xl p-5 border space-y-4 leading-relaxed text-gray-200'}>
+                <div className={'!border-t-0 px-4 pb-5 pt-1 space-y-4 leading-relaxed text-gray-200'}>
                     {/* Final Reflection */}
                     {(() => {
                         if (totalConsumptions === 0) return null;
@@ -2304,6 +2308,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     </p>
                 </div>
             )}
+            </div>
         </div>
     );
 });

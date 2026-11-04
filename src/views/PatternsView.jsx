@@ -1640,7 +1640,7 @@ export function PatternsView({
                                             const recentVal = (v, digits, unit) => v == null
                                                 ? <span className={'text-sm italic text-gray-400'}>{noDataTxt}</span>
                                                 : <>
-                                                    <span className={'text-2xl font-bold ' + 'text-white'}>{v.toFixed(digits)}</span>
+                                                    <span className={'text-2xl font-bold font-mono-theme ' + 'text-white'}>{v.toFixed(digits)}</span>
                                                     {unit && <span className={'text-sm ' + ('text-gray-400')}>{unit}</span>}
                                                   </>;
                                             // "antes: X" — ou "sem dados no período anterior".
@@ -1670,7 +1670,7 @@ export function PatternsView({
                                                                 {t('patterns.progress.title')}
                                                             </h3>
                                                             {progressScore != null && (
-                                                            <div className={'text-4xl font-black ' + (progressScore >= 70 ? 'text-green-400' : progressScore >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
+                                                            <div className={'text-4xl font-black font-mono-theme ' + (progressScore >= 70 ? 'text-green-400' : progressScore >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
                                                                 {progressScore}%
                                                             </div>
                                                             )}
@@ -1702,9 +1702,9 @@ export function PatternsView({
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 {t('patterns.progress.consumption')}
                                                             </h3>
-                                                            <div className="space-y-3">
+                                                            <div className="divide-y divide-gray-700">
                                                                 {progressData.frequency && (
-                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.frequency.label}
@@ -1728,7 +1728,7 @@ export function PatternsView({
                                                                     </div>
                                                                 )}
                                                                 {progressData.dosage && (
-                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.dosage.label}
@@ -1761,9 +1761,9 @@ export function PatternsView({
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 {t('patterns.progress.wellbeing')}
                                                             </h3>
-                                                            <div className="space-y-3">
+                                                            <div className="divide-y divide-gray-700">
                                                                 {progressData.sleep && (
-                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.sleep.label}
@@ -1783,7 +1783,7 @@ export function PatternsView({
                                                                     </div>
                                                                 )}
                                                                 {progressData.mood && (
-                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.mood.label}
@@ -1803,7 +1803,7 @@ export function PatternsView({
                                                                     </div>
                                                                 )}
                                                                 {progressData.energy && (
-                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.energy.label}
@@ -1832,9 +1832,9 @@ export function PatternsView({
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 {t('patterns.progress.routines')}
                                                             </h3>
-                                                            <div className="space-y-3">
+                                                            <div className="divide-y divide-gray-700">
                                                                 {progressData.bedtimeConsistency && (
-                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.bedtimeConsistency.label}
@@ -1853,7 +1853,7 @@ export function PatternsView({
                                                                                 {t('patterns.progress.bedtimeConsist.variation', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(0) })}
                                                                             </span>
                                                                         </div>
-                                                                        <div className={'bg-gray-800/50' + ' rounded px-3 py-2'}>
+                                                                        <div className={'mt-1'}>
                                                                             <p className={'text-xs italic ' + ('text-gray-400')}>
                                                                                 {progressData.bedtimeConsistency.recent < 30
                                                                                     ? t('patterns.progress.bedtimeConsist.msgVeryConsistent')
@@ -1865,7 +1865,7 @@ export function PatternsView({
                                                                     </div>
                                                                 )}
                                                                 {progressData.avgBedtime && (
-                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.avgBedtime.label}
@@ -1879,7 +1879,7 @@ export function PatternsView({
                                                                         <div className="flex items-baseline gap-2">
                                                                             {progressData.avgBedtime.recentTime == null
                                                                                 ? <span className={'text-sm italic text-gray-400'}>{noDataTxt}</span>
-                                                                                : <span className={'text-2xl font-bold ' + 'text-white'}>
+                                                                                : <span className={'text-2xl font-bold font-mono-theme ' + 'text-white'}>
                                                                                     {progressData.avgBedtime.recentTime}
                                                                                   </span>}
                                                                             <span className={'text-sm ml-auto ' + 'text-gray-500'}>
@@ -1907,7 +1907,7 @@ export function PatternsView({
                                                                     </div>
                                                                 )}
                                                                 {progressData.selfCare && (
-                                                                    <div className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-4 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center justify-between mb-2">
                                                                             <span className={'text-sm font-medium ' + ('text-gray-300')}>
                                                                                 {progressData.selfCare.label}
@@ -1936,9 +1936,9 @@ export function PatternsView({
                                                             <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                                                                 {t('patterns.progress.emotional')}
                                                             </h3>
-                                                            <div className="space-y-3">
+                                                            <div className="divide-y divide-gray-700">
                                                                 {progressData.negativeEmotions && (
-                                                                    <div className={'bg-gray-800/40 border-gray-700' + ' rounded-lg p-3 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😔</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-gray-400'}>
@@ -1953,7 +1953,7 @@ export function PatternsView({
                                                                         <div className="flex items-center justify-between">
                                                                             <div>
                                                                                 <div className="flex items-baseline gap-1">
-                                                                                    <span className={'text-3xl font-black ' + 'text-white'}>
+                                                                                    <span className={'text-3xl font-black font-mono-theme ' + 'text-white'}>
                                                                                         {progressData.negativeEmotions.recent == null ? noDataTxt : progressData.negativeEmotions.recent.toFixed(0) + '%'}
                                                                                     </span>
                                                                                     <span className={'text-xs font-medium ' + 'text-gray-400'}>
@@ -1966,14 +1966,14 @@ export function PatternsView({
                                                                                 </div>
                                                                                 )}
                                                                             </div>
-                                                                            <div className={'text-xs px-2 py-1 rounded ' + 'bg-gray-800/50 text-gray-400'}>
+                                                                            <div className={'text-xs text-gray-400'}>
                                                                                 {progressData.negativeEmotions.previous == null ? noPrevTxt : t('patterns.progress.wasPercent', { val: progressData.negativeEmotions.previous.toFixed(0) })}
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 {progressData.positiveEmotions && (
-                                                                    <div className={'bg-gradient-to-br from-green-900/20 to-emerald-900/20 border-green-700/50' + ' rounded-lg p-3 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center gap-2 mb-2">
                                                                             <span className="text-lg">😊</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-green-400'}>
@@ -1988,7 +1988,7 @@ export function PatternsView({
                                                                         <div className="flex items-center justify-between">
                                                                             <div>
                                                                                 <div className="flex items-baseline gap-1">
-                                                                                    <span className={'text-3xl font-black ' + 'text-green-400'}>
+                                                                                    <span className={'text-3xl font-black font-mono-theme ' + 'text-green-400'}>
                                                                                         {progressData.positiveEmotions.recent == null ? noDataTxt : progressData.positiveEmotions.recent.toFixed(0) + '%'}
                                                                                     </span>
                                                                                     <span className={'text-xs font-medium ' + 'text-green-300/70'}>
@@ -2001,14 +2001,14 @@ export function PatternsView({
                                                                                 </div>
                                                                                 )}
                                                                             </div>
-                                                                            <div className={'text-xs px-2 py-1 rounded ' + 'bg-gray-800/50 text-gray-400'}>
+                                                                            <div className={'text-xs text-gray-400'}>
                                                                                 {progressData.positiveEmotions.previous == null ? noPrevTxt : t('patterns.progress.wasPercent', { val: progressData.positiveEmotions.previous.toFixed(0) })}
                                                                             </div>
                                                                         </div>
                                                                     </div>
                                                                 )}
                                                                 {progressData.topEmotions && (
-                                                                    <div className={'bg-gradient-to-br from-blue-900/20 to-cyan-900/20 border-blue-700/50' + ' rounded-lg p-3 border'}>
+                                                                    <div className={'py-3'}>
                                                                         <div className="flex items-center gap-2 mb-3">
                                                                             <span className="text-lg">🌟</span>
                                                                             <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-blue-400'}>
@@ -2042,12 +2042,12 @@ export function PatternsView({
                                                             </h3>
 
                                                             {/* Overall score */}
-                                                            <div className={'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border-green-700/50' + ' rounded-lg p-4 border mb-4'}>
+                                                            <div className={'pb-3 mb-3 border-b border-gray-700'}>
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <span className={'text-sm font-semibold ' + ('text-gray-300')}>
                                                                         {t('patterns.progress.overallRate')}
                                                                     </span>
-                                                                    <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'text-green-400' : 'text-orange-400')}>
+                                                                    <span className={'text-2xl font-black font-mono-theme ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'text-green-400' : 'text-orange-400')}>
                                                                         {progressData.selfCareDetailed.recentOverall.toFixed(0)}%
                                                                     </span>
                                                                 </div>
@@ -2063,12 +2063,12 @@ export function PatternsView({
                                                             </div>
 
                                                             {/* Complete cycles */}
-                                                            <div className={'bg-gradient-to-r from-blue-900/30 to-cyan-900/30 border-blue-700/50' + ' rounded-lg p-4 border mb-4'}>
+                                                            <div className={'pb-3 mb-3 border-b border-gray-700'}>
                                                                 <div className="flex items-center justify-between mb-2">
                                                                     <span className={'text-sm font-semibold ' + ('text-gray-300')}>
                                                                         {t('patterns.progress.completeCycles')}
                                                                     </span>
-                                                                    <span className={'text-2xl font-black ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'text-blue-400' : 'text-orange-400')}>
+                                                                    <span className={'text-2xl font-black font-mono-theme ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'text-blue-400' : 'text-orange-400')}>
                                                                         {progressData.selfCareDetailed.completeCycles.recent.toFixed(0)}%
                                                                     </span>
                                                                 </div>
@@ -2094,7 +2094,7 @@ export function PatternsView({
                                                                     };
                                                                     const area = areaNames[areaKey];
                                                                     return (
-                                                                        <div key={areaKey} className={('bg-gray-700/30 border-gray-600') + ' rounded-lg p-3 border'}>
+                                                                        <div key={areaKey} className={'py-2'}>
                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                 <span className="text-lg">{area.emoji}</span>
                                                                                 <span className={'text-xs font-medium ' + ('text-gray-300')}>
@@ -2102,7 +2102,7 @@ export function PatternsView({
                                                                                 </span>
                                                                             </div>
                                                                             <div className="flex items-baseline gap-1">
-                                                                                <span className={'text-2xl font-bold ' + (percent >= 70 ? 'text-green-400' : 'text-orange-400')}>
+                                                                                <span className={'text-2xl font-bold font-mono-theme ' + (percent >= 70 ? 'text-green-400' : 'text-orange-400')}>
                                                                                     {percent.toFixed(0)}%
                                                                                 </span>
                                                                             </div>
