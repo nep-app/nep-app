@@ -35,7 +35,7 @@ export const WellbeingModal = ({
   useModalKeyboard(isOpen, onClose, onSubmit);
 
   // ===== REGISTO RÁPIDO (dois toques) =====
-  // Toque 1: a grelha de botões (humor com palavras × energia) dá o humor E a
+  // Toque 1: a grelha (energia × agradável/desagradável) dá o humor E a
   // energia de uma vez, nos mesmos números de 1 a 10 de sempre (as Análises
   // continuam iguais). Toque 2: Guardar. O resto do formulário fica em
   // "Mais detalhes". Nenhum canto é verde nem vermelho: nenhum estado é o
@@ -46,20 +46,21 @@ export const WellbeingModal = ({
   const moodN = wellbeingForm.mood === '' || wellbeingForm.mood == null ? null : parseInt(wellbeingForm.mood);
   const energyN = wellbeingForm.energy === '' || wellbeingForm.energy == null ? null : parseInt(wellbeingForm.energy);
   const hasPoint = Number.isFinite(moodN) && Number.isFinite(energyN);
-  const MOOD_COLS = [
-    { v: 2, face: '😣', label: (i18n.language === 'en' ? 'very low' : 'muito em baixo') },
-    { v: 4, face: '🙁', label: (i18n.language === 'en' ? 'low' : 'em baixo') },
-    { v: 6, face: '😐', label: (i18n.language === 'en' ? 'so-so' : 'assim-assim') },
-    { v: 8, face: '🙂', label: (i18n.language === 'en' ? 'good' : 'bem') },
-    { v: 10, face: '😄', label: (i18n.language === 'en' ? 'very good' : 'muito bem') },
-  ];
-  const ENERGY_ROWS = [
-    { v: 10, label: (i18n.language === 'en' ? 'lots' : 'muita') },
-    { v: 8, label: (i18n.language === 'en' ? 'some' : 'alguma') },
-    { v: 6, label: (i18n.language === 'en' ? 'medium' : 'média') },
-    { v: 4, label: (i18n.language === 'en' ? 'little' : 'pouca') },
-    { v: 2, label: (i18n.language === 'en' ? 'none' : 'nenhuma') },
-  ];
+  const setFromPad = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    setWellbeingForm(f => ({ ...f, mood: String(1 + Math.round(x * 9)), energy: String(1 + Math.round((1 - y) * 9)) }));
+  };
+  const [dragging, setDragging] = useState(false);
+  const [quickMode, setQuickMode] = useState(() => { try { return localStorage.getItem('nep_wb_mode') === 'quadrado' ? 'quadrado' : 'botoes'; } catch { return 'botoes'; } });
+  const pickMode = (m) => { setQuickMode(m); try { localStorage.setItem('nep_wb_mode', m); } catch { /* fica só nesta sessão */ } };
+  const MOOD_WORDS = i18n.language === 'en' ? ['very low', 'low', 'so-so', 'good', 'very good'] : ['muito em baixo', 'em baixo', 'assim-assim', 'bem', 'muito bem'];
+  // de cima (muita) para baixo (nenhuma)
+  const ENERGY_WORDS = i18n.language === 'en' ? ['lots', 'some', 'medium', 'little', 'none'] : ['muita', 'alguma', 'média', 'pouca', 'nenhuma'];
+  const idx5 = (n) => (Number.isFinite(n) ? Math.min(4, Math.max(0, Math.round(((n - 1) / 9) * 4))) : -1);
+  const moodIdx = idx5(moodN);
+  const energyIdx = idx5(energyN);
   // Palavras da lista da app, arrumadas pelo canto da grelha.
   const QUADRANT_WORDS = {
     tl: ['😰 Ansioso/a', '😤 Irritado/a', '😫 Frustrado/a', '😓 Stressado/a', '😩 Overwhelmed', '😕 Confuso/a', '😔 Inseguro/a'],
@@ -68,15 +69,11 @@ export const WellbeingModal = ({
     br: ['😌 Calmo/a', '🧘 Em paz', '🙏 Grato/a', '🥰 Amado/a', '🤝 Apoiado/a', '✨ Resiliente', '🌱 Orgulhoso/a'],
   };
   const ALWAYS_WORDS = ['🔥 Com craving', '😐 Ambivalente', '⚡ Okay', '🤗 Vulnerável'];
-  // Palavras do "canto" escolhido; no meio (6, assim-assim / média) mostram-se
-  // as dos dois lados, um pouco de cada.
-  const sides = (n) => (n > 6 ? ['hi'] : n < 6 ? ['lo'] : ['lo', 'hi']);
-  // Basta escolher uma das duas filas para aparecerem palavras; a que falta
-  // conta como "no meio".
+  // Palavras do "canto": basta humor OU energia; o que falta conta como "no
+  // meio", e no meio mostram-se as dos dois lados (um pouco de cada).
+  const sides = (n) => (!Number.isFinite(n) || n === 6 ? ['lo', 'hi'] : n > 6 ? ['hi'] : ['lo']);
   const anyPick = Number.isFinite(moodN) || Number.isFinite(energyN);
-  const quadKeys = anyPick
-    ? sides(Number.isFinite(energyN) ? energyN : 6).flatMap(e => sides(Number.isFinite(moodN) ? moodN : 6).map(m => (e === 'hi' ? 't' : 'b') + (m === 'hi' ? 'r' : 'l')))
-    : [];
+  const quadKeys = anyPick ? sides(energyN).flatMap(e => sides(moodN).map(m => (e === 'hi' ? 't' : 'b') + (m === 'hi' ? 'r' : 'l'))) : [];
   const perKey = quadKeys.length > 1 ? Math.ceil(7 / quadKeys.length) + 1 : 7;
   const quickWords = allEmotions
     ? EMOTIONS_LIST
@@ -203,48 +200,91 @@ export const WellbeingModal = ({
       <div className="space-y-3">
         <div className="flex items-baseline justify-between">
           <span className="text-sm font-medium text-gray-300">{i18n.language === 'en' ? 'How are you?' : 'Como estás?'}</span>
+          <span className="text-xs text-gray-400 font-mono-theme">
+            {hasPoint
+              ? (i18n.language === 'en' ? `Mood ${moodN}/10 · Energy ${energyN}/10` : `Humor ${moodN}/10 · Energia ${energyN}/10`)
+              : (i18n.language === 'en' ? 'mood × energy' : 'humor × energia')}
+          </span>
         </div>
-        {/* Duas filas de 5 botões grandes: humor (carinha + palavra) e energia
-            (bateria a encher). Um toque em cada fila; mais claro do que a grelha
-            5×5. Guarda nos números de 1 a 10 de sempre. Sem verde/vermelho: o
-            escolhido fica roxo. */}
-        <div className="space-y-1.5">
-          <div className="grid grid-cols-5 gap-1.5">
-            {MOOD_COLS.map(c => {
-              const on = moodN === c.v;
-              return (
-                <button key={c.v} type="button" aria-pressed={on} onClick={() => setWellbeingForm(f => ({ ...f, mood: String(c.v) }))}
-                  className={'rounded-2xl border py-2 px-0.5 flex flex-col items-center gap-1 transition-colors ' + (on ? 'bg-purple-600 border-purple-300 text-white' : 'bg-gray-700/50 border-gray-600 text-gray-300 hover:border-gray-400')}>
-                  <span className="text-2xl leading-none">{c.face}</span>
-                  <span className="text-[10px] leading-tight text-center">{c.label}</span>
-                </button>
-              );
-            })}
+        {/* Duas maneiras de registar, à escolha (lembra-se neste aparelho):
+            "Botões" (bolinhas em degradê com número e palavra) ou "Quadrado"
+            (o degradê com as palavras à volta). Guardam os mesmos números. */}
+        <div className="flex gap-1 p-0.5 rounded-full bg-gray-700/50 w-max text-xs">
+          {[['botoes', i18n.language === 'en' ? 'Buttons' : 'Botões'], ['quadrado', i18n.language === 'en' ? 'Square' : 'Quadrado']].map(([id, lbl]) => (
+            <button key={id} type="button" aria-pressed={quickMode === id} onClick={() => pickMode(id)}
+              className={'px-3 py-1 rounded-full transition-colors ' + (quickMode === id ? 'bg-purple-600 text-white' : 'text-gray-300')}>{lbl}</button>
+          ))}
+        </div>
+        {quickMode === 'quadrado' ? (<>
+        {/* O quadrado em degradê (de que a Teresa gostou) com as PALAVRAS à volta,
+            para ser óbvio o que é cada sítio: por baixo o humor (muito em baixo →
+            muito bem), ao lado a energia (muita → nenhuma). Um toque (ou arrastar)
+            dá os dois números de 1 a 10. Sem carinhas; cores suaves, nenhuma é a
+            "certa". A palavra mais perto de onde tocaste fica a branco. */}
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: 'auto minmax(0, 1fr)' }}>
+          <div className="flex flex-col justify-between py-1 text-[10px] leading-tight text-right">
+            {ENERGY_WORDS.map((w, i) => (
+              <span key={w} className={energyIdx === 4 - i ? 'text-white font-bold' : 'text-gray-500'}>{w}</span>
+            ))}
+          </div>
+          <div
+            role="application"
+            aria-label={i18n.language === 'en' ? 'Mood and energy: tap where you are' : 'Humor e energia: toca onde estás'}
+            className="relative w-full aspect-square max-h-[280px] rounded-2xl border border-gray-700 cursor-crosshair select-none"
+            style={{
+              touchAction: 'none',
+              background: 'radial-gradient(circle at 0% 0%, rgb(255 72 176 / 0.35), transparent 62%), radial-gradient(circle at 100% 0%, rgb(169 139 240 / 0.38), transparent 62%), radial-gradient(circle at 0% 100%, rgb(110 193 255 / 0.30), transparent 62%), radial-gradient(circle at 100% 100%, rgb(0 169 157 / 0.35), transparent 62%), rgb(255 255 255 / 0.03)'
+            }}
+            onPointerDown={(e) => { setDragging(true); try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* sem captura */ } setFromPad(e); }}
+            onPointerMove={(e) => { if (dragging) setFromPad(e); }}
+            onPointerUp={() => setDragging(false)}
+            onPointerCancel={() => setDragging(false)}
+          >
+            <span className="absolute left-1/2 top-2 bottom-2 w-px bg-white/10" />
+            <span className="absolute top-1/2 left-2 right-2 h-px bg-white/10" />
+            {!hasPoint && (
+              <span className="absolute inset-0 flex items-center justify-center text-xs text-gray-300 pointer-events-none">{i18n.language === 'en' ? 'tap where you are' : 'toca onde estás'}</span>
+            )}
+            {hasPoint && (
+              <span
+                className="absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-white border-[3px] border-gray-900 shadow pointer-events-none"
+                style={{ left: `${((moodN - 1) / 9) * 100}%`, top: `${(1 - (energyN - 1) / 9) * 100}%` }}
+              />
+            )}
+          </div>
+          <span className="text-[10px] text-gray-500 self-start">⚡</span>
+          <div className="grid grid-cols-5 text-[10px] leading-tight text-center">
+            {MOOD_WORDS.map((w, i) => (
+              <span key={w} className={moodIdx === i ? 'text-white font-bold' : 'text-gray-500'}>{w}</span>
+            ))}
           </div>
         </div>
-        <div className="space-y-1.5">
-          <span className="text-sm font-medium text-gray-300">{i18n.language === 'en' ? 'Energy' : 'Energia'}</span>
-          <div className="grid grid-cols-5 gap-1.5">
-            {ENERGY_ROWS.slice().reverse().map((r, idx) => {
-              const on = energyN === r.v;
-              return (
-                <button key={r.v} type="button" aria-pressed={on} aria-label={r.label} onClick={() => setWellbeingForm(f => ({ ...f, energy: String(r.v) }))}
-                  className={'rounded-2xl border py-2 px-0.5 flex flex-col items-center gap-1 transition-colors ' + (on ? 'bg-purple-600 border-purple-300 text-white' : 'bg-gray-700/50 border-gray-600 text-gray-300 hover:border-gray-400')}>
-                  {/* bateria: 0 a 4 tracinhos cheios */}
-                  <span className="flex items-center h-6">
-                    <span className={'flex gap-[2px] p-[2px] rounded-[4px] border ' + (on ? 'border-white' : 'border-gray-400')}>
-                      {[0, 1, 2, 3].map(k => (
-                        <span key={k} className={'w-[5px] h-3 rounded-[1px] ' + (k < idx ? (on ? 'bg-white' : 'bg-gray-300') : 'bg-transparent')} />
-                      ))}
-                    </span>
-                    <span className={'w-[2px] h-1.5 rounded-r-sm ' + (on ? 'bg-white' : 'bg-gray-400')} />
-                  </span>
-                  <span className="text-[10px] leading-tight text-center">{r.label}</span>
-                </button>
-              );
-            })}
-          </div>
+        </>) : (
+        <div className="space-y-2">
+          {[
+            { key: 'mood', title: i18n.language === 'en' ? 'Mood' : 'Humor', rgb: '169 139 240', words: MOOD_WORDS, cur: moodN, set: (v) => setWellbeingForm(f => ({ ...f, mood: String(v) })) },
+            { key: 'energy', title: i18n.language === 'en' ? 'Energy' : 'Energia', rgb: '110 193 255', words: ENERGY_WORDS.slice().reverse(), cur: energyN, set: (v) => setWellbeingForm(f => ({ ...f, energy: String(v) })) },
+          ].map(row => (
+            <div key={row.key}>
+              <div className="text-xs text-gray-400 mb-1">{row.title}</div>
+              <div className="grid grid-cols-5 gap-1.5">
+                {row.words.map((w, i) => {
+                  const v = 2 + i * 2;
+                  const on = row.cur === v;
+                  return (
+                    <button key={w} type="button" aria-pressed={on} onClick={() => row.set(v)}
+                      className={'rounded-2xl border pt-2.5 pb-2 px-0.5 flex flex-col items-center gap-1 transition-colors ' + (on ? 'bg-purple-600 border-purple-300 text-white' : 'bg-gray-700/40 border-gray-600 text-gray-300 hover:border-gray-400')}>
+                      <span className="w-5 h-5 rounded-full" style={{ background: `rgb(${row.rgb} / ${[0.3, 0.45, 0.6, 0.8, 1][i]})` }} />
+                      <span className="font-mono-theme text-xs">{v}</span>
+                      <span className="text-[10px] leading-tight text-center">{w}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
+        )}
         <div className="flex flex-wrap gap-1.5">
           {quickWords.map(e => {
             const on = chosenEmotions.includes(e);
