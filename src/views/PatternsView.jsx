@@ -97,18 +97,28 @@ export function PatternsView({
     // Serve de denominador às médias "por dia": os dias de antes de a pessoa
     // começar a usar a app não são dias "a zero" — simplesmente não se sabe.
     // Sem registo nenhum → null (e as médias por dia ficam sem valor).
-    const firstRecordDay = useMemo(() => {
-        let first = null;
-        const see = (k) => { if (k && (!first || k < first)) first = k; };
+    // Dias "conhecidos": dias com QUALQUER registo (consumo, bem-estar, ciclo,
+    // registo de mg). Só esses entram numa média "por dia": um dia com registos
+    // mas sem consumos é um 0 verdadeiro; um dia sem registo nenhum não se sabe
+    // (a app não estava a ser usada) e não conta como 0. Antes contava-se tudo
+    // desde o 1.º registo de sempre — um registo antigo solto chegava para
+    // meter centenas de dias "a zero" e afundar a média.
+    const knownDays = useMemo(() => {
+        const set = new Set();
+        const see = (k) => { if (k) set.add(k); };
         consumptions.forEach(c => see(getDateKeyFromItem(c)));
         wellbeingLogs.forEach(w => see(getDateKeyFromItem(w)));
         cycles.forEach(c => see(getDateKeyFromItem(c)));
         dailyLogs.forEach(l => { if (!isDayMarkLog(l)) see(getDateKeyFromItem(l)); });
         // Resumos por dia: no arranque podem ter dias que os registos ainda não carregaram.
         Object.keys(metrics?.consumptionDailyRollup || {}).forEach(see);
-        Object.keys(metrics?.dailySummary || {}).forEach(see);
+        return set;
+    }, [consumptions, wellbeingLogs, cycles, dailyLogs, metrics?.consumptionDailyRollup]);
+    const firstRecordDay = useMemo(() => {
+        let first = null;
+        knownDays.forEach(k => { if (!first || k < first) first = k; });
         return first;
-    }, [consumptions, wellbeingLogs, cycles, dailyLogs, metrics?.consumptionDailyRollup, metrics?.dailySummary]);
+    }, [knownDays]);
 
     return (
                                 <div className="space-y-4">
@@ -185,7 +195,7 @@ export function PatternsView({
                                                 const todayKey = getTodayKey();
                                                 const fromKey = [dateRange.start ? safeToISODate(dateRange.start) : null, firstRecordDay].filter(Boolean).sort().pop();
                                                 const toKey = [dateRange.end ? safeToISODate(dateRange.end) : todayKey, todayKey].sort()[0];
-                                                const countedDays = datesInRange(fromKey, toKey).filter(d => !excludedDates.has(d)).length;
+                                                const countedDays = datesInRange(fromKey, toKey).filter(d => !excludedDates.has(d) && knownDays.has(d)).length;
                                                 return countedDays > 0 ? (totalConsumptions / countedDays).toFixed(1) : '—';
                                             })();
 
@@ -1184,10 +1194,8 @@ export function PatternsView({
                                             const progExcluded = new Set([...excludedDates, ...progAtypical, ...(metrics?.unloggedDates || [])]);
 
                                             // Dias que CONTAM para uma média "por dia": não estão de fora e são do
-                                            // 1.º registo de sempre em diante (antes disso não se sabe, não é zero).
-                                            const countableDays = (days) => firstRecordDay
-                                                ? days.filter(d => !progExcluded.has(d) && d >= firstRecordDay)
-                                                : [];
+                                            // 1.º registo de sempre em diante (dias com algum registo: um dia sem registo nenhum não se sabe, não é zero).
+                                            const countableDays = (days) => days.filter(d => !progExcluded.has(d) && knownDays.has(d));
                                             const recentCountDays = countableDays(recentAllDays);
                                             const previousCountDays = countableDays(previousAllDays);
 

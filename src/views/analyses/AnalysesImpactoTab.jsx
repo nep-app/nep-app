@@ -754,7 +754,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                 {intraDayStats.avgMoodStart && intraDayStats.avgMoodEnd && (() => {
                                     const diff = parseFloat(intraDayStats.avgMoodEnd) - parseFloat(intraDayStats.avgMoodStart);
                                     const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                    const trendText = diff > 0.5 ? t('analyses.moodImproves') : diff < -0.5 ? t('analyses.moodDeclines') : t('analyses.energyStable');
+                                    const trendText = diff > 0.5 ? t('analyses.moodImproves') : diff < -0.5 ? t('analyses.moodDeclines') : t('analyses.moodStable');
 
                                     return (
                                         <>
@@ -780,7 +780,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                             {intraDayStats.avgEnergyStart && intraDayStats.avgEnergyEnd && (() => {
                                 const diff = parseFloat(intraDayStats.avgEnergyEnd) - parseFloat(intraDayStats.avgEnergyStart);
                                 const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                const trendText = diff > 0.5 ? t('analyses.moodImproves') : diff < -0.5 ? t('analyses.moodDeclines') : t('analyses.energyStable');
+                                const trendText = diff > 0.5 ? t('analyses.energyImproves') : diff < -0.5 ? t('analyses.energyDeclines') : t('analyses.energyStable');
 
                                 return (
                                     <div className="py-3 md:px-4 md:first:pl-0">
