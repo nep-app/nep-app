@@ -557,22 +557,22 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                     <div className="space-y-3">
                                         {/* Impacto Imediato do Consumo (Evolução + Eficácia juntos) */}
                                         {(latency.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
-                                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 border'}>
-                                                <div className={'text-sm font-semibold mb-4 ' + ('text-white')}>{t('analyses.impactMoodTitle')}</div>
+                                            <div>
+                                                <div className={'text-sm font-semibold mb-3 ' + ('text-white')}>{t('analyses.impactMoodTitle')}</div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    {/* Evolução Temporal (0h → 30min/1h/2h) */}
+                                                    {/* Evolução Temporal (0h → 30min/1h/2h) — números sem caixa, sem verde/vermelho */}
                                                     {latency.length > 0 && (
                                                         <div>
-                                                            <div className={'text-xs font-semibold mb-2 opacity-75'}>{t('analyses.impactMoodChangeSince')}</div>
-                                                            <div className="grid grid-cols-3 gap-2">
+                                                            <div className={'text-xs font-semibold mb-2 ' + ('text-gray-400')}>{t('analyses.impactMoodChangeSince')}</div>
+                                                            <div className="grid grid-cols-3 divide-x divide-gray-700 border-y border-gray-700 py-2">
                                                                 {latency.map(lat => (
-                                                                    <div key={lat.window} className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
-                                                                        <div className={'text-xs opacity-60'}>{lat.window}</div>
-                                                                        <div className={'text-lg font-bold ' + (parseFloat(lat.delta) > 0 ? ('text-green-400') : parseFloat(lat.delta) < 0 ? ('text-red-400') : ('text-gray-400'))}>
+                                                                    <div key={lat.window} className="px-2 py-1 text-center">
+                                                                        <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{lat.window}</div>
+                                                                        <div className="text-2xl font-bold font-mono-theme text-white">
                                                                             {lat.delta > 0 ? '+' : ''}{lat.delta}
                                                                         </div>
-                                                                        {lat.isPeak && <div className={'text-xs font-medium mt-0.5 ' + ('text-yellow-400')}>⚡</div>}
+                                                                        {lat.isPeak && <div className={'text-xs font-medium mt-0.5 ' + ('text-gray-400')}>⚡</div>}
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -582,21 +582,21 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                                     {/* Eficácia (Antes → Depois) */}
                                                     {experimentalFeatures.satisfaction.length > 0 && experimentalFeatures.satisfaction.map((sat, idx) => (
                                                         <div key={idx}>
-                                                            <div className={'text-xs font-semibold mb-2 opacity-75'}>{t('analyses.impactEfficacyLabel')}</div>
-                                                            <div className="grid grid-cols-2 gap-2">
-                                                                <div className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
-                                                                    <div className={'text-xs opacity-60'}>{t('analyses.impactImprovementLabel')}</div>
-                                                                    <div className={'text-lg font-bold ' + (parseFloat(sat.avgImprovement) > 0 ? ('text-green-400') : parseFloat(sat.avgImprovement) < 0 ? ('text-red-400') : ('text-gray-400'))}>
+                                                            <div className={'text-xs font-semibold mb-2 ' + ('text-gray-400')}>{t('analyses.impactEfficacyLabel')}</div>
+                                                            <div className="grid grid-cols-2 divide-x divide-gray-700 border-y border-gray-700 py-2">
+                                                                <div className="px-2 py-1 text-center">
+                                                                    <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{t('analyses.impactImprovementLabel')}</div>
+                                                                    <div className="text-2xl font-bold font-mono-theme text-white">
                                                                         {sat.avgImprovement > 0 ? '+' : ''}{sat.avgImprovement}
                                                                     </div>
-                                                                    <div className={'text-xs opacity-60'}>pts</div>
+                                                                    <div className={'text-xs ' + ('text-gray-500')}>pts</div>
                                                                 </div>
-                                                                <div className={'text-center p-2 rounded ' + ('bg-gray-800/50')}>
-                                                                    <div className={'text-xs opacity-60'}>{t('analyses.impactRateLabel')}</div>
-                                                                    <div className={'text-lg font-bold ' + ('text-green-400')}>
+                                                                <div className="px-2 py-1 text-center">
+                                                                    <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{t('analyses.impactRateLabel')}</div>
+                                                                    <div className="text-2xl font-bold font-mono-theme text-white">
                                                                         {sat.effectiveRate}%
                                                                     </div>
-                                                                    <div className={'text-xs opacity-60'}>{sat.effectiveCount}/{sat.totalEvents}</div>
+                                                                    <div className={'text-xs font-mono-theme ' + ('text-gray-500')}>{sat.effectiveCount}/{sat.totalEvents}</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -608,8 +608,8 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                 )}
 
                                 {/* Gráfico Agregado */}
-                                <div className={('bg-gray-800/50') + ' rounded-lg p-4'}>
-                                    <div className={'text-sm font-semibold mb-3 ' + ('text-gray-300')}>{t('analyses.impactTemporalEvolution')}</div>
+                                <div className="border-t border-gray-700 pt-4">
+                                    <div className={'text-sm font-semibold mb-3 ' + ('text-white')}>{t('analyses.impactTemporalEvolution')}</div>
                                     <div style={{ width: '100%', height: 200 }}>
                                         <ResponsiveContainer>
                                             <LineChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -5 }}>
@@ -659,16 +659,16 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                         <div className="space-y-4 mt-4">
                             {/* Gatilhos Compostos */}
                             {experimentalFeatures.compositeTriggers.length > 0 && (
-                                <div className={('bg-orange-900/20 border-orange-700/50') + ' rounded-lg p-4 border'}>
-                                    <div className={'text-sm font-semibold mb-3 ' + ('text-orange-300')}>
+                                <div>
+                                    <div className={'text-sm font-semibold mb-1 ' + ('text-white')}>
                                         {t('analyses.impactCompositeTriggers')}
                                     </div>
-                                    <p className={'text-xs mb-3 ' + ('text-gray-400')}>
+                                    <p className={'text-xs mb-2 ' + ('text-gray-400')}>
                                         {t('analyses.impactCompositeTriggersDesc')}
                                     </p>
-                                    <div className="space-y-2">
+                                    <div className="divide-y divide-gray-700 border-y border-gray-700">
                                         {experimentalFeatures.compositeTriggers.map((trigger, idx) => (
-                                            <div key={idx} className={'p-3 rounded border ' + ('bg-gray-800/50 border-gray-700')}>
+                                            <div key={idx} className="py-3">
                                                 <div className="flex items-start justify-between">
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
@@ -682,10 +682,10 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                                         </div>
                                                     </div>
                                                     <div className="text-right">
-                                                        <div className={'text-2xl font-bold ' + (parseFloat(trigger.increase) > 0 ? ('text-red-400') : ('text-green-400'))}>
+                                                        <div className="text-2xl font-bold font-mono-theme text-white">
                                                             {trigger.increase > 0 ? '+' : ''}{trigger.increase}%
                                                         </div>
-                                                        <div className={'text-xs ' + ('text-gray-400')}>
+                                                        <div className={'text-xs font-mono-theme ' + ('text-gray-400')}>
                                                             {trigger.avgCons} vs {trigger.normalCons} cons
                                                         </div>
                                                     </div>
@@ -698,11 +698,11 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
 
                             {/* Antecedentes */}
                             {experimentalFeatures.antecedents.length > 0 && (
-                                <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-4 border'}>
-                                    <div className={'text-sm font-semibold mb-3 ' + ('text-blue-300')}>
+                                <div>
+                                    <div className={'text-sm font-semibold mb-2 ' + ('text-white')}>
                                         {t('analyses.impactAntecedents')}
                                     </div>
-                                    <div className="space-y-1">
+                                    <div className="divide-y divide-gray-700 border-y border-gray-700">
                                         {/* Agrupar por padrão */}
                                         {(() => {
                                             const grouped = {};
@@ -711,14 +711,14 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                                 grouped[a.pattern].count++;
                                             });
                                             return Object.values(grouped).map((pattern, idx) => (
-                                                <div key={idx} className={'flex items-center justify-between p-2 rounded ' + ('bg-gray-800/50')}>
+                                                <div key={idx} className="flex items-center justify-between py-2">
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-base">{pattern.icon}</span>
                                                         <span className={'text-sm ' + ('text-gray-300')}>
                                                             {pattern.pattern}
                                                         </span>
                                                     </div>
-                                                    <div className={'text-xs font-semibold ' + ('text-blue-400')}>
+                                                    <div className={'text-xs font-semibold font-mono-theme ' + ('text-white')}>
                                                         {pattern.count}x
                                                     </div>
                                                 </div>
@@ -745,10 +745,11 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                     </p>
                     <div className="space-y-4">
                         {/* Evolução de Humor e Energia */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Humor e energia lado a lado, sem caixas: só uma linha fina a separar */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-700 border-y border-gray-700">
                             {/* Evolução de Humor */}
-                            <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-4 border'}>
-                                <div className={'text-sm font-semibold mb-3 ' + ('text-blue-300')}>{t('analyses.moodEvolution')}</div>
+                            <div className="py-3 md:px-4 md:first:pl-0">
+                                <div className={'text-sm font-semibold mb-3 ' + ('text-white')}>{t('analyses.moodEvolution')}</div>
 
                                 {intraDayStats.avgMoodStart && intraDayStats.avgMoodEnd && (() => {
                                     const diff = parseFloat(intraDayStats.avgMoodEnd) - parseFloat(intraDayStats.avgMoodStart);
@@ -759,11 +760,11 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                         <>
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center gap-2">
-                                                    <span className={'text-lg font-bold ' + ('text-blue-400')}>{intraDayStats.avgMoodStart}</span>
+                                                    <span className="text-2xl font-bold font-mono-theme text-white">{intraDayStats.avgMoodStart}</span>
                                                     <span className="text-xl">{arrow}</span>
-                                                    <span className={'text-lg font-bold ' + ('text-blue-400')}>{intraDayStats.avgMoodEnd}</span>
+                                                    <span className="text-2xl font-bold font-mono-theme text-white">{intraDayStats.avgMoodEnd}</span>
                                                 </div>
-                                                <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? ('bg-green-900/30 text-green-400') : diff < -0.5 ? ('bg-red-900/30 text-red-400') : ('bg-gray-700 text-gray-400'))}>
+                                                <span className="text-sm font-semibold font-mono-theme text-gray-300">
                                                     {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                                                 </span>
                                             </div>
@@ -782,15 +783,15 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                 const trendText = diff > 0.5 ? t('analyses.moodImproves') : diff < -0.5 ? t('analyses.moodDeclines') : t('analyses.energyStable');
 
                                 return (
-                                    <div className={('bg-yellow-900/20 border-yellow-700/50') + ' rounded-lg p-4 border'}>
-                                        <div className={'text-sm font-semibold mb-3 ' + ('text-yellow-300')}>{t('analyses.energyEvolution')}</div>
+                                    <div className="py-3 md:px-4 md:first:pl-0">
+                                        <div className={'text-sm font-semibold mb-3 ' + ('text-white')}>{t('analyses.energyEvolution')}</div>
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center gap-2">
-                                                <span className={'text-lg font-bold ' + ('text-yellow-400')}>{intraDayStats.avgEnergyStart}</span>
+                                                <span className="text-2xl font-bold font-mono-theme text-white">{intraDayStats.avgEnergyStart}</span>
                                                 <span className="text-xl">{arrow}</span>
-                                                <span className={'text-lg font-bold ' + ('text-yellow-400')}>{intraDayStats.avgEnergyEnd}</span>
+                                                <span className="text-2xl font-bold font-mono-theme text-white">{intraDayStats.avgEnergyEnd}</span>
                                             </div>
-                                            <span className={'text-sm font-semibold px-2 py-1 rounded ' + (diff > 0.5 ? ('bg-green-900/30 text-green-400') : diff < -0.5 ? ('bg-red-900/30 text-red-400') : ('bg-gray-700 text-gray-400'))}>
+                                            <span className="text-sm font-semibold font-mono-theme text-gray-300">
                                                 {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                                             </span>
                                         </div>
@@ -804,7 +805,7 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
 
                         {/* Impacto do Consumo - Novo Componente com Gráficos (Lazy Loaded) */}
                         <Suspense fallback={
-                            <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border text-center'}>
+                            <div className="py-6 text-center">
                                 <div className="animate-pulse">
                                     <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mx-auto mb-4"></div>
                                     <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>

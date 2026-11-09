@@ -338,42 +338,43 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                             {t('analyses.emotionalOverview')}
                         </h3>
-                        <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 border text-center'}>
-                                <div className={'text-3xl font-black mb-1 ' + ('text-white')}>
-                                    {emotionStats.positivePercent.toFixed(0)}%
-                                </div>
-                                <div className={'text-xs font-medium ' + ('text-gray-400')}>
+                        {/* Números sem caixa, separados por linhas finas (como no Dashboard dos Padrões) */}
+                        <div className="grid grid-cols-3 divide-x divide-gray-700 border-y border-gray-700 py-2 mb-4">
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">
                                     {t('analyses.positive')}
                                 </div>
-                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>
+                                <div className="text-2xl font-bold font-mono-theme text-white">
+                                    {emotionStats.positivePercent.toFixed(0)}%
+                                </div>
+                                <div className="text-xs mt-1 font-mono-theme text-gray-400">
                                     {emotionStats.positiveEmotions.length}
                                 </div>
                             </div>
-                            <div className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-4 border text-center'}>
-                                <div className={'text-3xl font-black mb-1 ' + ('text-white')}>
-                                    {emotionStats.negativePercent.toFixed(0)}%
-                                </div>
-                                <div className={'text-xs font-medium ' + ('text-gray-400')}>
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">
                                     {t('analyses.negative')}
                                 </div>
-                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>
+                                <div className="text-2xl font-bold font-mono-theme text-white">
+                                    {emotionStats.negativePercent.toFixed(0)}%
+                                </div>
+                                <div className="text-xs mt-1 font-mono-theme text-gray-400">
                                     {emotionStats.negativeEmotions.length}
                                 </div>
                             </div>
-                            <div className={('bg-gray-800/50 border-gray-700/50') + ' rounded-lg p-4 border text-center'}>
-                                <div className={'text-3xl font-black mb-1 ' + ('text-gray-400')}>
-                                    {emotionStats.allEmotions.length}
-                                </div>
-                                <div className={'text-xs font-medium ' + ('text-gray-400/70')}>
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">
                                     {t('analyses.totalLogged')}
+                                </div>
+                                <div className="text-2xl font-bold font-mono-theme text-white">
+                                    {emotionStats.allEmotions.length}
                                 </div>
                             </div>
                         </div>
-                        <div className={'flex items-center h-4 rounded-full overflow-hidden ' + ('bg-gray-800')}>
+                        <div className={'flex items-center h-4 rounded-full overflow-hidden ' + ('bg-gray-900')}>
                             <div
-                                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
-                                style={{width: emotionStats.positivePercent + '%'}}
+                                className="h-full transition-all duration-500"
+                                style={{width: emotionStats.positivePercent + '%', background: '#7c3aed'}}
                             />
                             <div
                                 className="h-full bg-gray-400 transition-all duration-500"
@@ -391,18 +392,18 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {/* Top 10 Emoções */}
                             <div>
                                 <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.topEmotions')}</div>
-                                <div className="space-y-2">
+                                <div className="divide-y divide-gray-700">
                                     {emotionStats.topEmotions.slice(0, 10).map((item, idx) => (
-                                        <div key={idx} className="flex items-center justify-between">
+                                        <div key={idx} className="flex items-center justify-between py-2">
                                             <div className="flex items-center gap-2 flex-1">
-                                                <span className={'text-xs font-bold w-5 text-center ' + ('text-gray-600')}>#{idx + 1}</span>
+                                                <span className={'text-xs font-bold font-mono-theme w-5 text-center ' + ('text-gray-500')}>#{idx + 1}</span>
                                                 <span className={'text-sm truncate ' + (
                                                     item.category === 'positive' ? ('text-green-400') :
                                                     item.category === 'negative' ? ('text-gray-300') :
                                                     ('text-gray-400')
                                                 )}>{translateEmotion(item.emotion)}</span>
                                             </div>
-                                            <span className={'text-xs ' + ('text-gray-500')}>
+                                            <span className={'text-xs font-mono-theme ' + ('text-gray-400')}>
                                                 {item.count}× ({item.percent.toFixed(0)}%)
                                             </span>
                                         </div>
@@ -414,37 +415,30 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {emotionStats.weekdayStats.length > 0 && (
                                 <div>
                                     <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.byWeekday')}</div>
-                                    <div className="space-y-2">
+                                    <div className="divide-y divide-gray-700">
                                         {emotionStats.weekdayStats
                                             .sort((a, b) => b.positivePercent - a.positivePercent)
                                             .map((stat) => (
-                                            <div key={stat.day} className="flex items-center justify-between">
+                                            <div key={stat.day} className="flex items-center justify-between py-2">
                                                 <span className={'text-sm w-16 ' + ('text-white')}>{getWeekdayName(stat.day)}</span>
                                                 <div className="flex-1 mx-2">
                                                     <div className={'h-1.5 rounded-full overflow-hidden ' + ('bg-gray-900')}>
+                                                        {/* Uma só cor de dados: a largura já mostra a proporção, a cor não julga */}
                                                         <div
-                                                            className={'h-full transition-all duration-500 ' + (
-                                                                stat.positivePercent >= 60 ? 'bg-gradient-to-r from-green-500 to-emerald-500' :
-                                                                stat.positivePercent >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
-                                                                'bg-gray-500'
-                                                            )}
-                                                            style={{width: stat.positivePercent + '%'}}
+                                                            className="h-full transition-all duration-500"
+                                                            style={{width: stat.positivePercent + '%', background: '#7c3aed'}}
                                                         />
                                                     </div>
                                                 </div>
-                                                <span className={'text-xs w-12 text-right ' + (
-                                                    stat.positivePercent >= 60 ? ('text-green-400') :
-                                                    stat.positivePercent >= 40 ? ('text-yellow-400') :
-                                                    ('text-gray-300')
-                                                )}>
+                                                <span className={'text-xs w-12 text-right font-mono-theme ' + ('text-white')}>
                                                     {stat.positivePercent.toFixed(0)}%
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
                                     {emotionStats.weekdayStats.length >= 2 && (
-                                        <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-3 mt-3 border'}>
-                                            <p className={'text-xs ' + ('text-blue-300')}>
+                                        <div className="border-t border-gray-700 pt-3 mt-1">
+                                            <p className={'text-xs ' + ('text-gray-400')}>
                                                 {t('analyses.bestWorstDay', {
                                                     best: getWeekdayName(emotionStats.bestDay.day),
                                                     bestPct: emotionStats.bestDay.positivePercent.toFixed(0),
@@ -509,51 +503,55 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
 
                             if (highRiskEmotions.length === 0 && lowRiskEmotions.length === 0) {
                                 return (
-                                    <div className={'text-center py-4 text-sm ' + ('bg-gray-700/30 text-gray-400') + ' rounded-lg'}>
+                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
                                         {t('analyses.insufficientCorrelation')}
                                     </div>
                                 );
                             }
 
                             return (
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {/* Emoções de ALTO risco (mais consumo) */}
                                     {highRiskEmotions.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-amber-300')}>
+                                            <div className={'text-xs font-medium mb-1 uppercase tracking-wide ' + ('text-gray-400')}>
                                                 {t('analyses.highRisk')}
                                             </div>
-                                            {highRiskEmotions.map(e => (
-                                                <div key={e.emotion} className={('bg-amber-900/15 border-amber-700/40') + ' rounded-lg p-3 border mb-2'}>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-amber-200')}>{translateEmotion(e.emotion)}</span>
-                                                        <span className={('bg-amber-800/40 text-amber-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                            <div className="divide-y divide-gray-700">
+                                                {highRiskEmotions.map(e => (
+                                                    <div key={e.emotion} className="py-2">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className={'font-medium text-sm ' + ('text-white')}>{translateEmotion(e.emotion)}</span>
+                                                            <span className={'text-xs font-bold font-mono-theme ' + ('text-gray-400')}>{e.count}×</span>
+                                                        </div>
+                                                        <div className={'text-xs ' + ('text-gray-400')}>
+                                                            {t('analyses.highRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
+                                                        </div>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-amber-300/70')}>
-                                                        {t('analyses.highRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 
                                     {/* Emoções de BAIXO risco (menos consumo) */}
                                     {lowRiskEmotions.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-white')}>
+                                            <div className={'text-xs font-medium mb-1 uppercase tracking-wide ' + ('text-gray-400')}>
                                                 {t('analyses.lowRisk')}
                                             </div>
-                                            {lowRiskEmotions.map(e => (
-                                                <div key={e.emotion} className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-3 border mb-2'}>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-gray-200')}>{translateEmotion(e.emotion)}</span>
-                                                        <span className={('bg-gray-800/40 border-gray-700 text-gray-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{e.count}×</span>
+                                            <div className="divide-y divide-gray-700">
+                                                {lowRiskEmotions.map(e => (
+                                                    <div key={e.emotion} className="py-2">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className={'font-medium text-sm ' + ('text-white')}>{translateEmotion(e.emotion)}</span>
+                                                            <span className={'text-xs font-bold font-mono-theme ' + ('text-gray-400')}>{e.count}×</span>
+                                                        </div>
+                                                        <div className={'text-xs ' + ('text-gray-400')}>
+                                                            {t('analyses.lowRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
+                                                        </div>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-gray-400')}>
-                                                        {t('analyses.lowRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -579,37 +577,38 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                             {t('analyses.triggerOverview')}
                         </h3>
-                        <div className="grid grid-cols-3 gap-4">
-                            <div className={('bg-amber-900/15 border-amber-700/40') + ' rounded-lg p-4 border text-center'}>
-                                <div className={'text-3xl font-black mb-1 ' + ('text-red-400')}>
-                                    {triggerStats.allTriggers.length}
-                                </div>
-                                <div className={'text-xs font-medium ' + ('text-red-300/70')}>
+                        {/* Números sem caixa nem cor de alarme (gatilhos não são "maus") */}
+                        <div className="grid grid-cols-3 divide-x divide-gray-700 border-y border-gray-700 py-2">
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">
                                     {t('analyses.totalTriggers')}
                                 </div>
-                                <div className={'text-xs mt-1 ' + ('text-red-400/60')}>
+                                <div className="text-2xl font-bold font-mono-theme text-white">
+                                    {triggerStats.allTriggers.length}
+                                </div>
+                                <div className={'text-xs mt-1 ' + ('text-gray-500')}>
                                     {t('analyses.identified')}
                                 </div>
                             </div>
-                            <div className={('bg-orange-900/20 border-orange-700/50') + ' rounded-lg p-4 border text-center'}>
-                                <div className={'text-3xl font-black mb-1 ' + ('text-orange-400')}>
-                                    {triggerStats.topTriggers.length}
-                                </div>
-                                <div className={'text-xs font-medium ' + ('text-orange-300/70')}>
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">
                                     {t('analyses.differentTypes')}
                                 </div>
-                                <div className={'text-xs mt-1 ' + ('text-orange-400/60')}>
+                                <div className="text-2xl font-bold font-mono-theme text-white">
+                                    {triggerStats.topTriggers.length}
+                                </div>
+                                <div className={'text-xs mt-1 ' + ('text-gray-500')}>
                                     {t('analyses.ofTriggers')}
                                 </div>
                             </div>
-                            <div className={('bg-yellow-900/20 border-yellow-700/50') + ' rounded-lg p-4 border text-center'}>
-                                <div className={'text-3xl font-black mb-1 ' + ('text-yellow-400')}>
-                                    {(triggerStats.allTriggers.length / analysisCycles.length).toFixed(1)}
-                                </div>
-                                <div className={'text-xs font-medium ' + ('text-yellow-300/70')}>
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">
                                     {t('analyses.avgPerCycle')}
                                 </div>
-                                <div className={'text-xs mt-1 ' + ('text-yellow-400/60')}>
+                                <div className="text-2xl font-bold font-mono-theme text-white">
+                                    {(triggerStats.allTriggers.length / analysisCycles.length).toFixed(1)}
+                                </div>
+                                <div className={'text-xs mt-1 ' + ('text-gray-500')}>
                                     {t('analyses.perCycle')}
                                 </div>
                             </div>
@@ -625,14 +624,14 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {/* Top 10 Gatilhos */}
                             <div>
                                 <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.topTriggers')}</div>
-                                <div className="space-y-2">
+                                <div className="divide-y divide-gray-700">
                                     {triggerStats.topTriggers.slice(0, 10).map((item, idx) => (
-                                        <div key={idx} className="flex items-center justify-between">
+                                        <div key={idx} className="flex items-center justify-between py-2">
                                             <div className="flex items-center gap-2 flex-1">
-                                                <span className={'text-xs font-bold w-5 text-center ' + ('text-gray-600')}>#{idx + 1}</span>
-                                                <span className={'text-sm truncate ' + ('text-red-400')}>{translateTrigger(item.trigger)}</span>
+                                                <span className={'text-xs font-bold font-mono-theme w-5 text-center ' + ('text-gray-500')}>#{idx + 1}</span>
+                                                <span className={'text-sm truncate ' + ('text-white')}>{translateTrigger(item.trigger)}</span>
                                             </div>
-                                            <span className={'text-xs ' + ('text-gray-500')}>
+                                            <span className={'text-xs font-mono-theme ' + ('text-gray-400')}>
                                                 {item.count}× ({item.percent.toFixed(0)}%)
                                             </span>
                                         </div>
@@ -644,7 +643,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             {Object.values(triggerStats.triggersByWeekday).some(count => count > 0) && (
                                 <div>
                                     <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.byWeekday')}</div>
-                                    <div className="space-y-2">
+                                    <div className="divide-y divide-gray-700">
                                         {Object.entries(triggerStats.triggersByWeekday)
                                             .map(([day, count]) => ({
                                                 day: parseInt(day),
@@ -654,25 +653,25 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                             .filter(stat => stat.count > 0)
                                             .sort((a, b) => b.count - a.count)
                                             .map((stat) => (
-                                            <div key={stat.day} className="flex items-center justify-between">
+                                            <div key={stat.day} className="flex items-center justify-between py-2">
                                                 <span className={'text-sm w-16 ' + ('text-white')}>{getWeekdayName(stat.day)}</span>
                                                 <div className="flex-1 mx-2">
                                                     <div className={'h-1.5 rounded-full overflow-hidden ' + ('bg-gray-900')}>
                                                         <div
-                                                            className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
-                                                            style={{width: stat.percent + '%'}}
+                                                            className="h-full transition-all duration-500"
+                                                            style={{width: stat.percent + '%', background: '#7c3aed'}}
                                                         />
                                                     </div>
                                                 </div>
-                                                <span className={'text-xs w-12 text-right ' + ('text-red-400')}>
+                                                <span className={'text-xs w-12 text-right font-mono-theme ' + ('text-white')}>
                                                     {stat.count}
                                                 </span>
                                             </div>
                                         ))}
                                     </div>
                                     {triggerStats.mostTriggersDay.count > 0 && (
-                                        <div className={('bg-blue-900/20 border-blue-700/50') + ' rounded-lg p-3 mt-3 border'}>
-                                            <p className={'text-xs ' + ('text-blue-300')}>
+                                        <div className="border-t border-gray-700 pt-3 mt-1">
+                                            <p className={'text-xs ' + ('text-gray-400')}>
                                                 {t('analyses.mostTriggersDay', {
                                                     day: getWeekdayName(triggerStats.mostTriggersDay.day),
                                                     count: triggerStats.mostTriggersDay.count,
@@ -735,51 +734,55 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
 
                             if (highRiskTriggers.length === 0 && lowRiskTriggers.length === 0) {
                                 return (
-                                    <div className={'text-center py-4 text-sm ' + ('bg-gray-700/30 text-gray-400') + ' rounded-lg'}>
+                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
                                         {t('analyses.insufficientCorrelation')}
                                     </div>
                                 );
                             }
 
                             return (
-                                <div className="space-y-3">
+                                <div className="space-y-4">
                                     {/* Gatilhos de ALTO risco (mais consumo) */}
                                     {highRiskTriggers.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-amber-300')}>
+                                            <div className={'text-xs font-medium mb-1 uppercase tracking-wide ' + ('text-gray-400')}>
                                                 {t('analyses.highRisk')}
                                             </div>
-                                            {highRiskTriggers.map(tr => (
-                                                <div key={translateTrigger(tr.trigger)} className={('bg-amber-900/15 border-amber-700/40') + ' rounded-lg p-3 border mb-2'}>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-red-300')}>{translateTrigger(tr.trigger)}</span>
-                                                        <span className={('bg-amber-800/40 text-amber-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
+                                            <div className="divide-y divide-gray-700">
+                                                {highRiskTriggers.map(tr => (
+                                                    <div key={translateTrigger(tr.trigger)} className="py-2">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className={'font-medium text-sm ' + ('text-white')}>{translateTrigger(tr.trigger)}</span>
+                                                            <span className={'text-xs font-bold font-mono-theme ' + ('text-gray-400')}>{tr.count}×</span>
+                                                        </div>
+                                                        <div className={'text-xs ' + ('text-gray-400')}>
+                                                            {t('analyses.highRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
+                                                        </div>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-amber-300/70')}>
-                                                        {t('analyses.highRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
 
                                     {/* Gatilhos de BAIXO risco (menos consumo) */}
                                     {lowRiskTriggers.length > 0 && (
                                         <div>
-                                            <div className={'text-xs font-medium mb-2 uppercase tracking-wide ' + ('text-white')}>
+                                            <div className={'text-xs font-medium mb-1 uppercase tracking-wide ' + ('text-gray-400')}>
                                                 {t('analyses.lowRisk')}
                                             </div>
-                                            {lowRiskTriggers.map(tr => (
-                                                <div key={translateTrigger(tr.trigger)} className={('bg-gray-800/40 border-gray-700') + ' rounded-lg p-3 border mb-2'}>
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className={'font-medium text-sm ' + ('text-white')}>{translateTrigger(tr.trigger)}</span>
-                                                        <span className={('bg-gray-800/40 border-gray-700 text-gray-200') + ' rounded-full px-2 py-0.5 text-xs font-bold'}>{tr.count}×</span>
+                                            <div className="divide-y divide-gray-700">
+                                                {lowRiskTriggers.map(tr => (
+                                                    <div key={translateTrigger(tr.trigger)} className="py-2">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <span className={'font-medium text-sm ' + ('text-white')}>{translateTrigger(tr.trigger)}</span>
+                                                            <span className={'text-xs font-bold font-mono-theme ' + ('text-gray-400')}>{tr.count}×</span>
+                                                        </div>
+                                                        <div className={'text-xs ' + ('text-gray-400')}>
+                                                            {t('analyses.lowRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
+                                                        </div>
                                                     </div>
-                                                    <div className={'text-xs ' + ('text-gray-400')}>
-                                                        {t('analyses.lowRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
-                                                    </div>
-                                                </div>
-                                            ))}
+                                                ))}
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -788,11 +791,11 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     </div>
 
                     {/* Consciencialização */}
-                    <div className={('bg-gray-800/40 border-gray-700') + ' rounded-xl p-6 border'}>
+                    <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-3 ' + ('text-white')}>
                             {t('analyses.awarenessSection')}
                         </h3>
-                        <p className={'text-sm mb-3 ' + ('text-white')}>
+                        <p className={'text-sm mb-3 font-mono-theme ' + ('text-white')}>
                             <strong>{triggerStats.cyclesWithTriggers}</strong> / {analysisCycles.length} ({((triggerStats.cyclesWithTriggers / analysisCycles.length) * 100).toFixed(0)}%)
                         </p>
                         <p className={'text-sm ' + ('text-gray-400')}>
@@ -811,18 +814,18 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                 <div className="space-y-4">
                     <div className={'bg-gray-800 border-gray-700 rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('analyses.exerciseSection')}</h3>
-                        <div className="grid grid-cols-3 gap-4 mb-4">
-                            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                                <div className={'text-2xl font-bold font-mono-theme text-green-400'}>{exerciseStats.daysWithExercise}</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.exerciseDays')}</div>
+                        <div className="grid grid-cols-3 divide-x divide-gray-700 border-y border-gray-700 py-2 mb-4">
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{t('analyses.exerciseDays')}</div>
+                                <div className="text-2xl font-bold font-mono-theme text-white">{exerciseStats.daysWithExercise}</div>
                             </div>
-                            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                                <div className={'text-2xl font-bold font-mono-theme text-green-400'}>{exerciseStats.exercisePercent.toFixed(0)}%</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.exerciseOfLoggedDays')}</div>
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{t('analyses.exerciseOfLoggedDays')}</div>
+                                <div className="text-2xl font-bold font-mono-theme text-white">{exerciseStats.exercisePercent.toFixed(0)}%</div>
                             </div>
-                            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                                <div className={'text-2xl font-bold text-green-400'}>{exerciseStats.avgDuration != null ? `${Math.round(exerciseStats.avgDuration)}min` : '—'}</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.avgDuration')}</div>
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{t('analyses.avgDuration')}</div>
+                                <div className="text-2xl font-bold font-mono-theme text-white">{exerciseStats.avgDuration != null ? `${Math.round(exerciseStats.avgDuration)}min` : '—'}</div>
                             </div>
                         </div>
 
@@ -835,11 +838,11 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                             <span className={'text-xs text-gray-300 w-24 truncate'}>{type}</span>
                                             <div className="flex-1 bg-gray-700 rounded-full h-2">
                                                 <div
-                                                    className="bg-green-500 h-2 rounded-full"
+                                                    className="bg-gray-400 h-2 rounded-full"
                                                     style={{ width: `${(count / exerciseStats.topTypes[0][1]) * 100}%` }}
                                                 />
                                             </div>
-                                            <span className={'text-xs text-gray-400 w-6 text-right'}>{count}x</span>
+                                            <span className={'text-xs font-mono-theme text-gray-400 w-6 text-right'}>{count}x</span>
                                         </div>
                                     ))}
                                 </div>
@@ -901,14 +904,14 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                 <div className="space-y-4">
                     <div className={'bg-gray-800 border-gray-700 rounded-xl p-6 border'}>
                         <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('analyses.symptomsSection')}</h3>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                                <div className={'text-2xl font-bold font-mono-theme text-orange-400'}>{symptomStats.allSymptoms.length}</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.symptomRecords')}</div>
+                        <div className="grid grid-cols-2 divide-x divide-gray-700 border-y border-gray-700 py-2 mb-4">
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{t('analyses.symptomRecords')}</div>
+                                <div className="text-2xl font-bold font-mono-theme text-white">{symptomStats.allSymptoms.length}</div>
                             </div>
-                            <div className="bg-gray-700/50 rounded-lg p-3 text-center">
-                                <div className={'text-2xl font-bold text-orange-400'}>{symptomStats.totalDays > 0 ? ((symptomStats.daysWithAnySymptom / symptomStats.totalDays) * 100).toFixed(0) : 0}%</div>
-                                <div className={'text-xs text-gray-400 mt-1'}>{t('analyses.symptomDaysLabel')}</div>
+                            <div className="px-2 py-1 text-center">
+                                <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{t('analyses.symptomDaysLabel')}</div>
+                                <div className="text-2xl font-bold font-mono-theme text-white">{symptomStats.totalDays > 0 ? ((symptomStats.daysWithAnySymptom / symptomStats.totalDays) * 100).toFixed(0) : 0}%</div>
                             </div>
                         </div>
 
@@ -919,11 +922,11 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     <span className={'text-xs text-gray-300 w-32 truncate'}>{symptom}</span>
                                     <div className="flex-1 bg-gray-700 rounded-full h-2">
                                         <div
-                                            className="bg-orange-500 h-2 rounded-full"
+                                            className="bg-gray-400 h-2 rounded-full"
                                             style={{ width: `${(count / symptomStats.topSymptoms[0][1]) * 100}%` }}
                                         />
                                     </div>
-                                    <span className={'text-xs text-gray-400 w-6 text-right'}>{count}x</span>
+                                    <span className={'text-xs font-mono-theme text-gray-400 w-6 text-right'}>{count}x</span>
                                 </div>
                             ))}
                         </div>

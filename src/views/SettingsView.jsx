@@ -17,10 +17,11 @@ const COMMUNITY_URL = 'https://nep-app.github.io/naosei/';
 // ── Secção que abre/fecha ───────────────────────────────────────────────────
 // Cartão com cabeçalho clicável. Fechada por defeito para a página não ocupar
 // tanto espaço — a pessoa abre só o que quer mexer.
-function Section({ icon, title, subtitle, defaultOpen = false, children }) {
+function Section({ icon, title, subtitle, defaultOpen = false, flat = false, children }) {
     const [open, setOpen] = useState(defaultOpen);
     return (
-        <div className="bg-gray-800 border-gray-700 rounded-xl border overflow-hidden">
+        // flat: dentro de um grupo (uma só caixa com linhas entre as secções).
+        <div className={flat ? '' : 'bg-gray-800 border-gray-700 rounded-xl border overflow-hidden'}>
             <button
                 onClick={() => setOpen(v => !v)}
                 className="w-full flex items-center justify-between p-4 text-left"
@@ -246,35 +247,24 @@ export const SettingsView = ({
                 </div>
             )}
 
-            {/* ── Idioma (compacto, no topo) ── */}
-            <div className="bg-gray-800 border-gray-700 rounded-xl p-4 border">
-                <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                    <Icons.Settings className="w-5 h-5" />
-                    {t('settings.language')}
-                </h3>
-                <div className="flex gap-3">
-                    <button
-                        onClick={() => handleChangeLang('pt')}
-                        className={
-                            'flex-1 py-2.5 rounded-lg font-medium transition-all border-2 ' +
-                            (currentLang === 'pt'
-                                ? 'bg-purple-600 border-purple-500 text-white'
-                                : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
-                        }
-                    >
-                        🇵🇹 Português
-                    </button>
-                    <button
-                        onClick={() => handleChangeLang('en')}
-                        className={
-                            'flex-1 py-2.5 rounded-lg font-medium transition-all border-2 ' +
-                            (currentLang === 'en'
-                                ? 'bg-purple-600 border-purple-500 text-white'
-                                : 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600')
-                        }
-                    >
-                        ENG
-                    </button>
+            {/* ── Idioma: uma linha, com um seletor pequeno PT/EN ── */}
+            <div className="bg-gray-800 border-gray-700 rounded-xl px-4 py-3 border flex items-center justify-between gap-3">
+                <span className="font-semibold text-white flex items-center gap-2">
+                    <span aria-hidden="true">🌐</span>
+                    {currentLang === 'en' ? 'Language' : 'Idioma'}
+                </span>
+                <div role="group" aria-label={t('settings.language')} className="flex gap-0.5 p-0.5 rounded-full bg-gray-700/60 text-sm font-semibold">
+                    {[['pt', 'PT'], ['en', 'EN']].map(([code, lbl]) => (
+                        <button
+                            key={code}
+                            type="button"
+                            aria-pressed={currentLang === code}
+                            onClick={() => handleChangeLang(code)}
+                            className={'px-3 py-1 rounded-full transition-colors ' + (currentLang === code ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white')}
+                        >
+                            {lbl}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -349,8 +339,10 @@ export const SettingsView = ({
                 </p>
             </div>
 
+            {/* As secções que abrem/fecham ficam numa só caixa, separadas por linhas. */}
+            <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden divide-y divide-gray-700">
             {/* ── Os meus dados (abre/fecha): sincronizar + exportar/backup/importar ── */}
-            <Section
+            <Section flat
                 icon={<Icons.RefreshCw className="w-5 h-5 text-gray-400" />}
                 title={pt ? 'Os meus dados' : 'My data'}
                 subtitle={pt
@@ -480,7 +472,7 @@ export const SettingsView = ({
             </Section>
 
             {/* ── Segurança e bloqueio (bloqueio automático + modo disfarce juntos) ── */}
-            <Section
+            <Section flat
                 icon={<Icons.Shield className="w-5 h-5 text-gray-400" />}
                 title={pt ? 'Segurança e bloqueio' : 'Security & lock'}
                 subtitle={pt ? 'Bloqueio automático e modo disfarce.' : 'Auto-lock and disguise mode.'}
@@ -559,7 +551,7 @@ export const SettingsView = ({
             </Section>
 
             {/* ── Conta (no fim, abre/fecha) ── */}
-            <Section
+            <Section flat
                 icon={<Icons.User className="w-5 h-5 text-gray-400" />}
                 title={t('settings.account')}
             >
@@ -589,7 +581,7 @@ export const SettingsView = ({
             </Section>
 
             {/* ── Sobre, ajuda e legal (tudo no mesmo dropdown) ── */}
-            <Section
+            <Section flat
                 icon={<Icons.Info className="w-5 h-5 text-gray-400" />}
                 title={pt ? 'Sobre, ajuda e legal' : 'About, help & legal'}
             >
@@ -665,6 +657,7 @@ export const SettingsView = ({
                 </div>
             </Section>
 
+            </div>
             {/* ── Privacidade e segurança (no fundo, sem repetir) ── */}
             <div className="bg-gray-800/40 border-gray-700 rounded-xl p-4 border border-gray-700">
                 <div className="flex items-start gap-2">
