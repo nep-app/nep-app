@@ -351,10 +351,16 @@ export function HistoryView({
             const arr = Object.entries(summary)
                 .filter(([, v]) => v && v.mg != null && v.mg > 0)
                 .map(([date, v]) => ({ date, mg: Math.round(v.mg) }));
+            // Dias em que só parte dos consumos tem mg medido: "≥ X mg" (pelo
+            // menos). Só aqui, para se ver; fora da meta e das médias.
+            const have = new Set(arr.map(a => a.date));
+            Object.entries(metrics?.mgPartialByDate || {}).forEach(([date, p]) => {
+                if (!have.has(date) && p && p.mg > 0) arr.push({ date, mg: Math.round(p.mg), partial: true, unknownDoses: p.unknownDoses });
+            });
             return filterByDateRange(arr, dateRange, 'date')
                 .sort((a, b) => (a.date < b.date ? 1 : -1));
         } catch { return []; }
-    }, [metrics?.dailySummary, dateRange]);
+    }, [metrics?.dailySummary, metrics?.mgPartialByDate, dateRange]);
 
     // Aplicar filtro de tópico
     const { filteredReflections, filteredWellbeing, filteredDailyLogs, filteredConsumptions, filteredCycles, filteredThoughts } = useMemo(() => {
@@ -1167,7 +1173,14 @@ export function HistoryView({
                                                                         <span className="text-sm text-gray-300">
                                                                             {(safeDate(d.date) || new Date(`${d.date}T12:00:00`)).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' })}
                                                                         </span>
-                                                                        <span className="text-sm font-medium text-green-300">{d.mg} mg</span>
+                                                                        {d.partial ? (
+                                                                    <span className="text-right">
+                                                                        <span className="block text-sm font-medium text-gray-300">≥ {d.mg} mg</span>
+                                                                        <span className="block text-[11px] text-gray-500">{isEN ? `at least · ${d.unknownDoses} use(s) without mg` : `pelo menos · ${d.unknownDoses} consumo(s) sem mg`}</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="text-sm font-medium text-green-300">{d.mg} mg</span>
+                                                                )}
                                                                     </div>
                                                                 ))}
                                                             </div>
