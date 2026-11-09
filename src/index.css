@@ -52,3 +52,15 @@ html[data-app-theme="riso"] button :is(.bg-purple-500, .bg-purple-600, .bg-purpl
 html[data-app-theme="riso"] :is(button, a, [role="button"]):is(.bg-purple-500, .bg-purple-600, .bg-purple-700, .bg-violet-500, .bg-indigo-500, .bg-indigo-600):hover {
   background-color: #6a3fc4;
 }
+
+/* Histórico: sombreados por tipo de registo, a pedido da Teresa.
+   Reflexões em roxo (com a barra à esquerda, como os pensamentos, que são
+   lilás); ciclos de sono em azul suave. Só identificam o tipo, não julgam. */
+.tint-reflexao {
+  background-color: rgb(124 58 237 / 0.12);
+  border-left-color: rgb(124 58 237 / 0.65);
+}
+.tint-ciclo {
+  background-color: rgb(110 193 255 / 0.08);
+  border-color: rgb(110 193 255 / 0.30);
+}

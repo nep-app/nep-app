@@ -608,6 +608,38 @@ export function HistoryView({
         );
     };
 
+    // Agrupar listas por dia (Hoje / Ontem / dia da semana), como no "Tudo".
+    // Usado também na sub-tab Consumos, para as duas mostrarem o mesmo.
+    const itemDay = (it) => (it.data && (it.data.date || safeToISODate(it.data.timestamp))) || safeToISODate(it.timestamp) || '';
+    const withDayHeaders = (list) => {
+        const perDay = {};
+        list.forEach(it => { const k = itemDay(it); perDay[k] = (perDay[k] || 0) + 1; });
+        let last = null;
+        return list.flatMap(it => {
+            const k = itemDay(it);
+            if (k === last) return [it];
+            last = k;
+            return [{ type: '__day', key: k, count: perDay[k] }, it];
+        });
+    };
+    const renderDayHeader = (h) => {
+        const todayK = safeToISODate(new Date());
+        const yd = new Date(); yd.setDate(yd.getDate() - 1);
+        const d = safeDate(h.key + 'T12:00:00');
+        const title = h.key === todayK ? (isEN ? 'Today' : 'Hoje')
+            : h.key === safeToISODate(yd) ? (isEN ? 'Yesterday' : 'Ontem')
+            : (d ? d.toLocaleDateString(i18n.language, { weekday: 'long' }) : h.key);
+        return (
+            <div key={`day-${h.key}`} className="flex items-baseline justify-between pt-4 first:pt-0 pb-1 border-b border-gray-700">
+                <span className="text-sm font-bold text-white capitalize">{title}</span>
+                <span className="text-xs text-gray-400">
+                    <span className="font-mono-theme">{d ? d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) : ''}</span>
+                    {' · '}{h.count} {isEN ? (h.count === 1 ? 'record' : 'records') : (h.count === 1 ? 'registo' : 'registos')}
+                </span>
+            </div>
+        );
+    };
+
     return (
                                 <div className="space-y-4">
                                     <h2 className="text-2xl font-bold text-white">{t('history.title')}</h2>
@@ -791,7 +823,7 @@ export function HistoryView({
                                                                 } else if (item.type === 'cycle') {
                                                                     const cycle = item.data;
                                                                     return (
-                                                                        <div key={`cycle-${cycle.id}`} className="bg-gray-800/40 border-gray-700 p-3 rounded-lg border">
+                                                                        <div key={`cycle-${cycle.id}`} className="tint-ciclo p-3 rounded-lg border">
                                                                             <div className="flex justify-between items-center mb-2">
                                                                                 <div className="text-sm font-medium text-white">
                                                                                     🌙 {(() => {
@@ -906,7 +938,7 @@ export function HistoryView({
                                                                     const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
                                                                     const isExpanded = expandedAnalysis === `reflection-${r.id}`;
                                                                     return (
-                                                                        <div key={`r-${r.id}`} className="border-gray-700 bg-gray-800/40 border border-gray-700-l-4 pl-4 py-2 rounded-r-lg">
+                                                                        <div key={`r-${r.id}`} className="tint-reflexao border-l-4 pl-4 py-2 rounded-r-lg">
                                                                             <div className="flex justify-between items-start mb-1">
                                                                                 <div className="text-xs text-gray-400">
                                                                                     📝 {(() => {
@@ -1363,7 +1395,7 @@ export function HistoryView({
                                                                     const analysis = r.answer ? getCachedSentimentAnalysis(r.answer) : null;
                                                                     const isExpanded = expandedAnalysis === `reflection-${r.id}`;
                                                                     return (
-                                                                        <div key={`r-${r.id}`} className="border-gray-700 bg-gray-800/40 border border-gray-700-l-4 pl-4 py-2 rounded-r-lg">
+                                                                        <div key={`r-${r.id}`} className="tint-reflexao border-l-4 pl-4 py-2 rounded-r-lg">
                                                                             {/* Etiqueta: distinguir pelo NOME, não só pela cor. */}
                                                                             <div className="text-[11px] font-semibold uppercase tracking-wide text-white mb-1">
                                                                                 ✍️ {isEN ? 'Reflection' : 'Reflexão'}
@@ -1506,7 +1538,7 @@ export function HistoryView({
                                                                 const isExpanded = expandedAnalysis === `reflection-${r.id}`;
 
                                                                 return (
-                                                                <div key={r.id} className="border-gray-700 bg-gray-800/40 border border-gray-700-l-4 pl-4 py-2 rounded-r-lg">
+                                                                <div key={r.id} className="tint-reflexao border-l-4 pl-4 py-2 rounded-r-lg">
                                                                     <div className="flex justify-between items-start mb-1">
                                                                         <div className="text-xs text-gray-400">
                                                                             {(() => {
@@ -1746,15 +1778,16 @@ export function HistoryView({
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2"><Icons.Clock className="w-4 h-4 text-white" /> {t('history.headerLogs', { count: filteredConsumptions.length + filteredDailyLogs.length })}</h3>
                                                         <div className="space-y-3">
-                                                            {consumptionLogsSorted.slice(0, consumptionsToShow).map(item => {
-                                                                    if (item.type === 'consumption') {
+                                                            {withDayHeaders(consumptionLogsSorted.slice(0, consumptionsToShow)).map(item => {
+                                                                    if (item.type === '__day') return renderDayHeader(item);
+                                                            if (item.type === 'consumption') {
                                                                         const c = item.data;
                                                                         return (
-                                                                            <div key={`c-${c.id}`} className="bg-gray-700 border-gray-600 p-3 rounded-lg border">
+                                                                            <div key={`c-${c.id}`} className="px-1 py-2">
                                                                                 <div className="flex justify-between items-center">
                                                                                     <div>
                                                                                         <div className="font-medium text-white">
-                                                                                            {formatDateTime(c.timestamp)}
+                                                                                            💊 <span className="font-mono-theme">{safeDate(c.timestamp)?.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' }) || formatDateTime(c.timestamp)}</span>
                                                                                         </div>
                                                                                         {c.substances?.length > 0 && <div className="text-sm mt-1 text-gray-200">{formatSubstances(c.substances)}</div>}
 {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
@@ -1774,11 +1807,8 @@ export function HistoryView({
                                                                                     <div className="flex-1">
                                                                                         <div className="font-medium mb-1 text-white">
                                                                                             {(() => {
-                                                                                                // Usar log.date (dia do registo) em vez de timestamp (quando foi criado)
-                                                                                                const d = safeDate(log.date || log.timestamp);
-                                                                                                if (!d) return t('history.invalidDate');
-                                                                                                const dateStr = d.toLocaleDateString(i18n.language);
-                                                                                                return dateStr;
+                                                                                                // O dia já está no título do grupo.
+                                                                                                return isEN ? '💊 Day total' : '💊 Total do dia';
                                                                                             })()}
                                                                                         </div>
                                                                                         <div className="flex items-center gap-3">
@@ -1826,7 +1856,7 @@ export function HistoryView({
                                                         <h3 className="font-semibold text-white mb-4 flex items-center gap-2">{t('history.sectionCycles')} ({filteredCycles.length})</h3>
                                                         <div className="space-y-3">
                                                             {filteredCycles.slice(0, cyclesHistoryToShow).map(cycle => (
-                                                                <div key={cycle.id} className="bg-gray-800/40 border-gray-700 p-3 rounded-lg border">
+                                                                <div key={cycle.id} className="tint-ciclo p-3 rounded-lg border">
                                                                     <div className="flex justify-between items-center mb-2">
                                                                         <div className="text-sm font-medium text-white">
                                                                             {(() => {
