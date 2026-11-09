@@ -14,6 +14,72 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievement } = analyticsService;
 
+// ===== ESTATÍSTICA DOS "SINAIS DE HOJE" =====
+// Contas pequenas, sem bibliotecas, para correrem no telemóvel. Servem para
+// a app VERIFICAR nos registos da própria pessoa se a soma de sinais do cartão
+// "Sinais de hoje" anda mesmo junto com o número de consumos do dia — e, se
+// não andar, dizer "não se distingue do acaso" (ver CLAUDE.md, "não sei").
+
+// Ordens com empates: cada valor recebe a sua posição na fila (1 = o mais
+// baixo); valores iguais recebem a MÉDIA das posições que ocupariam.
+// Ex.: [5, 1, 5] → [2.5, 1, 2.5].
+function averageRanks(values) {
+    const order = values.map((_, i) => i).sort((a, b) => values[a] - values[b]);
+    const ranks = new Array(values.length);
+    let i = 0;
+    while (i < order.length) {
+        let j = i;
+        while (j + 1 < order.length && values[order[j + 1]] === values[order[i]]) j++;
+        const r = (i + j) / 2 + 1;
+        for (let k = i; k <= j; k++) ranks[order[k]] = r;
+        i = j + 1;
+    }
+    return ranks;
+}
+
+// Correlação de Spearman (ρ) entre xs e ys + p por "deslocamento".
+// ρ é a correlação das ORDENS: só pergunta "quando um sobe, o outro tende a
+// subir?", sem supor linhas retas.
+// O p: dias seguidos parecem-se uns com os outros (uma semana pesada dá
+// vários dias pesados). Baralhar os dias ao calhas desfaz isso e faz o acaso
+// parecer mais fraco do que é — a app diria "há relação" vezes demais. Por
+// isso, em vez de baralhar, desliza-se a fila dos ys inteira (como uma
+// roda: o que sai de um lado entra do outro), e também a fila virada ao
+// contrário. As semanas pesadas continuam juntas, só deixam de coincidir
+// com os dias certos. Contam-se todos os deslizes (k) e em quantos (b) o
+// acaso dá um |ρ| tão forte como o verdadeiro: p = (b+1)/(k+1), nunca
+// zero — com b = 0 diz-se "menos de 1 em k". Deslizes de menos de
+// MIN_SHIFT dias ficam de fora (seriam quase a fila verdadeira).
+// Sem sorteio: os mesmos registos dão sempre o mesmo p.
+// Se uma das séries for sempre igual, não há ordem para comparar → rho null.
+const MIN_SHIFT = 7;
+function spearmanPermutation(xs, ys) {
+    const n = xs.length;
+    if (n < 2 * MIN_SHIFT + 1 || ys.length !== n) return { n, rho: null, b: null, m: 0, p: null };
+    const rx = averageRanks(xs), ry = averageRanks(ys);
+    const mid = (n + 1) / 2; // a média das ordens é sempre (n+1)/2, mesmo com empates
+    const ax = rx.map(r => r - mid), by = ry.map(r => r - mid);
+    let sxx = 0, syy = 0, sxy = 0;
+    for (let i = 0; i < n; i++) { sxx += ax[i] * ax[i]; syy += by[i] * by[i]; sxy += ax[i] * by[i]; }
+    if (sxx === 0 || syy === 0) return { n, rho: null, b: null, m: 0, p: null };
+    const den = Math.sqrt(sxx * syy);
+    const rho = sxy / den;
+    // Deslizar só muda a ordem dos ys: sxx e syy ficam iguais, por isso cada
+    // deslize só precisa de refazer o produto cruzado.
+    const limit = Math.abs(rho) - 1e-12; // folga para arredondamentos: um empate conta
+    const rev = by.slice().reverse();
+    let b = 0, m = 0;
+    const test = (arr, k) => {
+        let s = 0;
+        for (let i = 0; i < n; i++) s += ax[i] * arr[(i + k) % n];
+        m++;
+        if (Math.abs(s / den) >= limit) b++;
+    };
+    for (let k = MIN_SHIFT; k <= n - MIN_SHIFT; k++) test(by, k);
+    for (let k = 0; k < n; k++) test(rev, k);
+    return { n, rho, b, m, p: (b + 1) / (m + 1) };
+}
+
 export function PatternsView({
     patternsPeriod,
     setPatternsPeriod,
@@ -22,7 +88,7 @@ export function PatternsView({
     patternView,
     setPatternView
 }) {
-    const { consumptions, wellbeingLogs, cycles, dailyLogs, goals } = useData();
+    const { consumptions, wellbeingLogs, cycles, dailyLogs, goals, fullDataLoaded } = useData();
     // Meta de reduzir a frequência (consumos/dia), se a pessoa a tiver ativa.
     // É ela que decide se a Tendência e as barras podem ter cor de juízo:
     // sem meta, só descrição (regra do elogio).
@@ -119,6 +185,321 @@ export function PatternsView({
         knownDays.forEach(k => { if (!first || k < first) first = k; });
         return first;
     }, [knownDays]);
+
+    // ===== SINAIS DE HOJE (cartão do Painel) =====
+    // Os sinais somam-se com pesos fixos, escritos à mão — nunca foram tirados
+    // dos registos de ninguém. Por isso, antes de dizer alguma coisa sobre hoje,
+    // a app VERIFICA nos registos da própria pessoa se esta soma costumou andar
+    // junto com o número de consumos do dia. Se não andou (ou se ainda há poucos
+    // dias para saber), diz isso mesmo.
+    // Fica num useMemo: a verificação (umas dezenas de deslizes) só volta a correr
+    // quando os dados mudam, não a cada toque no ecrã.
+    const forecastTodayKey = getTodayKey();
+    const forecastModel = useMemo(() => {
+        // Agregar dados por dia
+        const parseSafe = (val) => { const n = parseFloat(val); return isNaN(n) ? null : n; };
+        const dailyData = {};
+        // Track mood/energy sums and counts for averaging
+        const moodCounts = {}, energyCounts = {};
+        const ensureDay = (date) => {
+            if (!dailyData[date]) dailyData[date] = { sleep: null, mood: null, energy: null, water: false, rest: false, food: false, social: false, consumptions: 0, mg: null };
+        };
+
+        wellbeingLogs.forEach(w => {
+            const date = w.date || safeToISODate(w.timestamp);
+            if (!date) return;
+            ensureDay(date);
+            if (w.mood != null) {
+                const v = parseSafe(w.mood);
+                if (v !== null) {
+                    moodCounts[date] = moodCounts[date] || { sum: 0, n: 0 };
+                    moodCounts[date].sum += v; moodCounts[date].n++;
+                    dailyData[date].mood = moodCounts[date].sum / moodCounts[date].n;
+                }
+            }
+            if (w.energy != null) {
+                const v = parseSafe(w.energy);
+                if (v !== null) {
+                    energyCounts[date] = energyCounts[date] || { sum: 0, n: 0 };
+                    energyCounts[date].sum += v; energyCounts[date].n++;
+                    dailyData[date].energy = energyCounts[date].sum / energyCounts[date].n;
+                }
+            }
+            if (w.water || (w.waterGlasses > 0)) dailyData[date].water = true;
+            if (w.rest || (w.exercise && w.exercise.trim()) || w.exerciseType || (w.exerciseDuration > 0)) dailyData[date].rest = true;
+            if (w.food) dailyData[date].food = true;
+            if (w.social) dailyData[date].social = true;
+        });
+        cycles.forEach(c => {
+            const date = c.date || safeToISODate(c.timestamp);
+            if (!date || c.sleep == null) return;
+            ensureDay(date);
+            const napMins = wellbeingLogs
+                .filter(w => (w.date || safeToISODate(w.timestamp)) === date && w.napDuration > 0)
+                .reduce((sum, w) => sum + (w.napDuration || 0), 0);
+            dailyData[date].sleep = parseFloat(c.sleep) + napMins / 60;
+        });
+        // mg por dia da fonte unificada (à mão ou pesagens do saco).
+        Object.entries(metrics?.dailySummary || {}).forEach(([date, sday]) => {
+            if (!(sday?.mg > 0)) return;
+            ensureDay(date);
+            dailyData[date].mg = sday.mg;
+        });
+        consumptions.forEach(c => {
+            const date = c.date || safeToISODate(c.timestamp);
+            if (!date) return;
+            ensureDay(date);
+            dailyData[date].consumptions++;
+        });
+
+        // Emoções de cada dia, juntas uma só vez (antes procurava-se na lista
+        // toda para cada dia — com centenas de dias a verificar ficava lento).
+        const emotionsByDay = {};
+        wellbeingLogs.forEach(w => {
+            const date = w.date || safeToISODate(w.timestamp);
+            if (!date) return;
+            (emotionsByDay[date] = emotionsByDay[date] || []).push(...(w.emotions || []));
+        });
+
+        // Dias com dados, por ordem, e somas acumuladas de consumos por dia da
+        // semana: pre*[i] = totais dos i primeiros dias da lista. Assim, para
+        // qualquer dia de referência, sabe-se a média "das sextas" só com os
+        // dias ANTERIORES a ele, sem voltar a percorrer tudo.
+        const sortedKeys = Object.keys(dailyData).sort();
+        const dowOf = (key) => new Date(`${key}T12:00:00`).getDay(); // dia LOCAL
+        const preSum = [new Array(7).fill(0)], preCnt = [new Array(7).fill(0)], preTotal = [0];
+        sortedKeys.forEach((k, i) => {
+            const s = preSum[i].slice(), c = preCnt[i].slice();
+            const dow = dowOf(k);
+            s[dow] += dailyData[k].consumptions; c[dow]++;
+            preSum.push(s); preCnt.push(c); preTotal.push(preTotal[i] + dailyData[k].consumptions);
+        });
+        // Quantos dias da lista vêm ANTES de refKey (procura binária).
+        const countBefore = (refKey) => {
+            let lo = 0, hi = sortedKeys.length;
+            while (lo < hi) { const mid = (lo + hi) >> 1; if (sortedKeys[mid] < refKey) lo = mid + 1; else hi = mid; }
+            return lo;
+        };
+
+        // ── SCORE PARA UM DIA QUALQUER ────────────────────────────
+        // Os mesmos sinais e os mesmos pesos de sempre, mas contados a partir
+        // de um dia de referência (refKey): "ontem" = refKey − 1, etc. Para
+        // hoje dá exatamente o que o cartão dava antes.
+        // strict = true (verificação no passado): o dia da semana e a tendência
+        // de consumo só olham para dias ANTERIORES a refKey — nunca para o
+        // próprio dia nem para depois (seria espreitar a resposta).
+        // Hoje também usa strict: o cartão mostra exatamente a conta que foi
+        // verificada no passado (e não mistura os consumos de hoje, ainda a meio).
+        // strict = false fica só como opção.
+        // tr = função de tradução: só com ela se monta a lista de fatores (na
+        // verificação do passado só interessa o número).
+        const scoreFor = (refKey, { strict = false, tr = null, lang = 'pt' } = {}) => {
+            const ref = new Date(`${refKey}T12:00:00`);
+            const getDS = (n) => { const d = new Date(ref); d.setDate(d.getDate() - n); return safeToISODate(d); };
+            const d1 = getDS(1), d2 = getDS(2), d3 = getDS(3);
+            if (![d1, d2, d3].some(d => dailyData[d])) return { hasInputs: false, score: null, factors: [], weeksOfData: 0 };
+
+            // Média ponderada 3 dias: ontem ×3, anteontem ×2, há 3 dias ×1
+            const wavg = (field) => {
+                const pts = [{ d: d1, w: 3 }, { d: d2, w: 2 }, { d: d3, w: 1 }].filter(p => dailyData[p.d]?.[field] != null);
+                if (!pts.length) return null;
+                const tw = pts.reduce((s, p) => s + p.w, 0);
+                return pts.reduce((s, p) => s + dailyData[p.d][field] * p.w, 0) / tw;
+            };
+            const sleep = wavg('sleep'), mood = wavg('mood'), energy = wavg('energy');
+            const fmt = (v) => v != null ? v.toFixed(1) : '?';
+
+            // Autocuidado médio (ontem + anteontem)
+            const yd = dailyData[d1] || {};
+            const scDays = [d1, d2].filter(d => dailyData[d]);
+            let selfCareAvg = null;
+            if (scDays.length > 0) {
+                const scores = scDays.map(d => {
+                    const day = dailyData[d];
+                    return (day.water ? 1 : 0) + (day.rest ? 1 : 0) + (day.food ? 1 : 0) + (day.social ? 1 : 0);
+                });
+                selfCareAvg = scores.reduce((s, v) => s + v, 0) / scores.length;
+            }
+            // Detalhes de ontem para display
+            const selfCareDetails = [];
+            if (yd.water) selfCareDetails.push(lang === 'en' ? 'Water' : 'Água');
+            if (yd.rest) selfCareDetails.push(lang === 'en' ? 'Rest' : 'Descanso');
+            if (yd.food) selfCareDetails.push(lang === 'en' ? 'Food' : 'Alimentação');
+            if (yd.social) selfCareDetails.push('Social');
+
+            // Emoções (d1, d2, d3) — valência e instabilidade
+            const emotionsD1 = emotionsByDay[d1] || [];
+            const emotionsD2 = emotionsByDay[d2] || [];
+            const emotionsD3 = emotionsByDay[d3] || [];
+            const allRecentEmotions = [...emotionsD1, ...emotionsD2, ...emotionsD3];
+            const negEmotions = allRecentEmotions.filter(e => EMOTION_CATEGORIES.negative.includes(e));
+            const posEmotions = allRecentEmotions.filter(e => EMOTION_CATEGORIES.positive.includes(e));
+            const totalEmotions = allRecentEmotions.length;
+            const negRatio = totalEmotions >= 2 ? negEmotions.length / totalEmotions : null;
+            const hasCravingYesterday = emotionsD1.includes('🔥 Com craving');
+            const uniqueD1 = new Set(emotionsD1).size;
+            const emotionFlux = emotionsD1.length > 0 && emotionsD2.length > 0
+                ? emotionsD1.filter(e => !emotionsD2.includes(e)).length
+                : 0;
+            const emotionallyUnstable = uniqueD1 >= 5 || emotionFlux >= 4;
+
+            // Tendência humor/energia nos 7 dias antes de refKey (oldest→newest)
+            const calcTrend = (field) => {
+                const vals = Array.from({ length: 7 }, (_, i) => dailyData[getDS(7 - i)]?.[field] ?? null).filter(v => v != null);
+                if (vals.length < 3) return 0;
+                const h = Math.floor(vals.length / 2);
+                return (vals.slice(-h).reduce((s, v) => s + v, 0) / h) - (vals.slice(0, h).reduce((s, v) => s + v, 0) / h);
+            };
+            const moodTrend = calcTrend('mood'), energyTrend = calcTrend('energy');
+
+            // mg "ontem" vs. média dos 30 dias anteriores
+            const mgYesterday = yd.mg ?? null;
+            const mgHistory = Array.from({ length: 30 }, (_, i) => dailyData[getDS(i + 2)]?.mg).filter(v => v != null && v > 0);
+            const mgAvg = mgHistory.length >= 7 ? mgHistory.reduce((s, v) => s + v, 0) / mgHistory.length : null;
+
+            // Dia da semana (com as somas acumuladas)
+            const nDays = strict ? countBefore(refKey) : sortedKeys.length;
+            const weeksOfData = nDays / 7;
+            const refDOW = ref.getDay();
+            const dowCount = preCnt[nDays][refDOW];
+            const todayAvg = dowCount ? preSum[nDays][refDOW] / dowCount : null;
+            const overallAvg = preTotal[nDays] / nDays;
+
+            // Tendência consumo: os últimos 7 dias com dados (antes de refKey, se strict)
+            const l7c = sortedKeys.slice(Math.max(0, nDays - 7), nDays).map(d => dailyData[d].consumptions);
+            const trendRecent = l7c.length >= 6
+                ? (l7c.slice(-3).reduce((s, c) => s + c, 0) / 3) - (l7c.slice(0, 3).reduce((s, c) => s + c, 0) / 3)
+                : 0;
+
+            // ── CALCULAR SCORE ──────────────────────────────────
+            // add(pontos, fator): soma sempre os pontos; o texto do fator só
+            // se escreve quando há tradução (o cartão de hoje).
+            let riskScore = 30;
+            const riskFactors = [];
+            const add = (points, makeFactor) => { riskScore += points; if (tr) riskFactors.push(makeFactor()); };
+            const lbl = lang === 'en' ? '(avg 3d)' : '(média 3 dias)';
+
+            // 1. Sono — horas dormidas (média pond. 3 dias)
+            if (sleep !== null) {
+                if (sleep < 4) add(20, () => ({ emoji: '😴', positive: false, text: tr('patterns.riskLevel.sleepVeryLow', { lbl, value: fmt(sleep) }) }));
+                else if (sleep < 6) add(10, () => ({ emoji: '😴', positive: false, text: tr('patterns.riskLevel.sleepLow', { lbl, value: fmt(sleep) }) }));
+                else if (sleep >= 7) add(-10, () => ({ emoji: '😴', positive: true, text: tr('patterns.riskLevel.sleepGood', { lbl, value: fmt(sleep) }) }));
+            }
+
+            // 2. Humor (média pond. 3 dias) — pesos reduzidos pois tendência já captura a variação
+            if (mood !== null) {
+                if (mood < 4) add(10, () => ({ emoji: '😔', positive: false, text: tr('patterns.riskLevel.moodVeryLow', { lbl, value: fmt(mood) }) }));
+                else if (mood < 6) add(5, () => ({ emoji: '😐', positive: false, text: tr('patterns.riskLevel.moodModerate', { lbl, value: fmt(mood) }) }));
+                else if (mood >= 7) add(-8, () => ({ emoji: '😊', positive: true, text: tr('patterns.riskLevel.moodGood', { lbl, value: fmt(mood) }) }));
+            }
+
+            // 3. Energia (média pond. 3 dias) — pesos reduzidos
+            if (energy !== null) {
+                if (energy < 4) add(10, () => ({ emoji: '🔋', positive: false, text: tr('patterns.riskLevel.energyVeryLow', { lbl, value: fmt(energy) }) }));
+                else if (energy < 6) add(5, () => ({ emoji: '🪫', positive: false, text: tr('patterns.riskLevel.energyModerate', { lbl, value: fmt(energy) }) }));
+                else if (energy >= 7) add(-8, () => ({ emoji: '⚡', positive: true, text: tr('patterns.riskLevel.energyGood', { lbl, value: fmt(energy) }) }));
+            }
+
+            // 4. Autocuidado (média 2 dias)
+            if (selfCareAvg !== null) {
+                const scLbl = () => tr(scDays.length > 1 ? 'patterns.riskLevel.selfCareAvg2d' : 'patterns.riskLevel.selfCareYesterday');
+                if (selfCareAvg < 1) add(15, () => ({ emoji: '⚠️', positive: false, text: tr('patterns.riskLevel.noSelfCare') }));
+                else if (selfCareAvg < 2) add(8, () => ({ emoji: '⚠️', positive: false, text: tr('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) }));
+                else if (selfCareAvg < 3) add(0, () => ({ emoji: '🟡', positive: null, text: tr('patterns.riskLevel.selfCarePartial', { lbl: scLbl(), value: selfCareAvg.toFixed(1) }) }));
+                else add(-12, () => ({ emoji: '✅', positive: true, text: tr('patterns.riskLevel.goodSelfCare', { score: selfCareAvg.toFixed(1), items: selfCareDetails.join(', ') }) }));
+            }
+
+            // 5. Tendência humor/energia (últimos 7 dias)
+            if (moodTrend < -1.5 || energyTrend < -1.5) {
+                add(12, () => {
+                    const which = moodTrend < -1.5 && energyTrend < -1.5
+                        ? tr('patterns.riskLevel.moodEnergyDeclining')
+                        : moodTrend < -1.5 ? tr('patterns.riskLevel.moodDeclining') : tr('patterns.riskLevel.energyDeclining');
+                    return { emoji: '📉', positive: false, text: tr('patterns.riskLevel.trendDeclining', { which }) };
+                });
+            } else if (moodTrend > 1.5 && energyTrend > 1.5) {
+                add(-8, () => ({ emoji: '📈', positive: true, text: tr('patterns.riskLevel.trendImproving') }));
+            }
+
+            // 6. mg ontem vs. média histórica
+            if (mgYesterday !== null && mgAvg !== null) {
+                if (mgYesterday > mgAvg * 1.4) add(12, () => ({ emoji: '💊', positive: null, text: tr('patterns.riskLevel.mgWayAbove', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }));
+                else if (mgYesterday > mgAvg * 1.2) add(6, () => ({ emoji: '💊', positive: null, text: tr('patterns.riskLevel.mgAbove', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }));
+                else if (mgYesterday < mgAvg * 0.8) add(-6, () => ({ emoji: '💊', positive: null, text: tr('patterns.riskLevel.mgBelow', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }));
+            }
+
+            // 7. Dia da semana — só ativo com ≥ 4 semanas de dados
+            if (weeksOfData >= 4 && todayAvg !== null && todayAvg > overallAvg * 1.3) {
+                add(12, () => {
+                    const dayNames = tr('analyses.dayNames', { returnObjects: true });
+                    return { emoji: '📅', positive: null, text: tr('patterns.riskLevel.highDayOfWeek', { day: dayNames[refDOW] }) };
+                });
+            }
+
+            // 8. Tendência consumo últimos 7 dias
+            if (trendRecent > 0.5) add(10, () => ({ emoji: '📊', positive: null, text: tr('patterns.riskLevel.trendIncreasing') }));
+            else if (trendRecent < -0.5) add(-10, () => ({ emoji: '📊', positive: null, text: tr('patterns.riskLevel.trendDecreasing') }));
+
+            // 9. Emoções — craving, valência e instabilidade
+            if (hasCravingYesterday) add(15, () => ({ emoji: '🔥', positive: false, text: tr('patterns.riskLevel.cravingYesterday') }));
+            if (negRatio !== null) {
+                if (negRatio > 0.6 && totalEmotions >= 3) add(12, () => ({ emoji: '😰', positive: false, text: tr('patterns.riskLevel.emotionsMajorityNeg', { pct: Math.round(negRatio * 100) }) }));
+                else if (negRatio > 0.4 && totalEmotions >= 2) add(6, () => ({ emoji: '😐', positive: false, text: tr('patterns.riskLevel.emotionsHalfNeg', { pct: Math.round(negRatio * 100) }) }));
+                else if (negRatio < 0.25 && posEmotions.length >= 3) add(-8, () => ({ emoji: '💚', positive: true, text: tr('patterns.riskLevel.emotionsMostlyPos') }));
+            }
+            if (emotionallyUnstable) add(8, () => ({ emoji: '🌊', positive: false, text: tr('patterns.riskLevel.emotionsUnstable') }));
+
+            riskScore = Math.max(0, Math.min(100, riskScore));
+            return { hasInputs: true, score: riskScore, factors: riskFactors, weeksOfData };
+        };
+
+        // ── VERIFICAÇÃO NOS REGISTOS DA PESSOA ────────────────────
+        // Para cada dia D do passado (nunca hoje): o score que a app teria dado
+        // nesse dia, só com o que se sabia ANTES dele, ao lado do número de
+        // consumos que houve mesmo em D. Entram só dias conhecidos (com algum
+        // registo — aí 0 consumos é um 0 verdadeiro), fora dos atípicos e dos
+        // "não registei", e com algum registo nos 3 dias anteriores (a mesma
+        // regra do "dados insuficientes" de hoje).
+        const MIN_DAYS = 30;
+        const excludedAll = new Set([...(metrics?.atypicalDates || []), ...(metrics?.unloggedDates || [])]);
+        const pastScores = [], pastUses = [];
+        for (const D of sortedKeys) {
+            if (D >= forecastTodayKey) break;
+            if (excludedAll.has(D)) continue;
+            const r = scoreFor(D, { strict: true });
+            if (!r.hasInputs) continue;
+            pastScores.push(r.score);
+            pastUses.push(dailyData[D].consumptions);
+        }
+        const n = pastScores.length;
+
+        // Histórico ainda a carregar (só há os últimos dias) → não se sabe.
+        let check;
+        if (!fullDataLoaded) check = { status: 'loading', n, min: MIN_DAYS };
+        else if (n < MIN_DAYS) check = { status: 'few', n, min: MIN_DAYS };
+        else {
+            const test = spearmanPermutation(pastScores, pastUses);
+            if (test.rho == null) check = { status: 'flat', n, min: MIN_DAYS };
+            else {
+                // Terços dos dias passados pelo score, com a posição a meio dos
+                // empates: (ordem − 0,5) / n. Abaixo de 1/3 = dias com menos
+                // sinais; acima de 2/3 = dias com mais sinais.
+                const ranks = averageRanks(pastScores);
+                let hiSum = 0, hiN = 0, loSum = 0, loN = 0;
+                ranks.forEach((r, i) => {
+                    const pos = (r - 0.5) / n;
+                    if (pos > 2 / 3) { hiSum += pastUses[i]; hiN++; }
+                    else if (pos < 1 / 3) { loSum += pastUses[i]; loN++; }
+                });
+                check = {
+                    status: 'tested', n, min: MIN_DAYS, ...test, scores: pastScores,
+                    hiMean: hiN ? hiSum / hiN : null, hiN, loMean: loN ? loSum / loN : null, loN,
+                };
+            }
+        }
+
+        return { scoreFor, check };
+    }, [consumptions, wellbeingLogs, cycles, metrics?.dailySummary, metrics?.atypicalDates, metrics?.unloggedDates, fullDataLoaded, forecastTodayKey]);
 
     return (
                                 <div className="space-y-4">
@@ -534,69 +915,12 @@ export function PatternsView({
 
                                                     {/* Alertas Preditivos */}
                                                     {(() => {
-                                                        // Agregar dados por dia
-                                                        const parseSafe = (val) => { const n = parseFloat(val); return isNaN(n) ? null : n; };
-                                                        const dailyData = {};
-                                                        // Track mood/energy sums and counts for averaging
-                                                        const moodCounts = {}, energyCounts = {};
-                                                        const ensureDay = (date) => {
-                                                            if (!dailyData[date]) dailyData[date] = { sleep: null, mood: null, energy: null, water: false, rest: false, food: false, social: false, consumptions: 0, mg: null };
-                                                        };
+                                                        // Os dados por dia, o score e a verificação no passado vêm do
+                                                        // useMemo forecastModel (lá em cima). Aqui só se escolhe o que dizer.
+                                                        const { scoreFor, check } = forecastModel;
+                                                        const todayRes = scoreFor(forecastTodayKey, { strict: true, tr: t, lang: i18n.language });
 
-                                                        wellbeingLogs.forEach(w => {
-                                                            const date = w.date || safeToISODate(w.timestamp);
-                                                            if (!date) return;
-                                                            ensureDay(date);
-                                                            if (w.mood != null) {
-                                                                const v = parseSafe(w.mood);
-                                                                if (v !== null) {
-                                                                    moodCounts[date] = moodCounts[date] || { sum: 0, n: 0 };
-                                                                    moodCounts[date].sum += v; moodCounts[date].n++;
-                                                                    dailyData[date].mood = moodCounts[date].sum / moodCounts[date].n;
-                                                                }
-                                                            }
-                                                            if (w.energy != null) {
-                                                                const v = parseSafe(w.energy);
-                                                                if (v !== null) {
-                                                                    energyCounts[date] = energyCounts[date] || { sum: 0, n: 0 };
-                                                                    energyCounts[date].sum += v; energyCounts[date].n++;
-                                                                    dailyData[date].energy = energyCounts[date].sum / energyCounts[date].n;
-                                                                }
-                                                            }
-                                                            if (w.water || (w.waterGlasses > 0)) dailyData[date].water = true;
-                                                            if (w.rest || (w.exercise && w.exercise.trim()) || w.exerciseType || (w.exerciseDuration > 0)) dailyData[date].rest = true;
-                                                            if (w.food) dailyData[date].food = true;
-                                                            if (w.social) dailyData[date].social = true;
-                                                        });
-                                                        cycles.forEach(c => {
-                                                            const date = c.date || safeToISODate(c.timestamp);
-                                                            if (!date || c.sleep == null) return;
-                                                            ensureDay(date);
-                                                            const napMins = wellbeingLogs
-                                                                .filter(w => (w.date || safeToISODate(w.timestamp)) === date && w.napDuration > 0)
-                                                                .reduce((sum, w) => sum + (w.napDuration || 0), 0);
-                                                            dailyData[date].sleep = parseFloat(c.sleep) + napMins / 60;
-                                                        });
-                                                        // mg por dia da fonte unificada (à mão ou pesagens do saco).
-                                                        Object.entries(metrics?.dailySummary || {}).forEach(([date, sday]) => {
-                                                            if (!(sday?.mg > 0)) return;
-                                                            ensureDay(date);
-                                                            dailyData[date].mg = sday.mg;
-                                                        });
-                                                        consumptions.forEach(c => {
-                                                            const date = c.date || safeToISODate(c.timestamp);
-                                                            if (!date) return;
-                                                            ensureDay(date);
-                                                            dailyData[date].consumptions++;
-                                                        });
-
-                                                        // Use local date to avoid UTC midnight edge case
-                                                        const today = new Date();
-                                                        const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                                                        const getDS = (n) => { const d = new Date(today); d.setDate(d.getDate() - n); return localDateStr(d); };
-                                                        const d1 = getDS(1), d2 = getDS(2), d3 = getDS(3);
-
-                                                        if (![d1, d2, d3].some(d => dailyData[d])) {
+                                                        if (!todayRes.hasInputs) {
                                                             return (
                                                                 <div className="bg-gray-700/30 border border-gray-600/50 rounded-lg p-4 mt-4">
                                                                     <div className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">{t('patterns.todayForecast')}</div>
@@ -609,189 +933,69 @@ export function PatternsView({
                                                             );
                                                         }
 
-                                                        // Média ponderada 3 dias: ontem ×3, anteontem ×2, há 3 dias ×1
-                                                        const wavg = (field) => {
-                                                            const pts = [{ d: d1, w: 3 }, { d: d2, w: 2 }, { d: d3, w: 1 }].filter(p => dailyData[p.d]?.[field] != null);
-                                                            if (!pts.length) return null;
-                                                            const tw = pts.reduce((s, p) => s + p.w, 0);
-                                                            return pts.reduce((s, p) => s + dailyData[p.d][field] * p.w, 0) / tw;
+                                                        const { score: riskScore, factors: riskFactors, weeksOfData } = todayRes;
+
+                                                        // Números com vírgula em português e sinal de menos a sério.
+                                                        const num = (v, dec) => {
+                                                            const s = Math.abs(v).toFixed(dec);
+                                                            return (v < 0 ? '−' : '') + (i18n.language === 'en' ? s : s.replace('.', ','));
                                                         };
-                                                        const sleep = wavg('sleep'), mood = wavg('mood'), energy = wavg('energy');
-                                                        const fmt = (v) => v != null ? v.toFixed(1) : '?';
+                                                        // Os números do texto em letra de números (font-mono-theme).
+                                                        const withMono = (text) => String(text).split(/([−-]?\d+(?:[.,]\d+)?)/).map((part, i) =>
+                                                            i % 2 === 1 ? <span key={i} className="font-mono-theme">{part}</span> : part
+                                                        );
 
-                                                        // Autocuidado médio (ontem + anteontem)
-                                                        const yd = dailyData[d1] || {};
-                                                        const hasYesterdayWellbeing = !!(dailyData[d1]);
-                                                        const scDays = [d1, d2].filter(d => dailyData[d]);
-                                                        let selfCareAvg = null;
-                                                        if (scDays.length > 0) {
-                                                            const scores = scDays.map(d => {
-                                                                const day = dailyData[d];
-                                                                return (day.water ? 1 : 0) + (day.rest ? 1 : 0) + (day.food ? 1 : 0) + (day.social ? 1 : 0);
-                                                            });
-                                                            selfCareAvg = scores.reduce((s, v) => s + v, 0) / scores.length;
+                                                        // O que dizer depende do que a verificação nos registos da
+                                                        // pessoa conseguiu saber. Cada ramo pode RECUSAR dizer como vai
+                                                        // ser o dia: só no último os sinais de hoje são comparados.
+                                                        let riskLevel, riskNote;
+                                                        if (check.status === 'loading') {
+                                                            riskLevel = t('patterns.riskLevel.unknown');
+                                                            riskNote = t('patterns.riskLevel.noteLoading');
+                                                        } else if (check.status === 'few') {
+                                                            riskLevel = t('patterns.riskLevel.unknown');
+                                                            riskNote = t('patterns.riskLevel.noteFew', { min: check.min, n: check.n });
+                                                        } else if (check.status === 'flat') {
+                                                            riskLevel = t('patterns.riskLevel.unknown');
+                                                            riskNote = t('patterns.riskLevel.noteFlat', { n: check.n });
+                                                        } else {
+                                                            // p como aparece no ecrã (3 casas). A decisão usa o MESMO
+                                                            // número que se mostra, para nunca se ler "p = 0,050" ao lado
+                                                            // de uma frase que diz que os sinais acompanham o uso.
+                                                            const pShown = Number(check.p.toFixed(3));
+                                                            const pText = check.b === 0
+                                                                ? t('patterns.riskLevel.pLessThan', { m: check.m })
+                                                                : t('patterns.riskLevel.pValue', { p: num(pShown, 3) });
+                                                            const rhoText = num(check.rho, 2);
+                                                            if (pShown >= 0.05 || check.rho <= 0) {
+                                                                riskLevel = t('patterns.riskLevel.chance');
+                                                                riskNote = t('patterns.riskLevel.noteChance', { n: check.n, rho: rhoText, p: pText });
+                                                            } else {
+                                                                // Onde fica o score de hoje entre os dos dias passados
+                                                                // (posição a meio dos empates, como nos terços).
+                                                                let below = 0, equal = 0;
+                                                                check.scores.forEach(s => { if (s < riskScore) below++; else if (s === riskScore) equal++; });
+                                                                const pos = (below + equal / 2) / check.n;
+                                                                riskLevel = pos > 2 / 3 ? t('patterns.riskLevel.tercileHigh')
+                                                                    : pos < 1 / 3 ? t('patterns.riskLevel.tercileLow')
+                                                                    : t('patterns.riskLevel.tercileMid');
+                                                                // Médias dos terços só com dias suficientes em cada um
+                                                                // (com muitos empates um terço pode ficar quase vazio).
+                                                                riskNote = (check.hiN >= 5 && check.loN >= 5)
+                                                                    ? t('patterns.riskLevel.noteLinked', { n: check.n, a: num(check.hiMean, 1), b: num(check.loMean, 1), rho: rhoText, p: pText })
+                                                                    : t('patterns.riskLevel.noteLinkedNoGroups', { n: check.n, rho: rhoText, p: pText });
+                                                            }
                                                         }
-                                                        // Detalhes de ontem para display
-                                                        const selfCareDetails = [];
-                                                        if (yd.water) selfCareDetails.push(i18n.language === 'en' ? 'Water' : 'Água');
-                                                        if (yd.rest) selfCareDetails.push(i18n.language === 'en' ? 'Rest' : 'Descanso');
-                                                        if (yd.food) selfCareDetails.push(i18n.language === 'en' ? 'Food' : 'Alimentação');
-                                                        if (yd.social) selfCareDetails.push('Social');
-
-                                                        // Emoções (d1, d2, d3) — valência e instabilidade
-                                                        const getEmotionsForDay = (date) =>
-                                                            wellbeingLogs.filter(w => (w.date || safeToISODate(w.timestamp)) === date).flatMap(w => w.emotions || []);
-                                                        const emotionsD1 = getEmotionsForDay(d1);
-                                                        const emotionsD2 = getEmotionsForDay(d2);
-                                                        const emotionsD3 = getEmotionsForDay(d3);
-                                                        const allRecentEmotions = [...emotionsD1, ...emotionsD2, ...emotionsD3];
-                                                        const negEmotions = allRecentEmotions.filter(e => EMOTION_CATEGORIES.negative.includes(e));
-                                                        const posEmotions = allRecentEmotions.filter(e => EMOTION_CATEGORIES.positive.includes(e));
-                                                        const totalEmotions = allRecentEmotions.length;
-                                                        const negRatio = totalEmotions >= 2 ? negEmotions.length / totalEmotions : null;
-                                                        const hasCravingYesterday = emotionsD1.includes('🔥 Com craving');
-                                                        const uniqueD1 = new Set(emotionsD1).size;
-                                                        const emotionFlux = emotionsD1.length > 0 && emotionsD2.length > 0
-                                                            ? emotionsD1.filter(e => !emotionsD2.includes(e)).length
-                                                            : 0;
-                                                        const emotionallyUnstable = uniqueD1 >= 5 || emotionFlux >= 4;
-
-                                                        // Tendência humor/energia últimos 7 dias (oldest→newest)
-                                                        const calcTrend = (field) => {
-                                                            const vals = Array.from({ length: 7 }, (_, i) => dailyData[getDS(7 - i)]?.[field] ?? null).filter(v => v != null);
-                                                            if (vals.length < 3) return 0;
-                                                            const h = Math.floor(vals.length / 2);
-                                                            return (vals.slice(-h).reduce((s, v) => s + v, 0) / h) - (vals.slice(0, h).reduce((s, v) => s + v, 0) / h);
-                                                        };
-                                                        const moodTrend = calcTrend('mood'), energyTrend = calcTrend('energy');
-
-                                                        // mg ontem vs. média dos 30 dias anteriores
-                                                        const mgYesterday = yd.mg ?? null;
-                                                        const mgHistory = Array.from({ length: 30 }, (_, i) => dailyData[getDS(i + 2)]?.mg).filter(v => v != null && v > 0);
-                                                        const mgAvg = mgHistory.length >= 7 ? mgHistory.reduce((s, v) => s + v, 0) / mgHistory.length : null;
-
-                                                        // Dia da semana
-                                                        const allDays = Object.keys(dailyData);
-                                                        const weeksOfData = allDays.length / 7;
-                                                        const todayDOW = today.getDay();
-                                                        const wkCons = {};
-                                                        allDays.forEach(date => {
-                                                            const dow = new Date(date).getDay();
-                                                            if (!wkCons[dow]) wkCons[dow] = [];
-                                                            wkCons[dow].push(dailyData[date].consumptions);
-                                                        });
-                                                        const todayAvg = wkCons[todayDOW] ? wkCons[todayDOW].reduce((s, c) => s + c, 0) / wkCons[todayDOW].length : null;
-                                                        const overallAvg = allDays.reduce((s, d) => s + dailyData[d].consumptions, 0) / allDays.length;
-
-                                                        // Tendência consumo últimos 7 dias
-                                                        const last7S = Object.keys(dailyData).sort().slice(-7);
-                                                        const l7c = last7S.map(d => dailyData[d].consumptions);
-                                                        const trendRecent = l7c.length >= 6
-                                                            ? (l7c.slice(-3).reduce((s, c) => s + c, 0) / 3) - (l7c.slice(0, 3).reduce((s, c) => s + c, 0) / 3)
-                                                            : 0;
-
-                                                        // ── CALCULAR SCORE ──────────────────────────────────
-                                                        let riskScore = 30;
-                                                        const riskFactors = [];
-                                                        const lbl = i18n.language === 'en' ? '(avg 3d)' : '(média 3 dias)';
-
-                                                        // 1. Sono — horas dormidas (média pond. 3 dias)
-                                                        if (sleep !== null) {
-                                                            if (sleep < 4) { riskScore += 20; riskFactors.push({ emoji: '😴', positive: false, text: t('patterns.riskLevel.sleepVeryLow', { lbl, value: fmt(sleep) }) }); }
-                                                            else if (sleep < 6) { riskScore += 10; riskFactors.push({ emoji: '😴', positive: false, text: t('patterns.riskLevel.sleepLow', { lbl, value: fmt(sleep) }) }); }
-                                                            else if (sleep >= 7) { riskScore -= 10; riskFactors.push({ emoji: '😴', positive: true, text: t('patterns.riskLevel.sleepGood', { lbl, value: fmt(sleep) }) }); }
-                                                        }
-
-                                                        // 2. Humor (média pond. 3 dias) — pesos reduzidos pois tendência já captura a variação
-                                                        if (mood !== null) {
-                                                            if (mood < 4) { riskScore += 10; riskFactors.push({ emoji: '😔', positive: false, text: t('patterns.riskLevel.moodVeryLow', { lbl, value: fmt(mood) }) }); }
-                                                            else if (mood < 6) { riskScore += 5; riskFactors.push({ emoji: '😐', positive: false, text: t('patterns.riskLevel.moodModerate', { lbl, value: fmt(mood) }) }); }
-                                                            else if (mood >= 7) { riskScore -= 8; riskFactors.push({ emoji: '😊', positive: true, text: t('patterns.riskLevel.moodGood', { lbl, value: fmt(mood) }) }); }
-                                                        }
-
-                                                        // 3. Energia (média pond. 3 dias) — pesos reduzidos
-                                                        if (energy !== null) {
-                                                            if (energy < 4) { riskScore += 10; riskFactors.push({ emoji: '🔋', positive: false, text: t('patterns.riskLevel.energyVeryLow', { lbl, value: fmt(energy) }) }); }
-                                                            else if (energy < 6) { riskScore += 5; riskFactors.push({ emoji: '🪫', positive: false, text: t('patterns.riskLevel.energyModerate', { lbl, value: fmt(energy) }) }); }
-                                                            else if (energy >= 7) { riskScore -= 8; riskFactors.push({ emoji: '⚡', positive: true, text: t('patterns.riskLevel.energyGood', { lbl, value: fmt(energy) }) }); }
-                                                        }
-
-                                                        // 4. Autocuidado (média 2 dias)
-                                                        if (selfCareAvg !== null) {
-                                                            const scLbl = t(scDays.length > 1 ? 'patterns.riskLevel.selfCareAvg2d' : 'patterns.riskLevel.selfCareYesterday');
-                                                            if (selfCareAvg < 1) { riskScore += 15; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.noSelfCare') }); }
-                                                            else if (selfCareAvg < 2) { riskScore += 8; riskFactors.push({ emoji: '⚠️', positive: false, text: t('patterns.riskLevel.minSelfCare', { items: selfCareDetails.join(', ') }) }); }
-                                                            else if (selfCareAvg < 3) { riskFactors.push({ emoji: '🟡', positive: null, text: t('patterns.riskLevel.selfCarePartial', { lbl: scLbl, value: selfCareAvg.toFixed(1) }) }); }
-                                                            else { riskScore -= 12; riskFactors.push({ emoji: '✅', positive: true, text: t('patterns.riskLevel.goodSelfCare', { score: selfCareAvg.toFixed(1), items: selfCareDetails.join(', ') }) }); }
-                                                        }
-
-                                                        // 5. Tendência humor/energia (últimos 7 dias)
-                                                        if (moodTrend < -1.5 || energyTrend < -1.5) {
-                                                            riskScore += 12;
-                                                            const which = moodTrend < -1.5 && energyTrend < -1.5
-                                                                ? t('patterns.riskLevel.moodEnergyDeclining')
-                                                                : moodTrend < -1.5 ? t('patterns.riskLevel.moodDeclining') : t('patterns.riskLevel.energyDeclining');
-                                                            riskFactors.push({ emoji: '📉', positive: false, text: t('patterns.riskLevel.trendDeclining', { which }) });
-                                                        } else if (moodTrend > 1.5 && energyTrend > 1.5) {
-                                                            riskScore -= 8;
-                                                            riskFactors.push({ emoji: '📈', positive: true, text: t('patterns.riskLevel.trendImproving') });
-                                                        }
-
-                                                        // 6. mg ontem vs. média histórica
-                                                        if (mgYesterday !== null && mgAvg !== null) {
-                                                            if (mgYesterday > mgAvg * 1.4) { riskScore += 12; riskFactors.push({ emoji: '💊', positive: null, text: t('patterns.riskLevel.mgWayAbove', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
-                                                            else if (mgYesterday > mgAvg * 1.2) { riskScore += 6; riskFactors.push({ emoji: '💊', positive: null, text: t('patterns.riskLevel.mgAbove', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
-                                                            else if (mgYesterday < mgAvg * 0.8) { riskScore -= 6; riskFactors.push({ emoji: '💊', positive: null, text: t('patterns.riskLevel.mgBelow', { yesterday: mgYesterday, avg: Math.round(mgAvg) }) }); }
-                                                        }
-
-                                                        // 7. Dia da semana — só ativo com ≥ 4 semanas de dados
-                                                        if (weeksOfData >= 4 && todayAvg !== null && todayAvg > overallAvg * 1.3) {
-                                                            riskScore += 12;
-                                                            const dayNames = t('analyses.dayNames', { returnObjects: true });
-                                                            riskFactors.push({ emoji: '📅', positive: null, text: t('patterns.riskLevel.highDayOfWeek', { day: dayNames[todayDOW] }) });
-                                                        }
-
-                                                        // 8. Tendência consumo últimos 7 dias
-                                                        if (trendRecent > 0.5) { riskScore += 10; riskFactors.push({ emoji: '📊', positive: null, text: t('patterns.riskLevel.trendIncreasing') }); }
-                                                        else if (trendRecent < -0.5) { riskScore -= 10; riskFactors.push({ emoji: '📊', positive: null, text: t('patterns.riskLevel.trendDecreasing') }); }
-
-                                                        // 9. Emoções — craving, valência e instabilidade
-                                                        if (hasCravingYesterday) { riskScore += 15; riskFactors.push({ emoji: '🔥', positive: false, text: t('patterns.riskLevel.cravingYesterday') }); }
-                                                        if (negRatio !== null) {
-                                                            if (negRatio > 0.6 && totalEmotions >= 3) { riskScore += 12; riskFactors.push({ emoji: '😰', positive: false, text: t('patterns.riskLevel.emotionsMajorityNeg', { pct: Math.round(negRatio * 100) }) }); }
-                                                            else if (negRatio > 0.4 && totalEmotions >= 2) { riskScore += 6; riskFactors.push({ emoji: '😐', positive: false, text: t('patterns.riskLevel.emotionsHalfNeg', { pct: Math.round(negRatio * 100) }) }); }
-                                                            else if (negRatio < 0.25 && posEmotions.length >= 3) { riskScore -= 8; riskFactors.push({ emoji: '💚', positive: true, text: t('patterns.riskLevel.emotionsMostlyPos') }); }
-                                                        }
-                                                        if (emotionallyUnstable) { riskScore += 8; riskFactors.push({ emoji: '🌊', positive: false, text: t('patterns.riskLevel.emotionsUnstable') }); }
-
-                                                        riskScore = Math.max(0, Math.min(100, riskScore));
 
                                                         // Classificar o PADRÃO do dia — não o "risco".
                                                         // Um dia de uso mais alto não é um perigo nem uma falha:
                                                         // é um dia. O alarme (🚨 + vermelho) dizia o contrário e
                                                         // contradizia o paradigma de redução de danos do projeto.
-                                                        // Fica a informação — "hoje parece-se com os teus dias
-                                                        // de uso mais alto" — numa paleta que não julga.
-                                                        let riskLevel, riskColor, riskBg, riskBorder, riskEmoji;
-                                                        if (riskScore >= 70) {
-                                                            riskLevel = t('patterns.riskLevel.high');
-                                                            riskColor = 'text-white';
-                                                            riskBg = 'bg-gray-800/40';
-                                                            riskBorder = 'border-gray-700';
-                                                            riskEmoji = '📊';
-                                                        } else if (riskScore >= 55) {
-                                                            riskLevel = t('patterns.riskLevel.moderate');
-                                                            riskColor = 'text-white';
-                                                            riskBg = 'bg-gray-800/40';
-                                                            riskBorder = 'border-gray-700';
-                                                            riskEmoji = '📊';
-                                                        } else {
-                                                            riskLevel = t('patterns.riskLevel.low');
-                                                            riskColor = 'text-white';
-                                                            riskBg = 'bg-gray-800/40';
-                                                            riskBorder = 'border-gray-700';
-                                                            riskEmoji = '📊';
-                                                        }
+                                                        // Fica a informação numa paleta que não julga (sem verde/vermelho).
+                                                        const riskColor = 'text-white';
+                                                        const riskBg = 'bg-gray-800/40';
+                                                        const riskBorder = 'border-gray-700';
+                                                        const riskEmoji = '📊';
 
                                                         return (
                                                             <div className={`${riskBg} border ${riskBorder} rounded-lg p-4 mt-4`}>
@@ -811,19 +1015,19 @@ export function PatternsView({
                                                                     {riskFactors.length > 0 && (
                                                                         <div className="mt-2 space-y-1">
                                                                             <div className={'text-xs font-semibold ' + 'text-gray-400'}>{t('patterns.riskLevel.factors')}</div>
-                                                                            {/* positive === null são os factores sobre a DIREÇÃO do consumo, que na
-                                                                                v6.50.0 deixaram de ser verdes/vermelhos. Ficavam a AMARELO, que
-                                                                                se lê como aviso — "menos consumos nos últimos 7 dias" aparecia
-                                                                                pintado de alerta. Neutro é cinzento. */}
+                                                                            {/* Todos os sinais em cinzento. A vermelho/verde liam-se como
+                                                                                "isto empurra para mais uso" — mesmo quando a própria
+                                                                                verificação dizia que não se distinguem do acaso. A cor
+                                                                                afirmava o que os números não sabiam. */}
                                                                             {riskFactors.map((rf, idx) => (
-                                                                                <div key={idx} className={'text-xs ' + (rf.positive === true ? 'text-green-400' : rf.positive === false ? 'text-red-300' : 'text-gray-400')}>
+                                                                                <div key={idx} className="text-xs text-gray-300">
                                                                                     {rf.emoji} {rf.text}
                                                                                 </div>
                                                                             ))}
                                                                         </div>
                                                                     )}
                                                                     <div className={'text-xs mt-3 pt-2 border-t ' + 'border-gray-600 text-gray-400'}>
-                                                                        {riskScore >= 70 ? t('patterns.riskLevel.msgHigh') : riskScore >= 55 ? t('patterns.moderateRisk') : t('patterns.riskLevel.msgLow')}
+                                                                        {withMono(riskNote)}
                                                                     </div>
                                                                     {weeksOfData < 4 && (
                                                                         <div className="text-xs mt-2 text-yellow-600/70">

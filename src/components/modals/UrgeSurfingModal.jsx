@@ -290,19 +290,41 @@ const EXERCISES = [
   { key: 'move',      emoji: '🚶', titlePt: 'Mexer o corpo', titleEn: 'Move your body', descPt: 'Levantar, andar, água fria — descarregar o pico.', descEn: 'Stand up, walk, cold water — let the peak pass.' },
 ];
 
-export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, onProceed, onLog, warnings = [] }) {
+export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, onProceed, onLog, onUpdate, warnings = [] }) {
   const { t, i18n } = useTranslation();
   const pt = i18n.language !== 'en';
   const [active, setActive] = useState(null);
-  // Registo do momento de impulso: que exercícios usou + o que fez. Loga UMA vez.
+  // Registo do momento de impulso: que exercícios usou + o que fez.
+  // Guarda-se LOGO ao abrir o primeiro exercício (como "adiado") e depois só se
+  // atualiza (mais exercícios, ou "registar agora"). Antes só se guardava ao
+  // fechar a folha — e se a app fechasse antes (botão "voltar" do Android,
+  // trocar de app, o telemóvel matar a app), o impulso perdia-se.
   const usedRef = useRef(new Set());
-  const loggedRef = useRef(false);
-  const logOnce = (outcome) => {
-    if (loggedRef.current) return;
-    loggedRef.current = true;
-    onLog?.({ exercises: Array.from(usedRef.current), outcome });
+  const savedRef = useRef(null);  // promessa com o id do registo guardado
+  const finalRef = useRef(false); // já ficou o resultado final (fechou/registou)
+  const persist = (outcome) => {
+    const payload = { exercises: Array.from(usedRef.current), outcome };
+    if (!savedRef.current) {
+      savedRef.current = Promise.resolve(onLog?.(payload)).catch(() => null);
+    } else {
+      // Só atualiza depois de o primeiro registo estar mesmo guardado.
+      savedRef.current = savedRef.current.then(id => {
+        if (id) return Promise.resolve(onUpdate?.(id, payload)).catch(() => null).then(() => id);
+        return id;
+      });
+    }
   };
-  const openExercise = (key) => { usedRef.current.add(key); setActive(key); };
+  const logOnce = (outcome) => {
+    if (finalRef.current) return;
+    finalRef.current = true;
+    persist(outcome);
+  };
+  const openExercise = (key) => {
+    const isNew = !usedRef.current.has(key);
+    usedRef.current.add(key);
+    setActive(key);
+    if (isNew && !finalRef.current) persist('delayed');
+  };
   const handleClose = () => { logOnce('delayed'); onClose(); };
   const handleProceed = () => { logOnce('proceeded'); onClose(); if (onProceed) onProceed(); };
   const handleThoughts = () => { usedRef.current.add('thoughts'); logOnce('delayed'); onClose(); onOpenThoughts(); };

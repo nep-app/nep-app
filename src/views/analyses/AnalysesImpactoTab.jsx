@@ -4,7 +4,6 @@ import { safeToISODate } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-const WellbeingChart = lazy(() => import('../../components/WellbeingChart'));
 
 // O dia de calendário N dias antes/depois de 'YYYY-MM-DD', em hora local (ao
 // meio-dia, para a mudança de hora não saltar de dia). "Ontem" é sempre D-1 —
@@ -20,6 +19,33 @@ const somaDias = (key, n) => {
 // quando o campo não existe ou vem vazio.
 const temSono = (x) => !!x && x.sleep != null && x.sleep !== '' && !isNaN(parseFloat(x.sleep));
 
+// Diferença de médias entre dois grupos de registos + p por permutação:
+// misturam-se os registos dos dois grupos, reparte-se ao calhas m vezes e
+// conta-se em quantas (b) o acaso dá uma diferença tão grande como a
+// verdadeira. p = (b+1)/(m+1), nunca zero. Semente fixa: os mesmos registos
+// dão sempre o mesmo p. (Aproximado: registos do mesmo dia parecem-se entre
+// si, por isso isto é um "sinal", não uma prova.)
+const MIN_PER_WINDOW = 5;
+function diffPermutation(a, b, m = 2000) {
+    const na = a.length, nb = b.length;
+    const mean = (v) => v.reduce((s, x) => s + x, 0) / v.length;
+    const diff = mean(b) - mean(a);
+    const all = a.concat(b), total = all.reduce((s, x) => s + x, 0), n = all.length;
+    let seed = 20261109 >>> 0;
+    const rand = () => { seed = (seed + 0x6D2B79F5) >>> 0; let x = seed; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    const sh = all.slice();
+    const limit = Math.abs(diff) - 1e-9;
+    let hits = 0;
+    for (let k = 0; k < m; k++) {
+        for (let i = n - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); const t = sh[i]; sh[i] = sh[j]; sh[j] = t; }
+        let sa = 0;
+        for (let i = 0; i < na; i++) sa += sh[i];
+        const d = (total - sa) / nb - sa / na;
+        if (Math.abs(d) >= limit) hits++;
+    }
+    return { diff, p: (hits + 1) / (m + 1) };
+}
+
 export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
     analysisConsumptions,
     analysisWellbeing,
@@ -31,8 +57,8 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
     const { t } = useTranslation();
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const [expandedSections, setExpandedSections] = useState({
-        intraDayAnalysis: !isMobile,
-        experimental: !isMobile,
+        intraDayAnalysis: true,
+        experimental: true,
     });
 
     const toggleSection = (section) => {
@@ -164,42 +190,32 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
             // eram os dois registos anteriores na lista — que, com dias sem
             // registo pelo meio, podiam ser de há uma semana e passavam por
             // "as 48h antes". Se falta um desses dias, este dia não entra.
+            // Para cada padrão conta-se "X de Y": em quantos dias COM consumo
+            // o padrão aparecia nos 2 dias antes (Y = dias em que se podia ver),
+            // e o mesmo nos dias SEM consumo, para comparar. Sem a comparação,
+            // "8 vezes" não diz nada: o humor também desce antes de dias
+            // normais. (Os dias "não registei" já vêm tirados das Análises.)
             const sortedDates = Object.keys(dailyData).sort();
+            const ante = {
+                mood: { icon: '📉', label: t('analyses.impactAntecedentMoodFalling'), use: { k: 0, n: 0 }, none: { k: 0, n: 0 } },
+                sleep: { icon: '💤', label: t('analyses.impactAntecedentSleepPoor'), use: { k: 0, n: 0 }, none: { k: 0, n: 0 } },
+            };
             sortedDates.forEach((date) => {
-                const today = dailyData[date];
-                const todayCons = today.consumptions || 0;
-
-                if (todayCons > 0) {
-                    // Olhar para os 2 dias anteriores
-                    const yesterday = dailyData[somaDias(date, -1)];
-                    const dayBefore = dailyData[somaDias(date, -2)];
-
-                    if (yesterday?.mood && dayBefore?.mood) {
-                        // Detectar tendência de declínio de humor
-                        const moodDecline = parseInt(dayBefore.mood) - parseInt(yesterday.mood) > 1;
-                        // Sono 0 ("não dormi") conta como noite curta; sem valor, não se sabe.
-                        const poorSleepStreak = yesterday.sleep != null && parseInt(yesterday.sleep) <= 5 && dayBefore.sleep != null && parseInt(dayBefore.sleep) <= 5;
-
-                        if (moodDecline) {
-                            experimentalFeatures.antecedents.push({
-                                date,
-                                pattern: t('analyses.impactAntecedentMoodFalling'),
-                                icon: '📉',
-                                cons: todayCons
-                            });
-                        }
-
-                        if (poorSleepStreak) {
-                            experimentalFeatures.antecedents.push({
-                                date,
-                                pattern: t('analyses.impactAntecedentSleepPoor'),
-                                icon: '💤',
-                                cons: todayCons
-                            });
-                        }
-                    }
+                const todayCons = dailyData[date].consumptions || 0;
+                const g = todayCons > 0 ? 'use' : 'none';
+                const yesterday = dailyData[somaDias(date, -1)];
+                const dayBefore = dailyData[somaDias(date, -2)];
+                if (yesterday?.mood && dayBefore?.mood) {
+                    ante.mood[g].n++;
+                    if (parseInt(dayBefore.mood) - parseInt(yesterday.mood) > 1) ante.mood[g].k++;
+                }
+                // Sono 0 ("não dormi") conta como noite curta; sem valor, não se sabe.
+                if (yesterday?.sleep != null && dayBefore?.sleep != null) {
+                    ante.sleep[g].n++;
+                    if (parseInt(yesterday.sleep) <= 5 && parseInt(dayBefore.sleep) <= 5) ante.sleep[g].k++;
                 }
             });
+            experimentalFeatures.antecedents = Object.values(ante).filter(a => a.use.n >= MIN_PER_WINDOW);
 
             // 3. SATISFAÇÃO/EFICÁCIA (melhoria pós-consumo)
             const satisfactionData = [];
@@ -314,38 +330,22 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                 chartData = computedChartData;
 
                 // Métricas de latência
-                const baseline = chartData.find(d => d.time === '0h');
-                const post30min = chartData.find(d => d.time === '+30min');
-                const post1h = chartData.find(d => d.time === '+1h');
-                const post2h = chartData.find(d => d.time === '+2h');
-
-                if (baseline && post30min) {
-                    latency.push({
-                        window: t('analyses.impactLatency30min'),
-                        delta: (parseFloat(post30min.humor) - parseFloat(baseline.humor)).toFixed(1),
-                        isPeak: false
-                    });
-                }
-                if (baseline && post1h) {
-                    latency.push({
-                        window: t('analyses.impactLatency1h'),
-                        delta: (parseFloat(post1h.humor) - parseFloat(baseline.humor)).toFixed(1),
-                        isPeak: false
-                    });
-                }
-                if (baseline && post2h) {
-                    latency.push({
-                        window: t('analyses.impactLatency2h'),
-                        delta: (parseFloat(post2h.humor) - parseFloat(baseline.humor)).toFixed(1),
-                        isPeak: false
-                    });
-                }
-
-                // Identificar pico
-                if (latency.length > 0) {
-                    const maxIdx = latency.reduce((maxI, curr, i, arr) => parseFloat(curr.delta) > parseFloat(arr[maxI].delta) ? i : maxI, 0);
-                    latency[maxIdx].isPeak = true;
-                }
+                // Compara os registos do momento do consumo (0h) com os de
+                // cada janela depois. Com menos de MIN_PER_WINDOW registos de
+                // um dos lados, não se mostra número ("poucos registos").
+                const winOf = (label) => timeWindows.find(w => w.label === label);
+                const base = winOf('0h').data.map(d => d.mood).filter(Number.isFinite);
+                [['+30min', 'impactLatency30min'], ['+1h', 'impactLatency1h'], ['+2h', 'impactLatency2h']].forEach(([label, key]) => {
+                    const post = winOf(label).data.map(d => d.mood).filter(Number.isFinite);
+                    const n = Math.min(base.length, post.length);
+                    if (base.length < MIN_PER_WINDOW || post.length < MIN_PER_WINDOW) {
+                        latency.push({ window: t('analyses.' + key), delta: null, n, p: null });
+                        return;
+                    }
+                    const r = diffPermutation(base, post);
+                    latency.push({ window: t('analyses.' + key), delta: r.diff.toFixed(1), n, p: r.p });
+                });
+                if (latency.every(l => l.delta == null)) latency = [];
             }
         }
 
@@ -569,10 +569,22 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                                                                 {latency.map(lat => (
                                                                     <div key={lat.window} className="px-2 py-1 text-center">
                                                                         <div className="text-xs mb-1 text-gray-400 leading-tight min-h-[2rem] flex items-center justify-center">{lat.window}</div>
-                                                                        <div className="text-2xl font-bold font-mono-theme text-white">
-                                                                            {lat.delta > 0 ? '+' : ''}{lat.delta}
-                                                                        </div>
-                                                                        {lat.isPeak && <div className={'text-xs font-medium mt-0.5 ' + ('text-gray-400')}>⚡</div>}
+                                                                        {lat.delta == null ? (
+                                                                            <>
+                                                                                <div className="text-2xl font-bold font-mono-theme text-gray-600">—</div>
+                                                                                <div className="text-[11px] mt-0.5 text-gray-500">{t('analyses.impactFewRecords')}</div>
+                                                                            </>
+                                                                        ) : (
+                                                                            <>
+                                                                                <div className={'text-2xl font-bold font-mono-theme ' + (lat.p < 0.05 ? 'text-white' : 'text-gray-400')}>
+                                                                                    {lat.delta > 0 ? '+' : ''}{lat.delta}
+                                                                                </div>
+                                                                                <div className="text-[11px] mt-0.5 text-gray-400 leading-tight">
+                                                                                    {lat.p < 0.05 ? t('analyses.impactNotChance') : t('analyses.impactMaybeChance')}
+                                                                                </div>
+                                                                                <div className="text-[11px] text-gray-500 whitespace-nowrap">{t('analyses.impactRecords', { n: lat.n })}</div>
+                                                                            </>
+                                                                        )}
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -643,10 +655,10 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
 
             {/* ⚗️ FEATURES EXPERIMENTAIS */}
             {(experimentalFeatures.compositeTriggers.length > 0 || experimentalFeatures.antecedents.length > 0 || experimentalFeatures.satisfaction.length > 0) && (
-                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border border-dashed'}>
+                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-4 md:p-6 border'}>
                     <div className="flex items-center justify-between mb-2 cursor-pointer" onClick={() => toggleSection('experimental')}>
                         <div>
-                            <h3 className={'font-semibold ' + ('text-white')}>⚗️ {t('analyses.experimentalFeatures')}</h3>
+                            <h3 className={'font-semibold ' + ('text-white')}>🔍 {t('analyses.experimentalFeatures')}</h3>
                             <p className={'text-xs mt-1 ' + ('text-gray-400')}>
                                 {t('analyses.impactExperimental')}
                             </p>
@@ -657,182 +669,35 @@ export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
                     </div>
                     {expandedSections.experimental && (
                         <div className="space-y-4 mt-4">
-                            {/* Gatilhos Compostos */}
-                            {experimentalFeatures.compositeTriggers.length > 0 && (
-                                <div>
-                                    <div className={'text-sm font-semibold mb-1 ' + ('text-white')}>
-                                        {t('analyses.impactCompositeTriggers')}
-                                    </div>
-                                    <p className={'text-xs mb-2 ' + ('text-gray-400')}>
-                                        {t('analyses.impactCompositeTriggersDesc')}
-                                    </p>
-                                    <div className="divide-y divide-gray-700 border-y border-gray-700">
-                                        {experimentalFeatures.compositeTriggers.map((trigger, idx) => (
-                                            <div key={idx} className="py-3">
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="text-lg">{trigger.icon}</span>
-                                                            <span className={'font-semibold text-sm ' + ('text-gray-300')}>
-                                                                {trigger.name}
-                                                            </span>
-                                                        </div>
-                                                        <div className={'text-xs ' + ('text-gray-400')}>
-                                                            {t('analyses.impactOccurrencesRegistered', { n: trigger.occurrences })}
-                                                        </div>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="text-2xl font-bold font-mono-theme text-white">
-                                                            {trigger.increase > 0 ? '+' : ''}{trigger.increase}%
-                                                        </div>
-                                                        <div className={'text-xs font-mono-theme ' + ('text-gray-400')}>
-                                                            {trigger.avgCons} vs {trigger.normalCons} cons
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Antecedentes */}
+                                                        {/* Antecedentes */}
                             {experimentalFeatures.antecedents.length > 0 && (
                                 <div>
                                     <div className={'text-sm font-semibold mb-2 ' + ('text-white')}>
                                         {t('analyses.impactAntecedents')}
                                     </div>
                                     <div className="divide-y divide-gray-700 border-y border-gray-700">
-                                        {/* Agrupar por padrão */}
-                                        {(() => {
-                                            const grouped = {};
-                                            experimentalFeatures.antecedents.forEach(a => {
-                                                if (!grouped[a.pattern]) grouped[a.pattern] = { ...a, count: 0 };
-                                                grouped[a.pattern].count++;
-                                            });
-                                            return Object.values(grouped).map((pattern, idx) => (
-                                                <div key={idx} className="flex items-center justify-between py-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-base">{pattern.icon}</span>
-                                                        <span className={'text-sm ' + ('text-gray-300')}>
-                                                            {pattern.pattern}
-                                                        </span>
-                                                    </div>
-                                                    <div className={'text-xs font-semibold font-mono-theme ' + ('text-white')}>
-                                                        {pattern.count}x
-                                                    </div>
+                                        {experimentalFeatures.antecedents.map((a, idx) => (
+                                            <div key={idx} className="py-2">
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="text-base">{a.icon}</span>
+                                                    <span className="text-sm text-gray-200">{a.label}</span>
                                                 </div>
-                                            ));
-                                        })()}
+                                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-400 pl-7">
+                                                    <div>{t('analyses.impactBeforeUse')}<br /><span className="font-mono-theme text-white">{t('analyses.impactXofY', { k: a.use.k, n: a.use.n })}</span></div>
+                                                    <div>{t('analyses.impactBeforeNoUse')}<br /><span className="font-mono-theme text-white">{a.none.n >= MIN_PER_WINDOW ? t('analyses.impactXofY', { k: a.none.k, n: a.none.n }) : t('analyses.impactFewNoUse', { n: a.none.n })}</span></div>
+                                                </div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             )}
-
-                            <p className={'text-xs italic ' + ('text-gray-400')}>
-                                {t('analyses.impactExperimental')}
-                            </p>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* Análise Intra-dia */}
-            {intraDayStats ? (
-                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                    <h3 className={'font-semibold mb-2 ' + ('text-white')}>{t('analyses.intradayTitle')}</h3>
-                    <p className={'text-xs mb-4 ' + ('text-gray-400')}>
-                        {t('analyses.impactIntraDayDesc')}
-                    </p>
-                    <div className="space-y-4">
-                        {/* Evolução de Humor e Energia */}
-                        {/* Humor e energia lado a lado, sem caixas: só uma linha fina a separar */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-700 border-y border-gray-700">
-                            {/* Evolução de Humor */}
-                            <div className="py-3 md:px-4 md:first:pl-0">
-                                <div className={'text-sm font-semibold mb-3 ' + ('text-white')}>{t('analyses.moodEvolution')}</div>
+            {/* (A análise intra-dia saiu: mostrava pouco e com poucos dados — pedido da Teresa.) */}
 
-                                {intraDayStats.avgMoodStart && intraDayStats.avgMoodEnd && (() => {
-                                    const diff = parseFloat(intraDayStats.avgMoodEnd) - parseFloat(intraDayStats.avgMoodStart);
-                                    const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                    const trendText = diff > 0.5 ? t('analyses.moodImproves') : diff < -0.5 ? t('analyses.moodDeclines') : t('analyses.moodStable');
-
-                                    return (
-                                        <>
-                                            <div className="flex items-center justify-between mb-3">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-2xl font-bold font-mono-theme text-white">{intraDayStats.avgMoodStart}</span>
-                                                    <span className="text-xl">{arrow}</span>
-                                                    <span className="text-2xl font-bold font-mono-theme text-white">{intraDayStats.avgMoodEnd}</span>
-                                                </div>
-                                                <span className="text-sm font-semibold font-mono-theme text-gray-300">
-                                                    {diff > 0 ? '+' : ''}{diff.toFixed(1)}
-                                                </span>
-                                            </div>
-                                            <p className={'text-xs italic ' + ('text-gray-400')}>
-                                                💬 {trendText}
-                                            </p>
-                                        </>
-                                    );
-                                })()}
-                            </div>
-
-                            {/* Evolução de Energia */}
-                            {intraDayStats.avgEnergyStart && intraDayStats.avgEnergyEnd && (() => {
-                                const diff = parseFloat(intraDayStats.avgEnergyEnd) - parseFloat(intraDayStats.avgEnergyStart);
-                                const arrow = diff > 0.5 ? '↗️' : diff < -0.5 ? '↘️' : '→';
-                                const trendText = diff > 0.5 ? t('analyses.energyImproves') : diff < -0.5 ? t('analyses.energyDeclines') : t('analyses.energyStable');
-
-                                return (
-                                    <div className="py-3 md:px-4 md:first:pl-0">
-                                        <div className={'text-sm font-semibold mb-3 ' + ('text-white')}>{t('analyses.energyEvolution')}</div>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-2xl font-bold font-mono-theme text-white">{intraDayStats.avgEnergyStart}</span>
-                                                <span className="text-xl">{arrow}</span>
-                                                <span className="text-2xl font-bold font-mono-theme text-white">{intraDayStats.avgEnergyEnd}</span>
-                                            </div>
-                                            <span className="text-sm font-semibold font-mono-theme text-gray-300">
-                                                {diff > 0 ? '+' : ''}{diff.toFixed(1)}
-                                            </span>
-                                        </div>
-                                        <p className={'text-xs italic ' + ('text-gray-400')}>
-                                            💬 {trendText}
-                                        </p>
-                                    </div>
-                                );
-                            })()}
-                        </div>
-
-                        {/* Impacto do Consumo - Novo Componente com Gráficos (Lazy Loaded) */}
-                        <Suspense fallback={
-                            <div className="py-6 text-center">
-                                <div className="animate-pulse">
-                                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mx-auto mb-4"></div>
-                                    <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                                </div>
-                                <p className="text-xs text-gray-500 mt-2">{t('analyses.loadingChart')}</p>
-                            </div>
-                        }>
-                            <WellbeingChart
-                                wellbeingLogs={analysisWellbeing}
-                                consumptions={analysisConsumptions}
-
-                                selectedCycle={selectedCycle}
-                            />
-                        </Suspense>
-                    </div>
-                </div>
-            ) : (
-                <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                    <h3 className={'font-semibold mb-2 ' + ('text-white')}>{t('analyses.intradayTitle')}</h3>
-                    <p className={'text-xs mb-4 ' + ('text-gray-400')}>
-                        {t('analyses.impactIntraDayDesc')}
-                    </p>
-                    <div className={'text-center py-6 text-sm ' + ('text-gray-400')}>
-                        {t('analyses.impactNoData')}
-                    </div>
-                </div>
-            )}
         </div>
     );
 });

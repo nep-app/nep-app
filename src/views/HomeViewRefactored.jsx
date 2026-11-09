@@ -7,6 +7,7 @@ import { WeighingSuggestion } from '../components/WeighingSuggestion';
 import { GradientButton } from '../components/ui/GradientButton';
 import { AlertCard } from '../components/ui/AlertCard';
 import { useData } from '../contexts/DataContext';
+import { logUrgeEvent } from '../utils/urgeLog';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey, genId, meetsGoal } from '../utils/helpers';
@@ -38,7 +39,7 @@ export function HomeViewRefactored({
   showToast
 }) {
   const { t, i18n } = useTranslation();
-  const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing, addUrgeEvent, addConsumption } = useData();
+  const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing, addUrgeEvent, addConsumption, updateItem } = useData();
   const metrics = useMetrics();
   // Só no modo demo pode valer 'relogio' (experiência do novo Início).
   const { layout: demoLayout } = useDemoPrefs();
@@ -525,7 +526,24 @@ export function HomeViewRefactored({
           onOpenThoughts={() => setShowThoughtsModal(true)}
           onOpenReflection={() => setShowReflectionModal(true)}
           onProceed={pendingConsumption ? () => markConsumption() : null}
-          onLog={(payload) => addUrgeEvent?.({ id: genId(), timestamp: new Date().toISOString(), ...payload })}
+          onLog={(payload) => {
+            // Guardar o momento na base cifrada. Devolve o id (para o modal
+            // poder atualizar o mesmo registo depois). Se falhar (ou não houver
+            // função), não se perde: fica no telemóvel (localStorage), que a
+            // contagem do "Surfar o impulso" também lê — e avisa-se.
+            const item = { id: genId(), timestamp: new Date().toISOString(), ...payload };
+            const fallback = (err) => {
+              try { logUrgeEvent(payload); } catch { /* sem storage */ }
+              if (err) console.warn('[urge] não guardei na base, fica no telemóvel:', err?.message || err);
+              showToast?.(t('urge.savedLocalOnly', 'Guardei o impulso só neste telemóvel (a base deu erro).'), 'info');
+              return null;
+            };
+            try {
+              if (!addUrgeEvent) return fallback();
+              return Promise.resolve(addUrgeEvent(item)).then(() => item.id, fallback);
+            } catch (err) { return fallback(err); }
+          }}
+          onUpdate={(id, updates) => updateItem ? updateItem('urgeEvents', id, updates) : null}
           warnings={urgeWarnings}
         />
       </Suspense>
