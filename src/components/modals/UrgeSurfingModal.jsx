@@ -311,8 +311,8 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, on
   return (
     <div className="fixed inset-0 z-[70] flex items-end bg-black/60 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget) handleClose(); }}>
-      <div className="w-full bg-gray-900 border-t border-gray-700 rounded-t-2xl max-h-[94dvh] overflow-y-auto"
-        style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+      <div className="w-full bg-gray-900 border-t border-gray-700 rounded-t-2xl max-h-[100dvh] overflow-y-auto"
+        style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))', paddingTop: 'env(safe-area-inset-top)' }}>
 
         {/* Handle bar */}
         <div className="w-10 h-1 bg-gray-600 rounded-full mx-auto mt-2 mb-2" />
@@ -350,7 +350,23 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, on
           {/* Menu */}
           {!active && (
             <div className="space-y-2 pb-1">
-              {EXERCISES.map(ex => (
+          {/* Registar fica no TOPO e do mesmo tamanho das outras opções: a escolha é
+              da pessoa. Antes era a opção mais apagada, no fundo, depois de 7
+              exercícios — o desenho do ecrã é que estava a escolher. */}
+          {onProceed && (
+            <>
+              <button onClick={handleProceed}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border border-purple-500/70 bg-purple-600/15 text-left transition-all active:scale-[0.98]">
+                <span className="text-xl w-7 text-center flex-shrink-0 text-white">✓</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold text-white text-sm">{pt ? 'Registar agora' : 'Log it now'}</div>
+                  <div className="text-xs text-gray-400 leading-tight">{pt ? 'Fica registado com a hora de agora' : 'Saved with the current time'}</div>
+                </div>
+              </button>
+              <p className="text-xs font-semibold text-gray-400 pt-2 pb-0.5 px-1">{pt ? 'Ou, se quiseres, uma pausa primeiro:' : 'Or, if you like, a pause first:'}</p>
+            </>
+          )}
+          {EXERCISES.map(ex => (
                 <button key={ex.key} onClick={() => openExercise(ex.key)}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gray-800 border border-gray-700 hover:border-purple-700/50 text-left transition-all active:scale-[0.98]">
                   <span className="text-xl w-7 text-center flex-shrink-0">{ex.emoji}</span>
@@ -381,13 +397,6 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, on
                     <div className="text-xs text-gray-400 leading-tight">{pt ? 'Uma pergunta suave para parar e pensar.' : 'A gentle prompt to pause and think.'}</div>
                   </div>
                   <span className="text-gray-500 flex-shrink-0 text-lg">›</span>
-                </button>
-              )}
-
-              {onProceed && (
-                <button onClick={handleProceed}
-                  className="w-full py-2.5 rounded-xl text-sm text-gray-500 hover:text-gray-300 border border-gray-800 hover:border-gray-700 transition-all text-center">
-                  {t('urge.proceedAnyway')}
                 </button>
               )}
             </div>
