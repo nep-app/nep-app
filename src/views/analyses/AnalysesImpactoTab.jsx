@@ -2,6 +2,7 @@ import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 import { safeToISODate } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
+import { diffPermutation, MIN_PER_WINDOW } from '../../utils/stats';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 
@@ -18,33 +19,6 @@ const somaDias = (key, n) => {
 // ⚠️ ZERO NÃO É VAZIO: sono 0 = "Não dormi", uma noite real. Só falta o valor
 // quando o campo não existe ou vem vazio.
 const temSono = (x) => !!x && x.sleep != null && x.sleep !== '' && !isNaN(parseFloat(x.sleep));
-
-// Diferença de médias entre dois grupos de registos + p por permutação:
-// misturam-se os registos dos dois grupos, reparte-se ao calhas m vezes e
-// conta-se em quantas (b) o acaso dá uma diferença tão grande como a
-// verdadeira. p = (b+1)/(m+1), nunca zero. Semente fixa: os mesmos registos
-// dão sempre o mesmo p. (Aproximado: registos do mesmo dia parecem-se entre
-// si, por isso isto é um "sinal", não uma prova.)
-const MIN_PER_WINDOW = 5;
-function diffPermutation(a, b, m = 2000) {
-    const na = a.length, nb = b.length;
-    const mean = (v) => v.reduce((s, x) => s + x, 0) / v.length;
-    const diff = mean(b) - mean(a);
-    const all = a.concat(b), total = all.reduce((s, x) => s + x, 0), n = all.length;
-    let seed = 20261109 >>> 0;
-    const rand = () => { seed = (seed + 0x6D2B79F5) >>> 0; let x = seed; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
-    const sh = all.slice();
-    const limit = Math.abs(diff) - 1e-9;
-    let hits = 0;
-    for (let k = 0; k < m; k++) {
-        for (let i = n - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); const t = sh[i]; sh[i] = sh[j]; sh[j] = t; }
-        let sa = 0;
-        for (let i = 0; i < na; i++) sa += sh[i];
-        const d = (total - sa) / nb - sa / na;
-        if (Math.abs(d) >= limit) hits++;
-    }
-    return { diff, p: (hits + 1) / (m + 1) };
-}
 
 export const AnalysesImpactoTab = React.memo(function AnalysesImpactoTab({
     analysisConsumptions,

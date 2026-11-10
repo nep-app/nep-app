@@ -12,73 +12,9 @@ import HeatmapChart from '../components/HeatmapChart';
 import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+import { averageRanks, spearmanPermutation } from '../utils/stats';
+
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievement } = analyticsService;
-
-// ===== ESTATÍSTICA DOS "SINAIS DE HOJE" =====
-// Contas pequenas, sem bibliotecas, para correrem no telemóvel. Servem para
-// a app VERIFICAR nos registos da própria pessoa se a soma de sinais do cartão
-// "Sinais de hoje" anda mesmo junto com o número de consumos do dia — e, se
-// não andar, dizer "não se distingue do acaso" (ver CLAUDE.md, "não sei").
-
-// Ordens com empates: cada valor recebe a sua posição na fila (1 = o mais
-// baixo); valores iguais recebem a MÉDIA das posições que ocupariam.
-// Ex.: [5, 1, 5] → [2.5, 1, 2.5].
-function averageRanks(values) {
-    const order = values.map((_, i) => i).sort((a, b) => values[a] - values[b]);
-    const ranks = new Array(values.length);
-    let i = 0;
-    while (i < order.length) {
-        let j = i;
-        while (j + 1 < order.length && values[order[j + 1]] === values[order[i]]) j++;
-        const r = (i + j) / 2 + 1;
-        for (let k = i; k <= j; k++) ranks[order[k]] = r;
-        i = j + 1;
-    }
-    return ranks;
-}
-
-// Correlação de Spearman (ρ) entre xs e ys + p por "deslocamento".
-// ρ é a correlação das ORDENS: só pergunta "quando um sobe, o outro tende a
-// subir?", sem supor linhas retas.
-// O p: dias seguidos parecem-se uns com os outros (uma semana pesada dá
-// vários dias pesados). Baralhar os dias ao calhas desfaz isso e faz o acaso
-// parecer mais fraco do que é — a app diria "há relação" vezes demais. Por
-// isso, em vez de baralhar, desliza-se a fila dos ys inteira (como uma
-// roda: o que sai de um lado entra do outro), e também a fila virada ao
-// contrário. As semanas pesadas continuam juntas, só deixam de coincidir
-// com os dias certos. Contam-se todos os deslizes (k) e em quantos (b) o
-// acaso dá um |ρ| tão forte como o verdadeiro: p = (b+1)/(k+1), nunca
-// zero — com b = 0 diz-se "menos de 1 em k". Deslizes de menos de
-// MIN_SHIFT dias ficam de fora (seriam quase a fila verdadeira).
-// Sem sorteio: os mesmos registos dão sempre o mesmo p.
-// Se uma das séries for sempre igual, não há ordem para comparar → rho null.
-const MIN_SHIFT = 7;
-function spearmanPermutation(xs, ys) {
-    const n = xs.length;
-    if (n < 2 * MIN_SHIFT + 1 || ys.length !== n) return { n, rho: null, b: null, m: 0, p: null };
-    const rx = averageRanks(xs), ry = averageRanks(ys);
-    const mid = (n + 1) / 2; // a média das ordens é sempre (n+1)/2, mesmo com empates
-    const ax = rx.map(r => r - mid), by = ry.map(r => r - mid);
-    let sxx = 0, syy = 0, sxy = 0;
-    for (let i = 0; i < n; i++) { sxx += ax[i] * ax[i]; syy += by[i] * by[i]; sxy += ax[i] * by[i]; }
-    if (sxx === 0 || syy === 0) return { n, rho: null, b: null, m: 0, p: null };
-    const den = Math.sqrt(sxx * syy);
-    const rho = sxy / den;
-    // Deslizar só muda a ordem dos ys: sxx e syy ficam iguais, por isso cada
-    // deslize só precisa de refazer o produto cruzado.
-    const limit = Math.abs(rho) - 1e-12; // folga para arredondamentos: um empate conta
-    const rev = by.slice().reverse();
-    let b = 0, m = 0;
-    const test = (arr, k) => {
-        let s = 0;
-        for (let i = 0; i < n; i++) s += ax[i] * arr[(i + k) % n];
-        m++;
-        if (Math.abs(s / den) >= limit) b++;
-    };
-    for (let k = MIN_SHIFT; k <= n - MIN_SHIFT; k++) test(by, k);
-    for (let k = 0; k < n; k++) test(rev, k);
-    return { n, rho, b, m, p: (b + 1) / (m + 1) };
-}
 
 export function PatternsView({
     patternsPeriod,
