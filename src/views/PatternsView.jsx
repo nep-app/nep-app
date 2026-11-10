@@ -12,7 +12,7 @@ import HeatmapChart from '../components/HeatmapChart';
 import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-import { averageRanks, spearmanPermutation, MIN_SHIFT } from '../utils/stats';
+import { averageRanks, spearmanPermutation, rangePermutation, MIN_SHIFT } from '../utils/stats';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievement } = analyticsService;
 
@@ -1800,11 +1800,16 @@ export function PatternsView({
                                             metricEntries.forEach(([, m]) => {
                                                 m.goal = m.goalType ? activeGoal(m.goalType) : null;
                                                 m.verdict = null;
-                                                if (!m.goal || !m.change || m.change.direction === 'stable' || m.test?.status !== 'tested' || !m.test.sig) return;
+                                                m.lean = null;
+                                                if (!m.goal || !m.change || m.change.direction === 'stable') return;
                                                 const up = m.recent > m.previous;
-                                                if ((m.test.rho > 0) !== up) return;
                                                 const lowerIsToward = m.goalType === 'bedtime_before' || GOAL_DIRECTION[m.goalType] === 'max';
-                                                m.verdict = (lowerIsToward ? !up : up) ? 'toward' : 'away';
+                                                const side = (lowerIsToward ? !up : up) ? 'toward' : 'away';
+                                                // Sem teste a favor (poucos dias ou pode ser acaso): diz-se o
+                                                // SENTIDO em relação à meta, a cinzento, com "pode ser acaso".
+                                                // A cor fica só para quando a diferença se distingue do acaso.
+                                                if (m.test?.status !== 'tested' || !m.test.sig || (m.test.rho > 0) !== up) { m.lean = side; return; }
+                                                m.verdict = side;
                                             });
                                             const comparableCount = metricEntries.filter(([, m]) => m.change).length;
                                             const withGoal = metricEntries.filter(([, m]) => m.goal && m.change);
@@ -1848,6 +1853,8 @@ export function PatternsView({
                                                         {line}
                                                         {m.verdict === 'toward' && <span className="text-green-400"> {t('patterns.progress.towardGoal', '✓ Na direção da tua meta.')}</span>}
                                                         {m.verdict === 'away' && <span className="text-yellow-400"> {t('patterns.progress.awayGoal', 'No sentido contrário ao da tua meta.')}</span>}
+                                                        {m.lean === 'toward' && <span className="text-gray-400"> {t('patterns.progress.leanToward', 'No sentido da tua meta.')}</span>}
+                                                        {m.lean === 'away' && <span className="text-gray-400"> {t('patterns.progress.leanAway', 'No sentido contrário ao da tua meta.')}</span>}
                                                     </p>
                                                 );
                                             };
@@ -2399,19 +2406,14 @@ export function PatternsView({
                                                 const sortedDays = dayOfMonthAverages.sort((a, b) => b[1] - a[1]);
                                                 const maxAvg = sortedDays[0][1] || 1;
 
-                                                // Dias 20–25 vs os outros: série de dias por ordem de data, teste por
-                                                // deslocamento (spearmanPermutation entre "é dia 20–25" e os consumos).
-                                                // Antes bastava a média ser 20% maior para dizer "Padrão detetado".
-                                                const inPeak = days.map(d => { const n = domOf(d); return n >= 20 && n <= 25 ? 1 : 0; });
-                                                const counts = days.map(d => byDate[d] || 0);
-                                                const nPeak = inPeak.reduce((a, b) => a + b, 0);
-                                                const mean = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
-                                                const avgPeak = mean(counts.filter((_, i) => inPeak[i]));
-                                                const avgRest = mean(counts.filter((_, i) => !inPeak[i]));
-                                                const PEAK_MIN_DAYS = 10;
-                                                const peakTest = nPeak >= PEAK_MIN_DAYS && days.length - nPeak >= PEAK_MIN_DAYS ? spearmanPermutation(inPeak, counts) : null;
-                                                const peakSig = peakTest?.rho != null && Number(peakTest.p.toFixed(3)) < 0.05;
-
+                                                // Os dias do mês diferem mais do que o acaso costuma dar? Há sempre
+                                                // um dia mais alto e um mais baixo, mesmo sem padrão nenhum (31
+                                                // grupos pequenos). rangePermutation compara a distância entre a
+                                                // média mais alta e a mais baixa com a que sai a baralhar os dias.
+                                                // (Antes: hipótese fixa "dias 20–25", tirada a pedido da Teresa.)
+                                                const domGroups = Object.values(dayOfMonthData).filter(g => g.length >= 2);
+                                                const domTest = domGroups.length >= 10 ? rangePermutation(domGroups) : null;
+                                                const domSig = domTest && Number(domTest.p.toFixed(3)) < 0.05;
                                                 const bar = (day, avg, nMonths) => (
                                                     <div key={day} className="flex items-center gap-2">
                                                         <div className={'text-xs w-12 font-medium text-right text-gray-300'}>{t('patterns.structural.day', { n: day })}</div>
@@ -2438,17 +2440,12 @@ export function PatternsView({
                                                                 {sortedDays.slice(-5).reverse().map(([day, avg, n]) => bar(day, avg, n))}
                                                             </div>
                                                         </div>
-                                                        {/* Dias 20–25: só se afirma "mais alto" se se distinguir do acaso. */}
                                                         <div className={'pt-3 border-t text-xs border-gray-700 text-gray-400'}>
-                                                            {!peakTest
-                                                                ? t('patterns.structural.peakFew', 'Dias 20–25 vs o resto do mês: são precisos pelo menos {{min}} dias de cada lado (há {{a}} e {{b}}).', { min: PEAK_MIN_DAYS, a: nPeak, b: days.length - nPeak })
-                                                                : peakTest.rho == null
-                                                                    ? t('patterns.structural.peakFlat', 'Dias 20–25 vs o resto do mês: os valores não variam, não há nada a comparar.')
-                                                                    : peakSig
-                                                                        ? t(peakTest.rho > 0 ? 'patterns.structural.peakSigHigh' : 'patterns.structural.peakSigLow', peakTest.rho > 0
-                                                                            ? 'Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais alto, e a diferença distingue-se do acaso ({{n}} dias, {{p}}).'
-                                                                            : 'Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais baixo, e a diferença distingue-se do acaso ({{n}} dias, {{p}}).', { a: fmtNum(avgPeak, 1), b: fmtNum(avgRest, 1), n: days.length, p: fmtP(peakTest) })
-                                                                        : t('patterns.structural.peakChance', 'Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — a diferença não se distingue do acaso ({{n}} dias, {{p}}).', { a: fmtNum(avgPeak, 1), b: fmtNum(avgRest, 1), n: days.length, p: fmtP(peakTest) })}
+                                                            {!domTest
+                                                                ? t('patterns.structural.domFew', 'Ainda não dá para dizer se os dias do mês diferem mais do que o acaso.')
+                                                                : domSig
+                                                                    ? t('patterns.structural.domSig', 'Os dias do mês diferem entre si mais do que o acaso costuma dar ({{p}}).', { p: fmtP(domTest) })
+                                                                    : t('patterns.structural.domChance', 'Há sempre dias mais altos e mais baixos; aqui a diferença entre eles não se distingue do acaso ({{p}}).', { p: fmtP(domTest) })}
                                                         </div>
                                                     </div>
                                                 );

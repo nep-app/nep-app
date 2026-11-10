@@ -811,7 +811,7 @@
     },
     "views": {
       "dashboard": "📊 Dashboard",
-      "progress": "📈 Progresso",
+      "progress": "⚖️ Comparar",
       "temporal": "⏰ Temporal",
       "estrutural": "📐 Estrutural"
     },
@@ -1035,7 +1035,9 @@
       "summaryTitleNeutral": "💡 Resumo",
       "towardList": "Na direção das tuas metas:",
       "awayList": "No sentido contrário ao das tuas metas:",
-      "changedList": "Mudaram mais de 5% (só descrição — sem meta, ou a diferença não se distingue do acaso):"
+      "changedList": "Mudaram mais de 5% (só descrição — sem meta, ou a diferença não se distingue do acaso):",
+      "leanToward": "No sentido da tua meta.",
+      "leanAway": "No sentido contrário ao da tua meta."
     },
     "temporal": {
       "byHour": "🕐 Consumo por Horário",
@@ -1146,7 +1148,10 @@
       "mgOnlyToday": "Só há mg de hoje, que ainda vai a meio — as contas começam amanhã.",
       "halvesChangeOnly": "{{sign}}{{pct}}% (sem tendência que se distinga do acaso)",
       "peakSigHigh": "Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais alto, e a diferença distingue-se do acaso ({{n}} dias, {{p}}).",
-      "peakSigLow": "Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais baixo, e a diferença distingue-se do acaso ({{n}} dias, {{p}})."
+      "peakSigLow": "Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais baixo, e a diferença distingue-se do acaso ({{n}} dias, {{p}}).",
+      "domFew": "Ainda não dá para dizer se os dias do mês diferem mais do que o acaso.",
+      "domSig": "Os dias do mês diferem entre si mais do que o acaso costuma dar ({{p}}).",
+      "domChance": "Há sempre dias mais altos e mais baixos; aqui a diferença entre eles não se distingue do acaso ({{p}})."
     },
     "cmp": {
       "few": "Dias: {{a}} antes, {{b}} agora — poucos para saber se a diferença é mais do que acaso (são precisos {{side}} de cada lado e {{min}} no total).",

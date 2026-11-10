@@ -748,7 +748,7 @@
     },
     "views": {
       "dashboard": "📊 Dashboard",
-      "progress": "📈 Progress",
+      "progress": "⚖️ Compare",
       "temporal": "⏰ Temporal",
       "estrutural": "📐 Structural"
     },
@@ -972,7 +972,9 @@
       "summaryTitleNeutral": "💡 Summary",
       "towardList": "In the direction of your goals:",
       "awayList": "The opposite way from your goals:",
-      "changedList": "Changed by more than 5% (description only — no goal, or the difference doesn't stand out from chance):"
+      "changedList": "Changed by more than 5% (description only — no goal, or the difference doesn't stand out from chance):",
+      "leanToward": "In the direction of your goal.",
+      "leanAway": "Against the direction of your goal."
     },
     "temporal": {
       "byHour": "🕐 Use by Hour",
@@ -1083,7 +1085,10 @@
       "dosageDroppedN": "The average per measured day went from {{first}} mg (1st complete week, {{a}} measured days) to {{last}} mg (latest, {{b}} days) — {{pct}}% less.",
       "twoWeeksNote": "These are two single weeks: this says what happened, not whether it is a trend.",
       "mgOnlyToday": "There is only mg for today, which isn't over yet — the numbers start tomorrow.",
-      "halvesChangeOnly": "{{sign}}{{pct}}% (no trend that stands out from chance)"
+      "halvesChangeOnly": "{{sign}}{{pct}}% (no trend that stands out from chance)",
+      "domFew": "Not enough data yet to say whether days of the month differ more than chance.",
+      "domSig": "Days of the month differ from each other more than chance usually gives ({{p}}).",
+      "domChance": "There are always higher and lower days; here the difference between them doesn't stand out from chance ({{p}})."
     },
     "cmp": {
       "few": "Days: {{a}} before, {{b}} now — too few to tell whether the difference is more than chance ({{side}} needed on each side and {{min}} in total).",
