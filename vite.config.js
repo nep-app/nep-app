@@ -56,9 +56,9 @@ export default defineConfig({
         ],
         shortcuts: [
           {
-            name: 'Consumi agora',
-            short_name: 'Consumo',
-            description: 'Registar um consumo rapidamente',
+            name: 'Registar',
+            short_name: 'Registar',
+            description: 'Registar rapidamente',
             url: '/nep-app/?action=consume',
             icons: [{ src: '/nep-app/icon-192.png', sizes: '192x192', type: 'image/png' }],
           },
