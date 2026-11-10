@@ -102,3 +102,33 @@ export function diffPermutation(a, b, m = 2000) {
     }
     return { diff, p: (hits + 1) / (m + 1) };
 }
+
+// Vários grupos (ex.: dias da semana): a diferença entre a média mais alta e a
+// mais baixa, com p por permutação ("há sempre um dia mais alto, mesmo por acaso").
+export function rangePermutation(groups, m = 2000) {
+    const sizes = groups.map(g => g.length);
+    const all = groups.flat();
+    const stat = (arr) => {
+        let off = 0, hi = -Infinity, lo = Infinity;
+        for (const n of sizes) {
+            let sum = 0;
+            for (let i = 0; i < n; i++) sum += arr[off + i];
+            off += n;
+            const mu = sum / n;
+            if (mu > hi) hi = mu;
+            if (mu < lo) lo = mu;
+        }
+        return hi - lo;
+    };
+    const obs = stat(all);
+    let seed = 20261110 >>> 0;
+    const rand = () => { seed = (seed + 0x6D2B79F5) >>> 0; let x = seed; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61); return ((x ^ (x >>> 14)) >>> 0) / 4294967296; };
+    const sh = all.slice();
+    const limit = obs - 1e-9;
+    let b = 0;
+    for (let k = 0; k < m; k++) {
+        for (let i = sh.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); const tmp = sh[i]; sh[i] = sh[j]; sh[j] = tmp; }
+        if (stat(sh) >= limit) b++;
+    }
+    return { range: obs, b, m, p: (b + 1) / (m + 1) };
+}

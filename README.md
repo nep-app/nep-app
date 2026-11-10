@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v7.3.0**
+**Versão actual: v8.0.0**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
@@ -13,60 +13,68 @@ O objectivo não é julgar. É ajudar a consumir de forma mais consciente, ident
 
 ## O que a app faz hoje
 
-### Registo diário
-- Consumos individuais com dosagem (mg), hora e notas
-- Ciclos de sono: hora de deitar, horas dormidas, gatilhos (triggers)
-- Bem-estar diário: humor, energia, água, alimentação, descanso, vida social
-- Emoções (lista curada com categorização positiva/negativa)
-- Reflexões livres e pensamentos (análise de sentimento automática)
-- Registo diário agregado (mg total do dia)
+Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
 
-### Análises e padrões
-Quatro tabs de análise distintas:
+### Princípios (linhas vermelhas — ver CLAUDE.md)
+- **Redução de danos**, nunca abstinência nem 12 passos. Tom neutro, sem moralismo.
+- **Regra do elogio:** elogio e cores verde/vermelho só existem quando há uma
+  meta que a própria pessoa definiu. Sem meta, a app só descreve.
+- **A app tem de poder dizer "não sei":** cada número de relação ou efeito
+  tem um mínimo de dados e um teste contra o acaso (p por permutação,
+  `src/utils/stats.js`). Quando não chega, a app diz "não se distingue do acaso"
+  ou "ainda há poucos dados". As correlações nunca se ordenam pelas mais fortes.
+- **Nunca inventar mg:** os mg por dia só existem com pesagens reais.
 
-**Correlações** — Descobre automaticamente relações entre variáveis: como o sono afecta o consumo, se deitar tarde aumenta o uso, como as emoções se correlacionam com a dosagem, padrões temporais ao longo do dia, etc.
-
-**Estado** — Análise de bem-estar, gatilhos de risco (emoções que precedem mais consumo), impacto do exercício, sintomas físicos, análise do dia da semana.
-
-**Impacto** — Como o consumo afecta o bem-estar ao longo do tempo. Comparação antes/depois de eventos marcantes.
-
-**General Reflections (Coach)** — Análise narrativa que junta tudo: tendências de frequência e dosagem, padrões de autocuidado, análise de sentimento das reflexões, progresso nas metas, correlações sono-humor, clusters de dias difíceis vs. fáceis.
+### Início — registar
+- **Consumos** (hora, substância, notas) e **pesagens** da balança. Os mg por
+  consumo/dia calculam-se entre pesagens; dias com só parte medida aparecem
+  como "≥ X mg"; períodos "não sei se pesei" ficam sem mg.
+- **Sono** (hora de deitar, horas dormidas, "não dormi"). O ciclo conta para o
+  dia em que se acorda.
+- **Bem-estar** em dois toques (humor e energia — "Botões" ou "Quadrado") e,
+  em "mais detalhes", água, comida, sesta, social, sintomas, notas.
+- **Emoções**, **reflexões** e **pensamentos**.
+- **Surfar o impulso:** ao registar um consumo, se uma meta for ultrapassada,
+  aparecem exercícios para adiar (timer de 15 min, respiração, ancorar…), com
+  "Registar agora" sempre à mão. O momento fica guardado logo ao abrir o
+  primeiro exercício.
+- Registo de consumos passados (não abre o impulso) e marcação de dias
+  "não registei" / atípicos (ficam fora das análises).
 
 ### Padrões
-- Gráfico de frequência ao longo do tempo
-- Evolução semanal da dosagem
-- Análise de intervalos entre consumos
-- Ciclo mensal
-- Previsão do dia de hoje (baseada nos últimos 3 dias)
-- Comparação entre períodos (esta semana vs. semana passada, etc.)
-- Análise estrutural: dosagem, intervalos, distribuição por hora do dia
+- **Dashboard:** total, média por dia (só dias com registos), intervalo médio,
+  "esta semana", tendência, **Sinais de hoje**, mapa de calor, evolução da
+  frequência, metas.
+- **Sinais de hoje:** junta sono, humor, energia, autocuidado, craving e
+  emoções dos últimos dias. A app verifica nos dias passados da própria pessoa
+  se essa soma acompanhou o número de consumos (Spearman + p por deslocamento
+  circular). Se não acompanhou, diz que não se distingue do acaso e não arrisca.
+- **Progresso** (este período vs o anterior), **Temporal** e **Estrutural**
+  (horas do dia, intervalos, dose).
 
-### Metas de redução de danos
-- Reduzir frequência (máx. X usos/dia)
-- Reduzir dosagem total (máx. X mg/dia)
-- Aumentar intervalo mínimo entre consumos
-- Limitar hora do último consumo (antes da meia-noite)
-- Adiar o primeiro consumo após acordar
-- Horas de sono mínimas
-- Hora de deitar máxima
+### Análises (períodos Hoje · Semana · Mês · Tudo)
+- **Correlações:** uma pergunta de cada vez (ex.: "sono → consumo do dia
+  seguinte"), com n, r e p. Mínimo de 20 dias; só pares de dias seguidos.
+- **Estado:** bem-estar, emoções, dia da semana, exercício, sintomas e o
+  cartão do Surfar o impulso.
+- **Impacto:** humor e energia à volta de um consumo (2h antes → 4h depois),
+  com "de N registos" e "pode ser acaso" debaixo de cada número; "Antes de
+  consumir" compara os 2 dias antes de dias com e sem consumo ("X de Y dias").
+- **Reflexão Geral:** resumo em texto de tudo, escrito por regras (sem IA, nada sai do telemóvel), com as mesmas regras de "não sei".
 
-Cada meta é avaliada só desde o dia em que foi criada — não contra todo o histórico.
+### Metas (escolhidas pela pessoa)
+Reduzir frequência · reduzir mg · aumentar intervalo · primeiro consumo não
+antes de · limitar o último consumo · horas de sono · deitar antes de.
+Cada meta conta só desde o dia em que foi criada.
 
-### Avisos inteligentes
-- Intervalo demasiado curto entre consumos
-- Dosagem acima da meta
-- Sono insuficiente
-- Hora de deitar muito tarde
-- Último consumo após meia-noite
+### Histórico
+Registos agrupados por dia (consumos, ciclos, reflexões…), pesquisa e filtros,
+total de mg por dia.
 
-### Outras funcionalidades
-- Urge Surfing — exercícios guiados para gerir impulso de consumo (baseados em DBT)
-- Fichas educativas de harm reduction
-- Badges de conquistas (streak, metas cumpridas, etc.)
-- Relatório de gaps (dias com dados em falta)
-- Histórico pesquisável e filtrável
-- Modo demo com dados realistas (sem registo necessário)
-- Português e inglês
+### Config
+Modo de dados, PIN e bloqueio, **disfarce** (abre como calculadora),
+**lembretes push**, temas (Riso por defeito e outros), idioma PT/EN,
+exportação, substâncias. **Modo demo** com dados realistas, sem conta.
 
 ---
 
@@ -86,6 +94,14 @@ Motor de correlações de Pearson para detectar automaticamente padrões. Análi
 
 **Fase 5 — Metas, PWA e internacionalização**
 Sistema de metas com acompanhamento diário. PWA instalável. Tradução completa para inglês (incluindo correlações, emoções, análises).
+
+---
+
+**Fase 6 — Honestidade estatística e redesenho (v6.5x → v7.x)**
+Regra do elogio (cor e elogio só com meta), "a app tem de poder dizer não
+sei" (mínimos de dados e p por permutação), mg só com pesagens reais,
+"Sinais de hoje" verificados no histórico, Surfar o impulso com estatísticas,
+bem-estar em dois toques, temas, Histórico agrupado por dia, menos caixas.
 
 ---
 
@@ -134,13 +150,15 @@ src/
 │   └── syncService.js         # Sync incremental Firebase
 ├── utils/
 │   ├── encryption.js          # AES-256-GCM
-│   ├── helpers.js             # Datas, fusos horários
+│   ├── helpers.js             # Datas, fusos horários (getTodayKey, safeToISODate)
+│   ├── stats.js               # Spearman/permutação: "não se distingue do acaso"
 │   ├── sentimentAnalysis.js   # Análise de sentimento em PT
 │   └── userStats.js           # Stats pré-calculadas (boot rápido)
 ├── views/
 │   ├── HomeViewRefactored.jsx
 │   ├── HistoryView.jsx
 │   ├── PatternsView.jsx
+│   ├── SettingsView.jsx
 │   └── AnalysesView.jsx
 │       analyses/
 │       ├── AnalysesCoachTab.jsx       # General Reflections
@@ -162,7 +180,9 @@ npm run dev        # http://localhost:5173
 npm run build      # build para produção → docs/
 ```
 
-Deploy automático via GitHub Actions em push para branches `claude/**`.
+Deploy via GitHub Actions (`main.yml`). Publicar = push **só** para os ramos de
+produção (`claude/branch-naming-docs-CwjcE` e
+`claude/user-experience-design-review-rmp9px`); ver CLAUDE.md.
 
 ---
 

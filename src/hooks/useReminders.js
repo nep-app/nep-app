@@ -95,7 +95,9 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           if (missing.length > 0) {
             const items = missing.join(', ');
             showToast(t('reminders.morningToast', { items }), 'info');
-            showBrowserNotification(t('reminders.morningTitle'), t('reminders.morningBody', { items }));
+            // No ecrã bloqueado: texto genérico (a lista dizia "mg de ontem"). O
+            // detalhe fica no aviso dentro da app (showToast).
+            showBrowserNotification(t('reminders.morningTitle'), t('reminders.doseBody'));
           }
           dismissToday('morning-check');
         }
@@ -110,7 +112,7 @@ export const useReminders = (user, wellbeingLogs, consumptions, cycles, reflecti
           if (missing.length > 0) {
             const items = missing.join(', ');
             showToast(t('reminders.eveningToast', { items }), 'info');
-            showBrowserNotification(t('reminders.reminderTitle'), t('reminders.eveningBody', { items }));
+            showBrowserNotification(t('reminders.reminderTitle'), t('reminders.doseBody'));
           }
           dismissToday('daily-check');
         }

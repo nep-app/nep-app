@@ -20,13 +20,15 @@ admin.initializeApp({ credential: admin.credential.cert(JSON.parse(raw)) });
 const db = admin.firestore();
 
 // Mensagens DISCRETAS de propósito — nunca revelam consumo/detalhes no ecrã bloqueado.
+// O título é "Lembrete" (não "NEP"): no ecrã bloqueado o nome da substância
+// denunciava a app, mesmo com o disfarce de calculadora ligado.
 const MESSAGES = {
-  'log-mg':         { title: 'NEP', body: 'Tens um registo pendente para hoje. 🙂' },
-  'log-emotions':   { title: 'NEP', body: 'Um momento para ti — como te sentes?' },
-  'log-wellbeing':  { title: 'NEP', body: 'Tens um registo pendente para hoje. 🙂' },
-  'log-reflection': { title: 'NEP', body: 'Um momento para pensar no teu dia.' },
-  'bedtime':        { title: 'NEP', body: 'Hora de começar a abrandar para dormir. 🌙' },
-  'custom':         { title: 'NEP', body: 'Lembrete.' },
+  'log-mg':         { title: 'Lembrete', body: 'Tens um registo pendente para hoje. 🙂' },
+  'log-emotions':   { title: 'Lembrete', body: 'Um momento para ti — como te sentes?' },
+  'log-wellbeing':  { title: 'Lembrete', body: 'Tens um registo pendente para hoje. 🙂' },
+  'log-reflection': { title: 'Lembrete', body: 'Um momento para pensar no teu dia.' },
+  'bedtime':        { title: 'Lembrete', body: 'Hora de começar a abrandar para dormir. 🌙' },
+  'custom':         { title: 'Lembrete', body: 'Lembrete.' },
 };
 
 // Hora atual no fuso do utilizador → { date: 'YYYY-MM-DD', minutes: h*60+m }

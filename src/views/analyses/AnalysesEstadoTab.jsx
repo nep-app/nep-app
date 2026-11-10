@@ -3,6 +3,27 @@ import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
 import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
+import { diffPermutation, MIN_PER_WINDOW, rangePermutation } from '../../utils/stats';
+
+// ===== "A APP TEM DE PODER DIZER NÃO SEI" (CLAUDE.md) =====
+// Cada comparação deste separador (dias com X vs dias sem X, dias da semana)
+// passa por um teste e tem um ramo onde recusa afirmar: poucos dias → diz
+// quantos há e quantos são precisos; p ≥ 0,05 → "não se distingue do acaso".
+
+const PERM_M = 2000; // baralhações (o mesmo m que o diffPermutation usa por omissão)
+const mean = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length;
+
+// Diferença entre o grupo com a média mais alta e o com a mais baixa (ex.: os
+// dias da semana) + p por permutação: baralham-se as etiquetas dos grupos m
+// vezes. Escolher "o maior e o menor" DEPOIS de ver os dados faz qualquer
+// diferença parecer grande — por isso o acaso é medido com a MESMA escolha
+// (máximo − mínimo) em cada baralhação. p = (b+1)/(m+1), nunca zero. Semente
+// fixa: os mesmos registos dão sempre o mesmo p.
+// TODO: mudar para utils/stats.js (está duplicada no AnalysesCoachTab.jsx).
+
+// Ordem FIXA dos dias da semana (segunda → domingo). Nunca pela média: ordenar
+// pelo "melhor" já é escolher a resposta antes de a testar.
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
     analysisConsumptions,
@@ -22,6 +43,69 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
     };
     const translateTrigger = (trigger) => i18n.language === 'en' ? (TRIGGER_EN[trigger] || trigger) : trigger;
 
+    // p como aparece no ecrã (3 casas). Com b = 0 diz-se "menos de 1 em m",
+    // nunca zero. A decisão usa o MESMO número que se mostra.
+    const pShown = (p) => Number(p.toFixed(3));
+    const fmtP = (p, m = PERM_M) => {
+        const b = Math.round(p * (m + 1)) - 1;
+        return b <= 0
+            ? t('estadoTab.pLessThan', { m, defaultValue: 'p: menos de 1 em {{m}}' })
+            : t('estadoTab.pValue', { p: pShown(p).toLocaleString(i18n.language), defaultValue: 'p = {{p}}' });
+    };
+    const verdict = (p, m = PERM_M) => pShown(p) < 0.05
+        ? t('estadoTab.notChance', { p: fmtP(p, m), defaultValue: 'dificilmente é só acaso ({{p}})' })
+        : t('estadoTab.chance', { p: fmtP(p, m), defaultValue: 'não se distingue do acaso ({{p}})' });
+    const fmt1 = (v) => v.toFixed(1);
+
+    // Duas listas de valores por DIA (com X / sem X) → uma linha de texto.
+    // Com menos de MIN_PER_WINDOW dias de um dos lados não há número nenhum:
+    // diz quantos há e quantos são precisos.
+    const twoGroupLine = (withArr, withoutArr, key, fallback, fewWhat) => {
+        if (withArr.length === 0 && withoutArr.length === 0) return null;
+        if (withArr.length < MIN_PER_WINDOW || withoutArr.length < MIN_PER_WINDOW) {
+            return (
+                <p className="text-xs text-gray-500">
+                    {t('estadoTab.fewDays', { what: fewWhat, nA: withArr.length, nB: withoutArr.length, min: MIN_PER_WINDOW, defaultValue: '{{what}}: poucos dias para comparar ({{nA}} com e {{nB}} sem; são precisos {{min}} de cada lado).' })}
+                </p>
+            );
+        }
+        const r = diffPermutation(withoutArr, withArr);
+        return (
+            <p className="text-xs text-gray-300">
+                {t(key, { a: fmt1(mean(withArr)), nA: withArr.length, b: fmt1(mean(withoutArr)), nB: withoutArr.length, verdict: verdict(r.p), defaultValue: fallback })}
+            </p>
+        );
+    };
+
+    // "Dias com esta etiqueta vs dias sem ela" (emoções, gatilhos) no número de
+    // consumos do dia. Uma linha por etiqueta, por ordem de FREQUÊNCIA (quantos
+    // dias tem), nunca pela diferença. Cada uma com o seu teste; etiquetas sem
+    // dias suficientes de um dos lados não mostram número (contam-se à parte).
+    const compareByLabel = (records) => {
+        const base = new Set();
+        const byLabel = new Map();
+        records.forEach(({ day, labels }) => {
+            base.add(day);
+            labels.forEach(l => {
+                if (!byLabel.has(l)) byLabel.set(l, new Set());
+                byLabel.get(l).add(day);
+            });
+        });
+        const dayCons = (d) => consCountByDate[d] || 0;
+        const rows = [];
+        let few = 0;
+        [...byLabel.entries()]
+            .sort((a, b) => b[1].size - a[1].size || String(a[0]).localeCompare(String(b[0])))
+            .forEach(([label, days]) => {
+                const withV = [...days].map(dayCons);
+                const withoutV = [...base].filter(d => !days.has(d)).map(dayCons);
+                if (withV.length < MIN_PER_WINDOW || withoutV.length < MIN_PER_WINDOW) { few++; return; }
+                const r = diffPermutation(withoutV, withV);
+                rows.push({ label, nWith: withV.length, nWithout: withoutV.length, avgWith: mean(withV), avgWithout: mean(withoutV), p: r.p });
+            });
+        return { rows, few, nDays: base.size };
+    };
+
     // ⚡ Contagem de consumos por dia, calculada UMA vez. Antes, cada cartão
     // (emoções/gatilhos vs consumo) fazia um .filter em toda a lista de consumos
     // por cada registo — O(n²) a cada render. Agora é uma consulta direta O(1).
@@ -32,6 +116,61 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
         }
         return m;
     }, [analysisConsumptions]);
+
+    // Emoções / gatilhos vs consumos do dia — com teste, por ordem de frequência.
+    const emotionCompare = useMemo(() => compareByLabel(
+        analysisWellbeing
+            .filter(w => w.emotions && w.emotions.length > 0)
+            .map(w => ({ day: w.date || safeToISODate(w.timestamp), labels: w.emotions }))
+            .filter(r => r.day)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), [analysisWellbeing, consCountByDate]);
+    const triggerCompare = useMemo(() => compareByLabel(
+        analysisCycles
+            .filter(c => c.triggers && c.triggers.length > 0)
+            .map(c => ({ day: c.date || safeToISODate(c.timestamp), labels: c.triggers }))
+            .filter(r => r.day)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    ), [analysisCycles, consCountByDate]);
+
+    // Lista "dias com X vs sem X". Sem nenhuma etiqueta com dias suficientes,
+    // diz o que falta em vez de ficar calada.
+    const renderCompare = (res, translateLabel) => {
+        if (res.rows.length === 0) {
+            return (
+                <div className="text-center py-4 text-sm text-gray-400">
+                    {t('estadoTab.compareNone', { min: MIN_PER_WINDOW, n: res.nDays, defaultValue: 'Ainda não dá para comparar: cada uma precisa de pelo menos {{min}} dias com ela e {{min}} sem ela (há {{n}} dias com registo).' })}
+                </div>
+            );
+        }
+        return (
+            <div>
+                <p className="text-xs text-gray-400 mb-2">
+                    {t('estadoTab.compareIntro', { defaultValue: 'Consumos por dia, em média, nos dias em que registaste cada uma e nos outros dias com registo.' })}
+                </p>
+                <div className="divide-y divide-gray-700">
+                    {res.rows.map(r => (
+                        <div key={r.label} className="py-2">
+                            <div className="flex items-center justify-between mb-1">
+                                <span className="font-medium text-sm text-white">{translateLabel(r.label)}</span>
+                                <span className="text-xs text-gray-400">
+                                    {t('estadoTab.withLabel', 'com')} <span className="font-mono-theme text-white">{fmt1(r.avgWith)}</span>
+                                    {' · '}{t('estadoTab.withoutLabel', 'sem')} <span className="font-mono-theme">{fmt1(r.avgWithout)}</span>
+                                </span>
+                            </div>
+                            <div className="text-xs text-gray-400">
+                                {t('estadoTab.compareRow', { nA: r.nWith, nB: r.nWithout, verdict: verdict(r.p), defaultValue: '{{nA}} dias com, {{nB}} sem — a diferença {{verdict}}.' })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                    {res.rows.length >= 2 && t('estadoTab.compareMultiple', { k: res.rows.length, defaultValue: 'São {{k}} comparações ao mesmo tempo: é normal uma ou outra parecer diferente só por acaso.' })}
+                    {res.few > 0 && <> {t('estadoTab.compareFew', { n: res.few, min: MIN_PER_WINDOW, defaultValue: 'Mais {{n}} com poucos dias para comparar (são precisos {{min}} dias com e {{min}} sem).' })}</>}
+                </p>
+            </div>
+        );
+    };
 
     const emotionStats = useMemo(() => {
         const allEmotions = analysisWellbeing.flatMap(w => w.emotions || []);
@@ -83,14 +222,35 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
             };
         }).filter(s => s.total > 0);
 
-        const bestDay = weekdayStats.reduce((best, curr) =>
-            curr.positivePercent > best.positivePercent ? curr : best,
-            weekdayStats[0] || { day: 0, positivePercent: 0 }
-        );
-        const worstDay = weekdayStats.reduce((worst, curr) =>
-            curr.positivePercent < worst.positivePercent ? curr : worst,
-            weekdayStats[0] || { day: 0, positivePercent: 0 }
-        );
+        // ⚠️ "MELHOR DIA / MAIS DESAFIANTE" ERA DITO SEMPRE, mesmo com um
+        // registo por dia da semana. Agora testa-se: cada emoção positiva conta
+        // 1 e cada negativa 0 (a média de um dia é a mesma % das barras); só
+        // entram os dias da semana com MIN_PER_WINDOW registos de bem-estar ou
+        // mais; e a distância entre o dia mais alto e o mais baixo é comparada
+        // com a que o acaso dá baralhando os dias da semana. (Aproximado:
+        // emoções do mesmo registo parecem-se entre si — é um sinal, não prova.)
+        const logsByWeekday = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+        const nLogsByWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+        analysisWellbeing.forEach(w => {
+            if (!w.emotions || w.emotions.length === 0 || !w.timestamp) return;
+            const day = new Date(w.timestamp).getDay();
+            let any = false;
+            w.emotions.forEach(e => {
+                const c = getEmotionCategory(e);
+                if (c === 'positive') { logsByWeekday[day].push(1); any = true; }
+                else if (c === 'negative') { logsByWeekday[day].push(0); any = true; }
+            });
+            if (any) nLogsByWeekday[day]++;
+        });
+        const testedDays = WEEK_ORDER.filter(d => nLogsByWeekday[d] >= MIN_PER_WINDOW);
+        let weekdayTest = null;
+        if (testedDays.length >= 2) {
+            const r = rangePermutation(testedDays.map(d => logsByWeekday[d]));
+            const means = testedDays.map(d => ({ day: d, mean: mean(logsByWeekday[d]), n: nLogsByWeekday[d] }));
+            const hi = means.reduce((a, b) => (b.mean > a.mean ? b : a));
+            const lo = means.reduce((a, b) => (b.mean < a.mean ? b : a));
+            weekdayTest = { ...r, hi, lo, k: testedDays.length };
+        }
 
         return {
             allEmotions,
@@ -102,8 +262,8 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
             negativePercent,
             topEmotions,
             weekdayStats,
-            bestDay,
-            worstDay,
+            weekdayTest,
+            testedDaysCount: testedDays.length,
         };
     }, [analysisWellbeing, analysisConsumptions, i18n.language]);
 
@@ -416,8 +576,9 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                 <div>
                                     <div className={'text-sm font-semibold mb-3 ' + ('text-gray-400')}>{t('analyses.byWeekday')}</div>
                                     <div className="divide-y divide-gray-700">
-                                        {emotionStats.weekdayStats
-                                            .sort((a, b) => b.positivePercent - a.positivePercent)
+                                        {/* Ordem fixa (segunda → domingo), nunca pela percentagem */}
+                                        {[...emotionStats.weekdayStats]
+                                            .sort((a, b) => WEEK_ORDER.indexOf(a.day) - WEEK_ORDER.indexOf(b.day))
                                             .map((stat) => (
                                             <div key={stat.day} className="flex items-center justify-between py-2">
                                                 <span className={'text-sm w-16 ' + ('text-white')}>{getWeekdayName(stat.day)}</span>
@@ -439,12 +600,21 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                     {emotionStats.weekdayStats.length >= 2 && (
                                         <div className="border-t border-gray-700 pt-3 mt-1">
                                             <p className={'text-xs ' + ('text-gray-400')}>
-                                                {t('analyses.bestWorstDay', {
-                                                    best: getWeekdayName(emotionStats.bestDay.day),
-                                                    bestPct: emotionStats.bestDay.positivePercent.toFixed(0),
-                                                    worst: getWeekdayName(emotionStats.worstDay.day),
-                                                    worstPct: emotionStats.worstDay.positivePercent.toFixed(0),
-                                                })}
+                                                {emotionStats.weekdayTest
+                                                    ? t('estadoTab.weekdayRange', {
+                                                        best: getWeekdayName(emotionStats.weekdayTest.hi.day),
+                                                        bestPct: (emotionStats.weekdayTest.hi.mean * 100).toFixed(0),
+                                                        worst: getWeekdayName(emotionStats.weekdayTest.lo.day),
+                                                        worstPct: (emotionStats.weekdayTest.lo.mean * 100).toFixed(0),
+                                                        k: emotionStats.weekdayTest.k,
+                                                        verdict: verdict(emotionStats.weekdayTest.p, emotionStats.weekdayTest.m),
+                                                        defaultValue: 'Entre os {{k}} dias da semana com registos suficientes, as emoções positivas vão de {{bestPct}}% ({{best}}) a {{worstPct}}% ({{worst}}). Uma diferença destas entre dias da semana {{verdict}}.',
+                                                    })
+                                                    : t('estadoTab.weekdayFew', {
+                                                        min: MIN_PER_WINDOW,
+                                                        k: emotionStats.testedDaysCount,
+                                                        defaultValue: 'Para comparar dias da semana são precisos pelo menos {{min}} registos com emoções em cada dia (por agora só {{k}} dias da semana chegam lá).',
+                                                    })}
                                             </p>
                                         </div>
                                     )}
@@ -458,105 +628,11 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                             {t('analyses.emotionsVsConsumption')}
                         </h3>
-                        {(() => {
-                            // Análise de emoções correlacionadas com consumo
-                            const emotionData = {};
-
-                            // Para cada registo de bem-estar
-                            analysisWellbeing.forEach(log => {
-                                if (!log.emotions || log.emotions.length === 0) return;
-
-                                const logDate = safeToISODate(log.timestamp);
-                                if (!logDate) return;
-
-                                // Contar consumos nesse dia (índice pré-calculado)
-                                const dayConsumptions = consCountByDate[logDate] || 0;
-
-                                log.emotions.forEach(emotion => {
-                                    if (!emotionData[emotion]) {
-                                        emotionData[emotion] = { count: 0, totalConsumptions: 0, days: [] };
-                                    }
-                                    emotionData[emotion].count++;
-                                    emotionData[emotion].totalConsumptions += dayConsumptions;
-                                    emotionData[emotion].days.push(logDate);
-                                });
-                            });
-
-                            // Calcular média de consumos para cada emoção e ordenar
-                            const emotionsWithAvg = Object.entries(emotionData).map(([emotion, data]) => ({
-                                emotion,
-                                count: data.count,
-                                avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
-                            }));
-
-                            // Emoções com MAIOR consumo (top 3)
-                            const highRiskEmotions = emotionsWithAvg
-                                .filter(e => e.count >= 2) // Apenas emoções registadas 2+ vezes
-                                .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
-                                .slice(0, 3);
-
-                            // Emoções com MENOR consumo (bottom 2)
-                            const lowRiskEmotions = emotionsWithAvg
-                                .filter(e => e.count >= 2 && e.avgConsumptions < 10) // Menos de 10 consumos em média
-                                .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
-                                .slice(0, 2);
-
-                            if (highRiskEmotions.length === 0 && lowRiskEmotions.length === 0) {
-                                return (
-                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
-                                        {t('analyses.insufficientCorrelation')}
-                                    </div>
-                                );
-                            }
-
-                            return (
-                                <div className="space-y-4">
-                                    {/* Emoções de ALTO risco (mais consumo) */}
-                                    {highRiskEmotions.length > 0 && (
-                                        <div>
-                                            <div className={'text-xs font-medium mb-1 uppercase tracking-wide ' + ('text-gray-400')}>
-                                                {t('analyses.highRisk')}
-                                            </div>
-                                            <div className="divide-y divide-gray-700">
-                                                {highRiskEmotions.map(e => (
-                                                    <div key={e.emotion} className="py-2">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className={'font-medium text-sm ' + ('text-white')}>{translateEmotion(e.emotion)}</span>
-                                                            <span className={'text-xs font-bold font-mono-theme ' + ('text-gray-400')}>{e.count}×</span>
-                                                        </div>
-                                                        <div className={'text-xs ' + ('text-gray-400')}>
-                                                            {t('analyses.highRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Emoções de BAIXO risco (menos consumo) */}
-                                    {lowRiskEmotions.length > 0 && (
-                                        <div>
-                                            <div className={'text-xs font-medium mb-1 uppercase tracking-wide ' + ('text-gray-400')}>
-                                                {t('analyses.lowRisk')}
-                                            </div>
-                                            <div className="divide-y divide-gray-700">
-                                                {lowRiskEmotions.map(e => (
-                                                    <div key={e.emotion} className="py-2">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className={'font-medium text-sm ' + ('text-white')}>{translateEmotion(e.emotion)}</span>
-                                                            <span className={'text-xs font-bold font-mono-theme ' + ('text-gray-400')}>{e.count}×</span>
-                                                        </div>
-                                                        <div className={'text-xs ' + ('text-gray-400')}>
-                                                            {t('analyses.lowRiskDesc', { avg: e.avgConsumptions.toFixed(1) })}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })()}
+                        {/* ⚠️ ANTES: "média mais alta / mais baixa" — as 3 emoções com mais
+                            consumo e as 2 com menos, escolhidas pela diferença, com
+                            só 2 registos cada e sem teste. Ordenar pela força é
+                            escolher a resposta antes de a testar (CLAUDE.md). */}
+                        {renderCompare(emotionCompare, translateEmotion)}
                     </div>
                 </div>
             )}
@@ -651,7 +727,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                                                 percent: triggerStats.allTriggers.length > 0 ? (count / triggerStats.allTriggers.length) * 100 : 0
                                             }))
                                             .filter(stat => stat.count > 0)
-                                            .sort((a, b) => b.count - a.count)
+                                            .sort((a, b) => WEEK_ORDER.indexOf(a.day) - WEEK_ORDER.indexOf(b.day))
                                             .map((stat) => (
                                             <div key={stat.day} className="flex items-center justify-between py-2">
                                                 <span className={'text-sm w-16 ' + ('text-white')}>{getWeekdayName(stat.day)}</span>
@@ -689,105 +765,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                         <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
                             {t('analyses.triggersVsConsumption')}
                         </h3>
-                        {(() => {
-                            // Calcular gatilhos e média de consumos por gatilho
-                            const triggerData = {};
-
-                            analysisCycles.forEach(cycle => {
-                                if (!cycle.triggers || cycle.triggers.length === 0) return;
-
-                                // Encontrar data do ciclo usando o timestamp
-                                const cycleDate = safeToISODate(cycle.timestamp);
-                                if (!cycleDate) return;
-
-                                // Contar consumos nesse dia (índice pré-calculado)
-                                const dayConsumptions = consCountByDate[cycleDate] || 0;
-
-                                cycle.triggers.forEach(trigger => {
-                                    if (!triggerData[trigger]) {
-                                        triggerData[trigger] = { count: 0, totalConsumptions: 0, days: [] };
-                                    }
-                                    triggerData[trigger].count++;
-                                    triggerData[trigger].totalConsumptions += dayConsumptions;
-                                    triggerData[trigger].days.push(cycleDate);
-                                });
-                            });
-
-                            // Calcular média de consumos para cada gatilho
-                            const triggersWithAvg = Object.entries(triggerData).map(([trigger, data]) => ({
-                                trigger,
-                                count: data.count,
-                                avgConsumptions: data.count > 0 ? data.totalConsumptions / data.count : 0
-                            }));
-
-                            // Gatilhos com MAIOR consumo (top 3)
-                            const highRiskTriggers = triggersWithAvg
-                                .filter(tr => tr.count >= 2)
-                                .sort((a, b) => b.avgConsumptions - a.avgConsumptions)
-                                .slice(0, 3);
-
-                            // Gatilhos com MENOR consumo (bottom 2)
-                            const lowRiskTriggers = triggersWithAvg
-                                .filter(tr => tr.count >= 2 && tr.avgConsumptions < 10)
-                                .sort((a, b) => a.avgConsumptions - b.avgConsumptions)
-                                .slice(0, 2);
-
-                            if (highRiskTriggers.length === 0 && lowRiskTriggers.length === 0) {
-                                return (
-                                    <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
-                                        {t('analyses.insufficientCorrelation')}
-                                    </div>
-                                );
-                            }
-
-                            return (
-                                <div className="space-y-4">
-                                    {/* Gatilhos de ALTO risco (mais consumo) */}
-                                    {highRiskTriggers.length > 0 && (
-                                        <div>
-                                            <div className={'text-xs font-medium mb-1 uppercase tracking-wide ' + ('text-gray-400')}>
-                                                {t('analyses.highRisk')}
-                                            </div>
-                                            <div className="divide-y divide-gray-700">
-                                                {highRiskTriggers.map(tr => (
-                                                    <div key={translateTrigger(tr.trigger)} className="py-2">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className={'font-medium text-sm ' + ('text-white')}>{translateTrigger(tr.trigger)}</span>
-                                                            <span className={'text-xs font-bold font-mono-theme ' + ('text-gray-400')}>{tr.count}×</span>
-                                                        </div>
-                                                        <div className={'text-xs ' + ('text-gray-400')}>
-                                                            {t('analyses.highRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Gatilhos de BAIXO risco (menos consumo) */}
-                                    {lowRiskTriggers.length > 0 && (
-                                        <div>
-                                            <div className={'text-xs font-medium mb-1 uppercase tracking-wide ' + ('text-gray-400')}>
-                                                {t('analyses.lowRisk')}
-                                            </div>
-                                            <div className="divide-y divide-gray-700">
-                                                {lowRiskTriggers.map(tr => (
-                                                    <div key={translateTrigger(tr.trigger)} className="py-2">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <span className={'font-medium text-sm ' + ('text-white')}>{translateTrigger(tr.trigger)}</span>
-                                                            <span className={'text-xs font-bold font-mono-theme ' + ('text-gray-400')}>{tr.count}×</span>
-                                                        </div>
-                                                        <div className={'text-xs ' + ('text-gray-400')}>
-                                                            {t('analyses.lowRiskDesc', { avg: tr.avgConsumptions.toFixed(1) })}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })()}
+                        {renderCompare(triggerCompare, translateTrigger)}
                     </div>
 
                     {/* Consciencialização */}
@@ -849,45 +827,27 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             </div>
                         )}
 
-                        {(exerciseStats.consWithExercise.length >= 3 || exerciseStats.moodWithExercise.length >= 3 || exerciseStats.energyWithExercise.length >= 3) && (
+                        {/* ⚠️ ANTES: "Impacto do exercício" (linguagem de causa), com 3 dias
+                            de cada lado, sem teste, e escondido quando a diferença era
+                            pequena — só aparecia o que parecia efeito. Agora: dias com e
+                            sem exercício, cada comparação com o seu teste. */}
+                        {(exerciseStats.consWithExercise.length + exerciseStats.consWithoutExercise.length) > 0 && (
                             <div className="border-t border-gray-700 pt-4">
                                 <p className={'text-sm font-medium text-gray-300 mb-3'}>{t('analyses.exerciseImpact')}</p>
                                 <div className="grid grid-cols-1 gap-2">
-                                    {exerciseStats.consWithExercise.length >= 3 && exerciseStats.consWithoutExercise.length >= 3 && (() => {
-                                        const withEx = exerciseStats.avg(exerciseStats.consWithExercise);
-                                        const withoutEx = exerciseStats.avg(exerciseStats.consWithoutExercise);
-                                        const diff = withEx - withoutEx;
-                                        const pct = withoutEx > 0 ? ((diff / withoutEx) * 100).toFixed(0) : 0;
-                                        if (Math.abs(pct) < 5) return null;
-                                        const diffStr = diff < 0 ? `−${Math.abs(pct)}%` : `+${pct}%`;
-                                        return (
-                                            <p className={'text-xs text-gray-300'}>
-                                                {t('analyses.exerciseConsImpact', { withEx: withEx.toFixed(1), withoutEx: withoutEx.toFixed(1), diff: diffStr })}
-                                            </p>
-                                        );
-                                    })()}
-                                    {exerciseStats.moodWithExercise.length >= 3 && exerciseStats.moodWithoutExercise.length >= 3 && (() => {
-                                        const withEx = exerciseStats.avg(exerciseStats.moodWithExercise);
-                                        const withoutEx = exerciseStats.avg(exerciseStats.moodWithoutExercise);
-                                        const diff = (withEx - withoutEx).toFixed(1);
-                                        if (Math.abs(diff) < 0.3) return null;
-                                        return (
-                                            <p className={'text-xs text-gray-300'}>
-                                                {t('analyses.exerciseMoodImpact', { withEx: withEx.toFixed(1), withoutEx: withoutEx.toFixed(1) })}
-                                            </p>
-                                        );
-                                    })()}
-                                    {exerciseStats.energyWithExercise.length >= 3 && exerciseStats.energyWithoutExercise.length >= 3 && (() => {
-                                        const withEx = exerciseStats.avg(exerciseStats.energyWithExercise);
-                                        const withoutEx = exerciseStats.avg(exerciseStats.energyWithoutExercise);
-                                        const diff = (withEx - withoutEx).toFixed(1);
-                                        if (Math.abs(diff) < 0.3) return null;
-                                        return (
-                                            <p className={'text-xs text-gray-300'}>
-                                                {t('analyses.exerciseEnergyImpact', { withEx: withEx.toFixed(1), withoutEx: withoutEx.toFixed(1) })}
-                                            </p>
-                                        );
-                                    })()}
+                                    {twoGroupLine(exerciseStats.consWithExercise, exerciseStats.consWithoutExercise, 'estadoTab.exCons',
+                                        '🔢 Consumos: {{a}} por dia nos dias com exercício ({{nA}} dias) e {{b}} nos outros ({{nB}} dias) — {{verdict}}.',
+                                        t('estadoTab.whatCons', 'Consumos'))}
+                                    {twoGroupLine(exerciseStats.moodWithExercise, exerciseStats.moodWithoutExercise, 'estadoTab.exMood',
+                                        '😊 Humor: {{a}}/10 nos dias com exercício ({{nA}} dias) e {{b}}/10 nos outros ({{nB}} dias) — {{verdict}}.',
+                                        t('estadoTab.whatMood', 'Humor'))}
+                                    {twoGroupLine(exerciseStats.energyWithExercise, exerciseStats.energyWithoutExercise, 'estadoTab.exEnergy',
+                                        '⚡ Energia: {{a}}/10 nos dias com exercício ({{nA}} dias) e {{b}}/10 nos outros ({{nB}} dias) — {{verdict}}.',
+                                        t('estadoTab.whatEnergy', 'Energia'))}
+                                    {[['consWithExercise', 'consWithoutExercise'], ['moodWithExercise', 'moodWithoutExercise'], ['energyWithExercise', 'energyWithoutExercise']]
+                                        .some(([a, b]) => exerciseStats[a].length >= MIN_PER_WINDOW && exerciseStats[b].length >= MIN_PER_WINDOW) && (
+                                        <p className="text-xs text-gray-500">{t('estadoTab.togetherNote', 'Andarem juntos não quer dizer que um cause o outro.')}</p>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -931,34 +891,16 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                             ))}
                         </div>
 
-                        {(symptomStats.consWithSymptom.length >= 3 || symptomStats.moodWithSymptom.length >= 3) && (
+                        {(symptomStats.consWithSymptom.length + symptomStats.consWithoutSymptom.length) > 0 && (
                             <div className="border-t border-gray-700 pt-4">
                                 <p className={'text-sm font-medium text-gray-300 mb-2'}>{t('analyses.symptomsVsPattern')}</p>
                                 <div className="space-y-2">
-                                    {symptomStats.consWithSymptom.length >= 3 && symptomStats.consWithoutSymptom.length >= 3 && (() => {
-                                        const withS = symptomStats.avg(symptomStats.consWithSymptom);
-                                        const withoutS = symptomStats.avg(symptomStats.consWithoutSymptom);
-                                        const diff = withS - withoutS;
-                                        const pct = withoutS > 0 ? ((diff / withoutS) * 100).toFixed(0) : 0;
-                                        if (Math.abs(pct) < 5) return <p className={'text-xs text-gray-400'}>{t('analyses.insufficientData')}</p>;
-                                        const diffStr = diff > 0 ? `+${pct}%` : `−${Math.abs(pct)}%`;
-                                        return (
-                                            <p className={'text-xs text-gray-300'}>
-                                                {t('analyses.symptomConsImpact', { withS: withS.toFixed(1), withoutS: withoutS.toFixed(1), diff: diffStr })}
-                                            </p>
-                                        );
-                                    })()}
-                                    {symptomStats.moodWithSymptom.length >= 3 && symptomStats.moodWithoutSymptom.length >= 3 && (() => {
-                                        const withS = symptomStats.avg(symptomStats.moodWithSymptom);
-                                        const withoutS = symptomStats.avg(symptomStats.moodWithoutSymptom);
-                                        const diff = (withS - withoutS).toFixed(1);
-                                        if (Math.abs(diff) < 0.3) return null;
-                                        return (
-                                            <p className={'text-xs text-gray-300'}>
-                                                {t('analyses.symptomMoodImpact', { withS: withS.toFixed(1), withoutS: withoutS.toFixed(1) })}
-                                            </p>
-                                        );
-                                    })()}
+                                    {twoGroupLine(symptomStats.consWithSymptom, symptomStats.consWithoutSymptom, 'estadoTab.symCons',
+                                        '🔢 Consumos: {{a}} por dia nos dias com sintomas ({{nA}} dias) e {{b}} nos outros ({{nB}} dias) — {{verdict}}.',
+                                        t('estadoTab.whatCons', 'Consumos'))}
+                                    {twoGroupLine(symptomStats.moodWithSymptom, symptomStats.moodWithoutSymptom, 'estadoTab.symMood',
+                                        '😊 Humor: {{a}}/10 nos dias com sintomas ({{nA}} dias) e {{b}}/10 nos outros ({{nB}} dias) — {{verdict}}.',
+                                        t('estadoTab.whatMood', 'Humor'))}
                                 </div>
                             </div>
                         )}

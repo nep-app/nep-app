@@ -565,16 +565,16 @@
     "itemWellbeing": "wellbeing",
     "itemReflection": "reflection",
     "itemMgYesterday": "yesterday's dosage",
-    "morningTitle": "Good morning – NEP",
+    "morningTitle": "Good morning",
     "morningToast": "🌅 Good morning! Still to log: {{items}}",
     "morningBody": "Still to log: {{items}}",
-    "reminderTitle": "Reminder – NEP",
+    "reminderTitle": "Reminder",
     "eveningToast": "💭 Reminder: Still to log: {{items}}",
     "eveningBody": "Still to log: {{items}}",
     "doseToast": "📊 Reminder: Log your daily dose!",
-    "doseBody": "Log your daily dose!",
+    "doseBody": "You have an entry pending for today.",
     "wellbeingToast": "💚 Reminder: You have {{n}} uses! Log your wellbeing",
-    "wellbeingBody": "You have {{n}} uses! Log your wellbeing"
+    "wellbeingBody": "A moment for you — how are you feeling?"
   },
   "dbtQuestions": [
     "What worked well for you today in terms of self-care?",
@@ -767,7 +767,11 @@
       "summaryInterval": " Avg interval: {{avg}}h.",
       "metricTotal": "Total",
       "metricAvgDay": "Avg/day",
-      "metricAvgInterval": "Avg interval"
+      "metricAvgInterval": "Avg interval",
+      "avgDaysNoToday": "{{n}} day(s), not today",
+      "avgDays": "{{n}} day(s)",
+      "avgNoDays": "today isn't over yet",
+      "avgNoKnownDays": "no days with records"
     },
     "trend": {
       "title": "📈 Trend (30 days)",
@@ -776,7 +780,14 @@
       "decreasing": "Going down:",
       "decreasingDetail": "📊 Over the last 30 days frequency fell by {{slope}} uses per day on average. At the same rate, in 10 days it would be ~{{projection}} a day.",
       "stable": "Stable pattern:",
-      "stableDetail": "📊 Your frequency is consistent, no major changes in the last 30 days."
+      "stableDetail": "📊 Your frequency is consistent, no major changes in the last 30 days.",
+      "few": "Still too few days for this — {{n}} complete days with records in the last 30; {{min}} needed.",
+      "flat": "The same number of uses every day (~{{avg}}/day) — no rise or fall.",
+      "basis": "Over {{n}} complete days (today is left out: it isn't over yet).",
+      "up": "Rising: the line goes from ~{{from}} to ~{{to}} uses/day.",
+      "down": "Falling: the line goes from ~{{from}} to ~{{to}} uses/day.",
+      "chance": "No rise or fall that stands out from chance (~{{from}} → ~{{to}} uses/day on the line).",
+      "testNote": "Over {{n}} complete days (today is left out: it isn't over yet). ρ = {{rho}}, {{p}}."
     },
     "riskLevel": {
       "unknown": "too early to tell",
@@ -829,7 +840,8 @@
       "title": "📈 Frequency Evolution",
       "desc": "Number of uses per day over time. Colours indicate intensity.",
       "today": "Today",
-      "intensityLegend": "💡 Colour intensity = use frequency"
+      "intensityLegend": "💡 Colour intensity = use frequency",
+      "todaySoFar": "today (so far)"
     },
     "goals": {
       "title": "🎯 Goals",
@@ -878,7 +890,9 @@
       "qtyAvgCycles": "📊 On average: ≈{{mg}} mg per day (24 h), over the same {{n}} cycles",
       "qtyAvgDays": "📊 On average: ≈{{mg}} mg per day (over the same {{n}} days)",
       "qtyAvgAllExplain": "The mg of the cycles the goal counts — from \"Log mg\" or from the scale — divided by how long those cycles last. A 2-day cycle (a night without sleep) counts as 2 days. It hides peaks.",
-      "qtyAvgDaysExplain": "The mg of every day the goal counts — from \"Log mg\" or from the scale — divided by the number of days. It hides peaks: one very high day gets diluted in the average."
+      "qtyAvgDaysExplain": "The mg of every day the goal counts — from \"Log mg\" or from the scale — divided by the number of days. It hides peaks: one very high day gets diluted in the average.",
+      "metSomeDay": "{{achieved}} of {{total}} goals met on at least one day",
+      "avgPerDayCounted": "over {{days}} day(s) the goals count"
     },
     "progress": {
       "title": "📈 Temporal Progress Analysis",
@@ -932,7 +946,8 @@
         "variation": "variation: ±{{val}}h",
         "msgVeryConsistent": "🎯 You go to bed at very similar times (variation <30min). Excellent! Your body learns to prepare for sleep at the same time, improving sleep quality and making it easier to fall asleep.",
         "msgConsistent": "⚖️ Moderate variation (±{{val}}h in bedtime). Some consistency, but you can improve. Try to set a 30-min window (e.g. 11pm-11:30pm) for bedtime, even on weekends.",
-        "msgVariable": "🌪️ Very variable bedtimes (±{{val}}h difference). This confuses the circadian rhythm — the body doesn't know when to prepare for sleep. Result: harder to fall asleep, less deep sleep. Starting by reducing to ±1h already helps."
+        "msgVariable": "🌪️ Very variable bedtimes (±{{val}}h difference). This confuses the circadian rhythm — the body doesn't know when to prepare for sleep. Result: harder to fall asleep, less deep sleep. Starting by reducing to ±1h already helps.",
+        "msgNeutral": "Bedtimes were, on average, ±{{val}}h apart ({{n}} nights now, {{prev}} before)."
       },
       "avgBedtime": {
         "later": "Later",
@@ -940,8 +955,24 @@
         "wasBefore": "was: {{time}}",
         "lateNight": "Heads up: going to bed very late (early morning) can affect sleep quality.",
         "goodWindow": "Good bedtime window! (10pm-midnight)",
-        "morning": "Sleeping in the morning may indicate cycle inversion."
-      }
+        "morning": "Sleeping in the morning may indicate cycle inversion.",
+        "inGoal": "The average time is within your goal (by {{target}}).",
+        "outGoal": "The average time is after your goal (by {{target}})."
+      },
+      "selfCareLow": "On fewer than half of the days ({{n}} with records): {{areas}}.",
+      "selfCareAllHalf": "Every area shows up on at least half of the days ({{n}} with records).",
+      "todayHalf": "today isn't over yet",
+      "towardGoal": "✓ In the direction of your goal.",
+      "awayGoal": "The opposite way from your goal.",
+      "titleCompare": "📈 This period and the one before",
+      "todayNote": "Today isn't over yet: it is left out of the averages for uses, mg and self-care (it counts for sleep, mood, energy and emotions).",
+      "noGoalsNote": "None of these measures has a goal of yours: the arrows only say which way it changed, not whether that is better or worse.",
+      "goalsNote": "With a goal of yours: {{toward}} of {{total}} changed in the direction of the goal, by a difference that stands out from chance. The other arrows are description only.",
+      "variationShort": "spread",
+      "summaryTitleNeutral": "💡 Summary",
+      "towardList": "In the direction of your goals:",
+      "awayList": "The opposite way from your goals:",
+      "changedList": "Changed by more than 5% (description only — no goal, or the difference doesn't stand out from chance):"
     },
     "temporal": {
       "byHour": "🕐 Use by Hour",
@@ -951,7 +982,16 @@
       "tarde": "Afternoon",
       "noite": "Evening",
       "madrugada": "Late night",
-      "byWeekday": "📅 By Day of Week"
+      "byWeekday": "📅 By Day of Week",
+      "basisToday": "{{k}} use(s) over {{n}} day(s) with use (today counts with what you've logged so far).",
+      "basis": "{{k}} use(s) over {{n}} day(s) with use.",
+      "fewPct": "Percentages only from {{min}} days with use ({{n}} so far).",
+      "weekdayDesc": "Average uses per day, over {{n}} complete days (today is left out: it isn't over yet).",
+      "nDaysShort": "{{n}}d",
+      "weekdayHigh": "highest average ({{v}}/day over {{n}} days)",
+      "weekdayLow": "lowest average ({{v}}/day over {{n}} days)",
+      "weekdayCaveat": "With 7 days to compare, one is always highest and one lowest, even by chance alone.",
+      "weekdayFew": "To say which weekday has more or fewer uses, at least {{min}} complete days of each weekday are needed — the one with fewest has {{n}}."
     },
     "areas": {
       "water": "Hydration",
@@ -1030,7 +1070,35 @@
       "stableTrend": "Stable",
       "increasingTrend": "Increasing",
       "decreasingTrend": "Decreasing",
-      "basedOnGoal": "(based on your goal of {{mg}}mg)"
+      "basedOnGoal": "(based on your goal of {{mg}}mg)",
+      "monthlyFew": "Still too few days for this — {{n}} complete days; {{min}} needed (about 2 months).",
+      "monthlyDesc": "Average uses per day, for each day of the month, over {{n}} complete days. \"×2\" = that day of the month appeared twice.",
+      "peakFew": "Days 20–25 vs the rest of the month: at least {{min}} days are needed on each side ({{a}} and {{b}} so far).",
+      "peakFlat": "Days 20–25 vs the rest of the month: the values don't vary, nothing to compare.",
+      "peakChance": "Days 20–25: {{a}}/day vs {{b}}/day for the rest of the month — the difference doesn't stand out from chance ({{n}} days, {{p}}).",
+      "peakSigHigh": "Days 20–25: {{a}}/day vs {{b}}/day for the rest of the month — higher, and the difference stands out from chance ({{n}} days, {{p}}).",
+      "peakSigLow": "Days 20–25: {{a}}/day vs {{b}}/day for the rest of the month — lower, and the difference stands out from chance ({{n}} days, {{p}}).",
+      "mgNoToday": "Today is left out: it isn't over yet.",
+      "dosageRoseN": "The average per measured day went from {{first}} mg (1st complete week, {{a}} measured days) to {{last}} mg (latest, {{b}} days) — {{pct}}% more.",
+      "dosageDroppedN": "The average per measured day went from {{first}} mg (1st complete week, {{a}} measured days) to {{last}} mg (latest, {{b}} days) — {{pct}}% less.",
+      "twoWeeksNote": "These are two single weeks: this says what happened, not whether it is a trend.",
+      "mgOnlyToday": "There is only mg for today, which isn't over yet — the numbers start tomorrow.",
+      "halvesChangeOnly": "{{sign}}{{pct}}% (no trend that stands out from chance)"
+    },
+    "cmp": {
+      "few": "Days: {{a}} before, {{b}} now — too few to tell whether the difference is more than chance ({{side}} needed on each side and {{min}} in total).",
+      "flat": "Days: {{a}} before, {{b}} now — the values don't vary, nothing to compare.",
+      "sig": "Days: {{a}} before, {{b}} now — the difference stands out from chance ({{p}}).",
+      "chance": "Days: {{a}} before, {{b}} now — the difference doesn't stand out from chance ({{p}})."
+    },
+    "insight": {
+      "few": "Still too few days to look for patterns — {{n}} complete days with records; {{min}} needed.",
+      "minDay": "Over {{n}} complete days, the day with the fewest uses was {{date}}, with {{count}}.",
+      "minDayTie": "Over {{n}} complete days, the lowest was {{count}} uses a day, on {{k}} days (most recent: {{date}}).",
+      "partOfDay": "Over {{n}} complete days, {{percent}}% of uses ({{k}} of {{total}}) were in the {{part}}."
+    },
+    "week": {
+      "soFar": "so far"
     }
   },
   "firebase": {
@@ -1138,11 +1206,13 @@
     "subtitleAll": "all time",
     "surfed": "urges surfed",
     "delayed": "uses delayed",
-    "avgHeld": "held off",
+    "avgHeld": "until the next use",
     "openedNoUse": "opened, unused",
-    "reinforceNone": "You haven't used the strategies yet. Next time the urge shows up, try one — breathing, the timer, grounding. 💜",
-    "reinforceMany": "Of the {{surfed}} times you used the strategies, you delayed use in {{delayed}}. That counts. 💜",
-    "openedNoUseNote": "You opened urge-surfing without using anything {{count}}×. For past entries use \"＋ Log a past use\" on Home — it doesn't open urge-surfing or count as an urge."
+    "reinforceNone": "You opened urge-surfing, but haven't used a strategy yet.",
+    "reinforceMany": "Of the {{surfed}} times you used the strategies, in {{delayed}} you didn't tap \"use anyway\".",
+    "openedNoUseNote": "You opened urge-surfing without using anything {{count}}×. For past entries use \"＋ Log a past use\" on Home — it doesn't open urge-surfing or count as an urge.",
+    "avgHeldNote_one": "The time comes from {{count}} time: the one followed by a use within 24 h.",
+    "avgHeldNote_other": "The time is the average of {{count}} times: those followed by a use within 24 h."
   },
   "wellbeing": {
     "exercisePlaceholder": "What? e.g. walking",
@@ -1207,7 +1277,7 @@
     "perCycle": "per cycle",
     "topTriggersPatterns": "📊 Most Frequent Triggers & Weekly Patterns",
     "topTriggers": "🎯 Top 10 Triggers",
-    "mostTriggersDay": "💡 Day with most triggers: {{day}}s ({{count}}).",
+    "mostTriggersDay": "💡 Weekday with the most triggers logged: {{day}} ({{count}}).",
     "triggersVsConsumption": "🔍 Triggers vs Use",
     "awarenessSection": "🧠 Awareness",
     "awarenessText": "Understanding your triggers is the first step to managing them. When you identify a trigger, you have more time to choose your response.",
@@ -1261,14 +1331,14 @@
     "exerciseOfLoggedDays": "of logged days",
     "avgDuration": "avg duration",
     "exerciseTypesLabel": "Exercise types",
-    "exerciseImpact": "Exercise impact",
+    "exerciseImpact": "Days with and without exercise",
     "exerciseConsImpact": "🔢 Days with exercise: avg {{withEx}} uses vs {{withoutEx}} without ({{diff}}%).",
     "exerciseMoodImpact": "😊 Mood with exercise: {{withEx}}/10 vs {{withoutEx}}/10 without exercise.",
     "exerciseEnergyImpact": "⚡ Energy with exercise: {{withEx}}/10 vs {{withoutEx}}/10 without exercise.",
     "symptomRecords": "symptom records",
     "symptomDaysLabel": "days with symptoms",
     "mostFrequentSymptoms": "Most frequent symptoms",
-    "symptomsVsPattern": "Symptoms vs use pattern",
+    "symptomsVsPattern": "Days with and without symptoms",
     "symptomConsImpact": "🔢 Days with symptoms: avg {{withS}} uses vs {{withoutS}} without ({{diff}}%).",
     "symptomMoodImpact": "😊 Mood on symptom days: {{withS}}/10 vs {{withoutS}}/10 without symptoms.",
     "corrTemporalImpactTitle": "🔄 Temporal Impact (between days)",
@@ -1442,7 +1512,240 @@
     "nameCompositeLowMoodSleep": "Low Mood + Poor Sleep",
     "nameCompositeLowMoodEnergy": "Low Mood + Low Energy",
     "nameAntecedentMoodFalling": "Mood was declining before use",
-    "nameAntecedentSleepPoor": "Poor sleep on consecutive days"
+    "nameAntecedentSleepPoor": "Poor sleep on consecutive days",
+    "introOne": "Pick one question at a time. The app looks at your days and says whether the two things went together — or whether that can't be told apart from chance.",
+    "whyOne": "☝️ One at a time:",
+    "whyOneText": "with many questions open at once, some would look strong just by chance. Even one at a time: if you look at many, expect roughly 1 in 20 to look real just by chance.",
+    "minDaysText": "each question needs {{min}} days with both values. Until then, the app tells you how many are missing.",
+    "pickQuestion": "Question",
+    "prevQuestion": "Previous question",
+    "nextQuestion": "Next question",
+    "fewDaysShort": "needs more days",
+    "fewDays": "Not enough days yet — there are {{n}}, {{falta}} to go.",
+    "fewDaysHelp": "Days with both values recorded count. From {{min}} on, the app checks whether they go together.",
+    "fewUses": "Not enough uses yet — there are {{n}}, {{falta}} to go.",
+    "flat": "One of the two values was always the same on these days — so there's no way to see whether they go together.",
+    "chance": "Can't be told apart from chance.",
+    "chanceHelp": "On these days, the two things didn't go together more than chance usually gives. There may be no link, or not enough days to see it yet.",
+    "pLessThan": "p: less than 1 in {{m}}",
+    "shiftExplain": "We slid your days against each other {{m}} times. In {{b}} of them, chance gave a link as strong as this one.",
+    "shiftExplainNone": "We slid your days against each other {{m}} times. In none of them did chance give a link as strong as this one.",
+    "notCause": "Going together doesn't mean one causes the other — and it doesn't say which side is better.",
+    "avgInOneDay": "Values for that day:",
+    "avgInDays": "Averages over these {{n}} days:",
+    "dispersionText": "On average, each use was {{h}} h away from the average time of your uses.",
+    "dispersionHelp": "Small number: uses cluster at similar times. Large number: they spread across the day. It's only a description — it doesn't compare anything.",
+    "usesAnalysed": "uses",
+    "g": {
+      "sono": "Sleep and use",
+      "humor": "Mood and energy",
+      "bem": "Sleep and wellbeing",
+      "emocoes": "Emotions and self-care",
+      "mg": "Amount (mg)",
+      "dia": "Rhythm of use"
+    },
+    "v": {
+      "sleep": {
+        "label": "sleep",
+        "unit": " h"
+      },
+      "cons": {
+        "label": "uses",
+        "unit": "/day"
+      },
+      "mood": {
+        "label": "mood",
+        "unit": "/10"
+      },
+      "energy": {
+        "label": "energy",
+        "unit": "/10"
+      },
+      "bedtime": {
+        "label": "bedtime"
+      },
+      "mg": {
+        "label": "mg",
+        "unit": "/day"
+      },
+      "negPct": {
+        "label": "negative emotions",
+        "unit": "%"
+      },
+      "selfCare": {
+        "label": "self-care",
+        "unit": "/4"
+      },
+      "triggers": {
+        "label": "triggers",
+        "unit": "/day"
+      },
+      "interval": {
+        "label": "time between uses",
+        "unit": " h"
+      },
+      "firstHour": {
+        "label": "1st use"
+      },
+      "consManha": {
+        "label": "morning uses",
+        "unit": "/day"
+      },
+      "consTarde": {
+        "label": "afternoon uses",
+        "unit": "/day"
+      },
+      "consNoite": {
+        "label": "evening uses",
+        "unit": "/day"
+      }
+    },
+    "q": {
+      "sleepToCons": {
+        "label": "Hours of sleep → uses the day after",
+        "pos": "After nights with more hours of sleep, there were more uses that day.",
+        "neg": "After nights with more hours of sleep, there were fewer uses that day."
+      },
+      "consToSleep": {
+        "label": "Uses in a day → hours of sleep that night",
+        "pos": "On days with more uses, the night after had more hours of sleep.",
+        "neg": "On days with more uses, the night after had fewer hours of sleep."
+      },
+      "bedtimeToCons": {
+        "label": "Bedtime → uses the day after",
+        "pos": "After nights when you went to bed later, there were more uses that day.",
+        "neg": "After nights when you went to bed later, there were fewer uses that day."
+      },
+      "consToBedtime": {
+        "label": "Uses in a day → bedtime that night",
+        "pos": "On days with more uses, you went to bed later that night.",
+        "neg": "On days with more uses, you went to bed earlier that night."
+      },
+      "consMood": {
+        "label": "Uses → mood the same day",
+        "pos": "On days with more uses, recorded mood was higher.",
+        "neg": "On days with more uses, recorded mood was lower."
+      },
+      "consEnergy": {
+        "label": "Uses → energy the same day",
+        "pos": "On days with more uses, recorded energy was higher.",
+        "neg": "On days with more uses, recorded energy was lower."
+      },
+      "moodToNextCons": {
+        "label": "Mood in a day → uses the next day",
+        "pos": "After days with higher mood, there were more uses the next day.",
+        "neg": "After days with higher mood, there were fewer uses the next day."
+      },
+      "energyToNextCons": {
+        "label": "Energy in a day → uses the next day",
+        "pos": "After days with higher energy, there were more uses the next day.",
+        "neg": "After days with higher energy, there were fewer uses the next day."
+      },
+      "consToNextMood": {
+        "label": "Uses in a day → mood the next day",
+        "pos": "On days with more uses, mood the next day was higher.",
+        "neg": "On days with more uses, mood the next day was lower."
+      },
+      "consToNextEnergy": {
+        "label": "Uses in a day → energy the next day",
+        "pos": "On days with more uses, energy the next day was higher.",
+        "neg": "On days with more uses, energy the next day was lower."
+      },
+      "sleepMood": {
+        "label": "Hours of sleep → mood that day",
+        "pos": "After nights with more hours of sleep, mood that day was higher.",
+        "neg": "After nights with more hours of sleep, mood that day was lower."
+      },
+      "bedtimeMood": {
+        "label": "Bedtime → mood the day after",
+        "pos": "After nights when you went to bed later, mood that day was higher.",
+        "neg": "After nights when you went to bed later, mood that day was lower."
+      },
+      "bedtimeEnergy": {
+        "label": "Bedtime → energy the day after",
+        "pos": "After nights when you went to bed later, energy that day was higher.",
+        "neg": "After nights when you went to bed later, energy that day was lower."
+      },
+      "consNegEmotions": {
+        "label": "Uses → negative emotions the same day",
+        "pos": "On days with more uses, a larger share of recorded emotions was negative.",
+        "neg": "On days with more uses, a smaller share of recorded emotions was negative."
+      },
+      "consSelfCare": {
+        "label": "Uses → self-care the same day",
+        "pos": "On days with more uses, you recorded more self-care areas.",
+        "neg": "On days with more uses, you recorded fewer self-care areas."
+      },
+      "mgSleep": {
+        "label": "mg in a day → hours of sleep that night",
+        "pos": "On days with more mg, the night after had more hours of sleep.",
+        "neg": "On days with more mg, the night after had fewer hours of sleep."
+      },
+      "mgMood": {
+        "label": "mg → mood the same day",
+        "pos": "On days with more mg, recorded mood was higher.",
+        "neg": "On days with more mg, recorded mood was lower."
+      },
+      "mgEnergy": {
+        "label": "mg → energy the same day",
+        "pos": "On days with more mg, recorded energy was higher.",
+        "neg": "On days with more mg, recorded energy was lower."
+      },
+      "mgNegEmotions": {
+        "label": "mg → negative emotions the same day",
+        "pos": "On days with more mg, a larger share of recorded emotions was negative.",
+        "neg": "On days with more mg, a smaller share of recorded emotions was negative."
+      },
+      "mgSelfCare": {
+        "label": "mg → self-care the same day",
+        "pos": "On days with more mg, you recorded more self-care areas.",
+        "neg": "On days with more mg, you recorded fewer self-care areas."
+      },
+      "triggersMg": {
+        "label": "Recorded triggers → mg that day",
+        "pos": "On days with more recorded triggers, there was more mg.",
+        "neg": "On days with more recorded triggers, there was less mg."
+      },
+      "intervalMg": {
+        "label": "Time between uses → mg that day",
+        "pos": "On days with more time between uses, there was more mg.",
+        "neg": "On days with more time between uses, there was less mg."
+      },
+      "consAutocorr": {
+        "label": "Uses in a day → uses the next day",
+        "pos": "After days with more uses, the next day also had more.",
+        "neg": "After days with more uses, the next day had fewer."
+      },
+      "firstConsTotal": {
+        "label": "Time of first use → day total",
+        "pos": "On days when the first use was later, there were more uses in total.",
+        "neg": "On days when the first use was later, there were fewer uses in total."
+      },
+      "intervalTotal": {
+        "label": "Time between uses → day total",
+        "pos": "On days with more time between uses, there were more uses in total.",
+        "neg": "On days with more time between uses, there were fewer uses in total.",
+        "nota": "Partly this is arithmetic: with more uses in the same day, there is less time left between them."
+      },
+      "morningMood": {
+        "label": "Morning uses (6am–12pm) → mood that day",
+        "pos": "On days with more morning uses, recorded mood was higher.",
+        "neg": "On days with more morning uses, recorded mood was lower."
+      },
+      "afternoonMood": {
+        "label": "Afternoon uses (12pm–6pm) → mood that day",
+        "pos": "On days with more afternoon uses, recorded mood was higher.",
+        "neg": "On days with more afternoon uses, recorded mood was lower."
+      },
+      "eveningMood": {
+        "label": "Evening uses (6pm–12am) → mood that day",
+        "pos": "On days with more evening uses, recorded mood was higher.",
+        "neg": "On days with more evening uses, recorded mood was lower."
+      },
+      "dispersion": {
+        "label": "How spread out uses are across the day"
+      }
+    }
   },
   "sentiment": {
     "very_positive": "very positive",
@@ -1459,7 +1762,7 @@
     "subtitle": "Personalised summary of the selected period",
     "noData": "No data for this period",
     "overviewLabel": "Overview:",
-    "overviewText": "{{total}} {{uses}} in {{days}} {{daysLabel}} (avg {{avg}}/day). Let's explore the patterns:",
+    "overviewText": "{{total}} {{uses}} over {{days}} {{daysLabel}} with use (average {{avg}} per day, not counting today).",
     "noConsumptions": "No uses recorded in this period. Only you know what this means for you.",
     "use_singular": "use",
     "use_plural": "uses",
@@ -1491,11 +1794,11 @@
     "balancePositive": "positive",
     "balanceMixed": "mixed",
     "balanceChallenging": "challenging",
-    "weeklyPatternLabel": "Weekly Pattern:",
+    "weeklyPatternLabel": "Weekdays:",
     "weeklyHardDays": "{{day}}s are your most difficult days (avg {{avg}} uses), while {{bestDay}}s are better (avg {{bestAvg}}).",
     "weeklyWeekdayTip": "💡 On {{day}}s you tend to log more uses. It may be tied to that part of your week — knowing it is yours, and so is what you do with it.",
     "weeklyWeekendTip": "💡 Weekends tend to be more challenging — perhaps due to routine change or boredom. Plan activities for that day.",
-    "escalationLabel": "First Use → Escalation:",
+    "escalationLabel": "Time of the first use:",
     "escalationHigher": "When the first use is before 10am, the daily total is {{pct}}% higher (avg {{early}} vs {{late}} when starting later).",
     "escalationLower": "When the first use is before 10am, the daily total is {{pct}}% lower (avg {{early}} vs {{late}} when starting later).",
     "escalationWarning": "In your records, starting earlier goes together with more uses that day. What you do with that is yours.",
@@ -1512,34 +1815,34 @@
     "windowMorning": "morning",
     "windowAfternoon": "afternoon",
     "windowEveningNight": "late afternoon/evening",
-    "cascadeLabel": "Difficult days in a row:",
-    "cascadeDetected": "You had {{n}} {{label}} of difficult days in a row (the longest was {{longest}} days). By chance alone, at your rate of difficult days, about {{esperado}} would be expected.",
-    "cascadeNone": "No difficult days in a row in this period.",
-    "recoveryLabel": "Bounce-back Pattern:",
+    "cascadeLabel": "Days above your goal, in a row:",
+    "cascadeDetected": "There were {{n}} {{label}} of consecutive days with {{threshold}} or more uses (the longest: {{longest}} days).",
+    "cascadeNone": "No consecutive days above your goal in this period.",
+    "recoveryLabel": "Back to average:",
     "recoveryAvgSingular": "After a day above your goal, it takes you {{n}} day on average to return to your average.",
     "recoveryAvgPlural": "After a day above your goal, it takes you {{n}} days on average to return to your average.",
     "recoveryFast": "That is quick — days above your goal do not tend to drag on.",
     "recoveryModerate": "If it interests you, notice what usually happens on those days.",
     "recoverySlow": "💡 Difficult days tend to drag on a little. Small 'reset' habits the next day may help (routine, sleep, physical activity).",
-    "recoveryStillSingular": "{{n}} day above your goal has not yet returned to your average.",
-    "recoveryStillPlural": "⏳ {{n}} difficult days still settling (haven't returned to your average in recent days).",
-    "outliersLabel": "Outliers:",
+    "recoveryStillSingular": "{{n}} day above your goal without getting back to your average in the next 7 days (or by the end of the period).",
+    "recoveryStillPlural": "{{n}} days above your goal without getting back to your average in the next 7 days (or by the end of the period).",
+    "outliersLabel": "Days with the most uses:",
     "outliersTopDay": "{{date}} had {{n}} uses — {{diff}} above your average of {{avg}}. It's your highest day.",
     "outliersTopDayN": "{{date}} had {{n}} uses — {{diff}} above your average of {{avg}}. One of your top {{k}} highest days.",
     "outliersOtherPeaks": "Other peaks:",
     "outliersNoteEmotion": "Outliers are not failures — they're data. Notice the emotional pattern: {{emotion}}.",
     "outliersNoteQuestion": "Outliers are not failures — they're data. What need gap was being filled on those days?",
-    "clustersLabel": "Behaviour Patterns:",
-    "clustersHighPressure": "\"High Pressure\" days ({{n}}): High use + little sleep + stable mood. You're 'riding the edge' — functioning, but at the cost of stimulation.",
-    "clustersParadox": "\"Paradox\" days ({{n}}): Low use + lots of sleep + low mood. Sleep doesn't compensate for low mood — possible masked depression or another factor.",
-    "clustersBalance": "\"Balance\" days ({{n}}): use in the middle of your range and higher mood.",
+    "clustersLabel": "Combinations of days:",
+    "clustersHighPressure": "Days with many uses (top quarter), under 6h of sleep and mood 5 or higher: {{n}}.",
+    "clustersParadox": "Days with few uses (bottom quarter), 7h or more of sleep and mood below 5: {{n}}.",
+    "clustersBalance": "Days with uses near your median and mood 6 or higher: {{n}}.",
     "microTrendLabel": "Micro-trend:",
     "microTrendText": "Last 7 days: avg {{last7}} uses/day vs {{prev21}} in the previous 3 weeks ({{pct}}%).",
     "microTrendIncrease": "Significant increase. Worth understanding the cause before it becomes a pattern.",
     "microTrendDecrease": "Clear reduction. What changed? If you like, notice what helped.",
     "microTrendSlightIncrease": "Slight increase — monitor.",
     "microTrendSlightDecrease": "Slight decrease.",
-    "emotionalTriggersLabel": "Validated Emotional Triggers:",
+    "emotionalTriggersLabel": "Emotions and uses:",
     "emotionalTriggersRisk": "Emotion {{emotion}} correlates with +{{diff}} uses above average ({{n}} days). This is a validated trigger, not speculation.",
     "emotionalTriggersProtector": "Emotion {{emotion}} correlates with {{diff}} uses BELOW average. Protective factor — cultivate.",
     "emotionalProfileLabel": "Emotional Profile:",
@@ -1554,24 +1857,24 @@
     "emotionalOscillationHigh": "high",
     "emotionalOscillationModerate": "moderate",
     "emotionalOscillationLow": "low",
-    "selfCareContextLabel": "Self-Care Context:",
+    "selfCareContextLabel": "Self-care and uses:",
     "selfCareContextPositive": "On days with {{area}}, you used {{pct}}% less ({{n}} days). Strong association with lower use days.",
     "selfCareContextNegative": "On days with {{area}}, you used {{pct}}% more. Unexpected correlation — worth exploring.",
     "selfCareContextAlso": "Also: {{area}} associated with a {{pct}}% reduction.",
-    "selfCareContextNote": "Note: days with fewer uses may naturally have more self-care, without one causing the other. They are two things that move together.",
+    "selfCareContextNote": "Going together doesn't mean one causes the other.",
     "selfCareContextWater": "enough water",
     "selfCareContextFood": "nutritious meals",
     "selfCareContextSocial": "socialising",
-    "triggerMappingLabel": "Trigger Mapping:",
+    "triggerMappingLabel": "Late-night uses and sleep:",
     "triggerMappingLate": "{{pct}}% of late-night uses (00h-06h) happened on days with <6h sleep. Strong pattern: sleep deprivation is consistently linked to night-time use. Improving sleep may be a useful lever.",
     "triggerMappingHighFreq": "In {{pct}}% of high-frequency days (≥{{threshold}} uses), you recorded emotion {{emotion}}. This is your primary validated trigger — not speculation. Developing strategies for this specific emotion has high ROI.",
     "notesLabel": "Your Reflections Analysis ({{n}} notes):",
     "notesPatternsLabel": "Emotional patterns:",
-    "notesPositiveTone": "Overall tone positive ({{positivePct}}% positive vs {{negativePct}}% negative). There's awareness of challenges, but also hope and resilience.",
-    "notesNegativeTone": "Overall tone negative ({{negativePct}}% negative vs {{positivePct}}% positive). I recognise you're facing difficulties.",
-    "notesBalancedTone": "Balanced tone between positive ({{positivePct}}%) and negative ({{negativePct}}%), with {{neutralPct}}% neutral — you're navigating the ups and downs.",
-    "notesTrendImproving": "Trend: rising.",
-    "notesTrendWorsening": "📉 Trend: worsening in recent days.",
+    "notesPositiveTone": "Overall positive tone ({{positivePct}}% positive vs {{negativePct}}% negative).",
+    "notesNegativeTone": "Overall negative tone ({{negativePct}}% negative vs {{positivePct}}% positive).",
+    "notesBalancedTone": "Mixed tone: {{positivePct}}% positive, {{negativePct}}% negative and {{neutralPct}}% neutral.",
+    "notesTrendImproving": "In the most recent notes the tone is more positive.",
+    "notesTrendWorsening": "In the most recent notes the tone is more negative.",
     "notesHighNegPattern": "Days with more negative reflections coincide with more uses ({{n}} of {{total}} days). They coincide — that does not mean one causes the other.",
     "notesThemesLabel": "Main themes:",
     "notesThemeSleep": "sleep",
@@ -1581,7 +1884,7 @@
     "notesThemeFocus": "focus/concentration",
     "notesThemeSocial": "social relationships",
     "notesThemeHealth": "physical health",
-    "notesStressNote": "Note: Your reflections on stress/anxiety tend to be negative — this topic deserves attention.",
+    "notesStressNote": "Notes about stress/anxiety have a more negative tone.",
     "notesSleepNote": "Sleep comes up often in your notes.",
     "notesNoThemes": "Write more reflections to identify recurring themes.",
     "notesEncourage": "I encourage you to write more in your reflections — expressing thoughts and feelings helps process emotions and identify patterns.",
@@ -1659,13 +1962,13 @@
     "goalTypeBedtimeBefore": "Bedtime Before",
     "goalTypeSleepHours": "Sleep Hours",
     "goalTypeFirstNotBefore": "☀️ 1st Use After",
-    "sleepMoodLabel": "Sleep and Mood:",
+    "sleepMoodLabel": "Sleep and mood:",
     "sleepMoodText": "I analysed how your sleep affects your next-day mood.",
     "sleepMoodStrongPos": "Strong positive correlation (+{{r}}): Good sleep clearly improves your next-day mood! More sleep = better mood. 💡 Action: Prioritise 7-8h — it's your best emotional investment.",
     "sleepMoodModPos": "Moderate positive correlation (+{{r}}): There's a positive link between sleep and mood, but other factors also influence it. 💡 Action: Improve sleep quality (dark environment, regular schedule).",
     "sleepMoodNeg": "Negative correlation ({{r}}): Curiously, more sleep is associated with worse mood — this may indicate oversleeping or poor sleep quality. 💡 Action: Focus on sleep QUALITY. Consider consulting a healthcare professional.",
     "sleepMoodWeak": "Weak correlation ({{r}}): no clear linear relationship. Other factors may weigh more.",
-    "consumptionImpactLabel": "Use Impact:",
+    "consumptionImpactLabel": "Uses and the next day:",
     "consumptionImpactText": "I analysed how today's use affects your wellbeing tomorrow.",
     "consumptionImpactMoodStrong": "Strong correlation ({{r}}): Days with more use clearly precede days with lower mood. 💡 The cycle is evident — using today = feeling worse tomorrow.",
     "consumptionImpactMoodMod": "Moderate correlation ({{r}}): days with more use tend to precede lower mood. They move together — the direction of cause is not visible from here.",
@@ -1673,7 +1976,7 @@
     "consumptionImpactEnergyStrong": "On energy: strong correlation ({{r}}) — more use results in clear fatigue the next day. Your body is asking for rest.",
     "consumptionImpactEnergyMod": "On energy: moderate correlation ({{r}}) — use affects your next-day energy. The body is recovering. 💡 More rest and hydration the next day can help.",
     "consumptionImpactEnergyPos": "On energy: positive correlation ({{r}}) — more use is associated with more energy the next day. Observe if this is sustainable.",
-    "riskProfileLabel": "Day profile:",
+    "riskProfileLabel": "Previous day's mood and uses:",
     "riskProfileText": "I identified an important pattern:",
     "riskProfileLowMood": "Days with more use tend to be preceded by lower mood the day before (difference of {{diff}} points). Low mood may be a trigger for you. When you feel down, use prevention strategies — contact someone, exercise, or use mindfulness techniques.",
     "riskProfileHighMood": "Days with more use are preceded by higher mood (difference of {{diff}} points) — celebration or euphoria may be triggers. Being aware of this helps you moderate.",
@@ -1687,14 +1990,14 @@
     "selfKnowledgeText": "You're recording consistently",
     "selfKnowledgeWellbeing": "(wellbeing)",
     "selfKnowledgeSleepCycles": "sleep cycles",
-    "selfKnowledgeTip": "This is already a huge step! Recording is self-awareness. Patterns become clearer over time, and that gives you the power to act.",
+    "selfKnowledgeTip": "Logging is a way of getting to know yourself: with more days, patterns get clearer — or it becomes clear there isn't one.",
     "controlLabel": "You are in control.",
-    "controlText": "This data is yours. This progress is yours. This power of choice is yours.",
+    "controlText": "This data is yours, and so are the choices.",
     "controlTip": "Logging, reflecting, adjusting — each of those decisions is yours. The app shows; what you do with what you see is up to you.",
     "closingLabel": "Commitment:",
-    "closingText": "The simple fact that you're here, recording, reflecting, analysing — that's already change.",
-    "closingHarmReduction": "Harm reduction is not perfection, it's progress. And you are progressing, at your own pace.",
-    "closingRemember": "Remember: change is not linear. There will be better and worse days, and that's normal. What matters is that you keep showing up for yourself.",
+    "closingText": "Just being here, logging and looking at your data, is a choice of yours.",
+    "closingHarmReduction": "Harm reduction isn't perfection: it's deciding, with information, what makes sense for you — at your own pace.",
+    "closingRemember": "Days will differ from one another, and that's normal.",
     "closingProud": "You've been showing up and noticing your own patterns — that takes real awareness. 💜",
     "peakWindowLabel": "Busiest window:",
     "peakWindowSpread": "Your use is quite spread through the day, with no strong peak — which is also useful information about you.",
@@ -1710,7 +2013,62 @@
     "gapMore": "+ {{n}} older days in the same situation.",
     "gapNoRuleGroups": "There are still too few nights of each kind to compare: {{longN}} with a gap above {{longH}}h and {{shortN}} below {{shortH}}h ({{min}} of each are needed). The times are here; the reading is yours.",
     "quantityGoalWithin": "Your goal is {{target}}mg a day — this average is within it.",
-    "quantityGoalAbove": "Your goal is {{target}}mg a day — this average is above it."
+    "quantityGoalAbove": "Your goal is {{target}}mg a day — this average is above it.",
+    "pValue": "p = {{p}}",
+    "pLessThan": "p: less than 1 in {{m}}",
+    "verdictChance": "can't be told apart from chance ({{p}})",
+    "verdictNotChance": "is unlikely to be just chance ({{p}})",
+    "diffSentence": "The difference {{verdict}}.",
+    "towardGoal": "It goes in the direction of your goal to reduce.",
+    "awayFromGoal": "It goes against the direction of your goal to reduce.",
+    "trendLabel": "Compared with the previous period:",
+    "trendCompare": "an average of {{curr}} uses per day in this one ({{nCurr}} days) and {{prev}} in the previous one ({{nPrev}} days), {{pct}}%.",
+    "groupFew": "{{what}}: too few days to compare the two groups ({{nA}} and {{nB}}; {{min}} needed on each side).",
+    "groupTest": "{{what}}: the difference between the two groups {{verdict}}.",
+    "whatSleep": "Sleep",
+    "whatMood": "Mood",
+    "whatEnergy": "Energy",
+    "weeklyFew": "Comparing weekdays needs at least {{min}} days of each ({{n}} days in the period).",
+    "weeklyRange": "Most uses on average: {{day}} ({{avg}}); fewest: {{bestDay}} ({{bestAvg}}), over {{n}} days.",
+    "weeklyVerdict": "A gap like this between weekdays {{verdict}}.",
+    "recoveryChanceNote": "After a day well above average, the next ones are often closer to it even just by chance — this describes, it doesn't measure a \"recovery\".",
+    "cascadeFew": "To see whether a day above goes together with the next one also above, {{min}} pairs of consecutive days of each kind are needed (there are {{nA}} and {{nB}}).",
+    "cascadeTest": "After a day above, the next was also above {{a}}% of the time (of {{nA}}); after other days, {{b}}% (of {{nB}}). The difference {{verdict}}.",
+    "peakWindowConcentrated": "More than half of your uses fall in these 4 hours.",
+    "escalationFew": "Comparing days that start before 10am with the others needs {{min}} days of each (there are {{nE}} and {{nL}}).",
+    "escalationCompare": "On days when the first use was before 10am there were {{early}} uses on average ({{nE}} days); on days that started later, {{late}} ({{nL}} days).",
+    "escalationHoursNote": "Starting earlier also leaves more hours in the day.",
+    "lateSleepFew": "Comparing sleep on days with uses between midnight and 6am with other days needs {{min}} days of each, with sleep logged (there are {{nA}} and {{nB}}).",
+    "lateSleepCompare": "On days with uses between midnight and 6am, {{a}}% had under 6h of sleep logged ({{nA}} days); on other days with use, {{b}}% ({{nB}} days).",
+    "prevMoodFew": "To see whether the previous day's mood goes together with the number of uses, {{min}} days with mood logged the day before are needed (there are {{n}}).",
+    "prevMoodChance": "Over {{n}} days, the previous day's mood doesn't go together with the number of uses in a way that can be told apart from chance (ρ = {{rho}}, {{p}}).",
+    "prevMoodLow": "Over {{n}} days, days after a lower mood tended to have more uses (ρ = {{rho}}, {{p}}). They go together — that doesn't mean one causes the other.",
+    "prevMoodHigh": "Over {{n}} days, days after a higher mood tended to have more uses (ρ = {{rho}}, {{p}}). They go together — that doesn't mean one causes the other.",
+    "sleepTrendUp": "First half of the nights: {{a}}h on average; second half: {{b}}h — going up ({{p}}).",
+    "sleepTrendDown": "First half of the nights: {{a}}h on average; second half: {{b}}h — going down ({{p}}).",
+    "sleepTrendChance": "First half of the nights: {{a}}h on average; second half: {{b}}h — the difference can't be told apart from chance ({{p}}).",
+    "sleepTrendFew": "To see whether sleep is changing, {{min}} logged nights are needed (there are {{n}}).",
+    "noSleepFew": "There are {{n}} nights logged with 3h or less and {{m}} with more — {{min}} of each are needed to compare.",
+    "sleepMoodFew": "To see whether hours of sleep go together with that day's mood, {{min}} days with both logged are needed (there are {{n}}).",
+    "sleepMoodChance": "Over {{n}} days, hours of sleep and that day's mood don't go together in a way that can be told apart from chance (ρ = {{rho}}, {{p}}).",
+    "sleepMoodPos": "Over {{n}} days, after longer nights mood tended to be higher (ρ = {{rho}}, {{p}}). They go together — that doesn't mean one causes the other.",
+    "sleepMoodNegative": "Over {{n}} days, after longer nights mood tended to be lower (ρ = {{rho}}, {{p}}). They go together — that doesn't mean one causes the other.",
+    "emotionsFew": "No emotion has enough days to compare yet ({{min}} days with it and {{min}} without are needed).",
+    "emotionsNone": "We tested {{k}} emotions (those with enough days): for none of them does the number of uses on days with it stand out from chance.",
+    "emotionsSome": "We tested {{k}} emotions (those with enough days). On days with these, the number of uses was different in a way that is unlikely to be just chance:",
+    "emotionRow": "{{a}} uses/day vs {{b}} without it ({{n}} days, {{p}})",
+    "emotionsMultiple": "With {{k}} comparisons, about {{e}} would give this result just by chance. Going together doesn't mean one causes the other.",
+    "selfCareFew": "Days with {{area}}: too few to compare ({{nA}} with and {{nB}} without; {{min}} of each needed).",
+    "selfCareCompare": "Days with {{area}}: {{a}} uses/day ({{nA}} days); without: {{b}} ({{nB}} days) — {{verdict}}.",
+    "clustersNote": "These are just counts (out of {{n}} days with use): they don't say whether these combinations show up more than chance would give.",
+    "nextDayFew": "{{what}}: {{min}} pairs of consecutive days with both logged are needed (there are {{n}}).",
+    "nextDayChance": "{{what}}: over {{n}} pairs of days, it doesn't go together with the previous day's uses in a way that can be told apart from chance (ρ = {{rho}}, {{p}}).",
+    "nextDayLower": "{{what}}: over {{n}} pairs of days, after days with more uses it tended to be lower (ρ = {{rho}}, {{p}}).",
+    "nextDayHigher": "{{what}}: over {{n}} pairs of days, after days with more uses it tended to be higher (ρ = {{rho}}, {{p}}).",
+    "togetherNote": "Going together doesn't mean one causes the other.",
+    "energyFew": "Comparing with the other check-ins needs {{min}} on each side (there are {{nA}} and {{nB}}).",
+    "energyCompare": "In check-ins right before using, energy was low {{a}}% of the time; in the other {{nB}} check-ins, {{b}}%.",
+    "synthesisGoal": "With your goal of up to {{target}} uses per day: {{dentro}} days within and {{acima}} above, out of {{n}} days with use."
   },
   "demoHome": {
     "sinceLast": "since the last one",
@@ -1826,5 +2184,30 @@
     "cycleNudgeOpen": "Log cycle",
     "cycleNudgeLater": "Not now",
     "unknownGap": "? (days without logged uses in between)"
+  },
+  "estadoTab": {
+    "pValue": "p = {{p}}",
+    "pLessThan": "p: less than 1 in {{m}}",
+    "notChance": "is unlikely to be just chance ({{p}})",
+    "chance": "can't be told apart from chance ({{p}})",
+    "fewDays": "{{what}}: too few days to compare ({{nA}} with and {{nB}} without; {{min}} needed on each side).",
+    "weekdayRange": "Across the {{k}} weekdays with enough entries, positive emotions go from {{bestPct}}% ({{best}}) to {{worstPct}}% ({{worst}}). A gap like this between weekdays {{verdict}}.",
+    "weekdayFew": "Comparing weekdays needs at least {{min}} entries with emotions on each day (so far only {{k}} weekdays have that).",
+    "compareNone": "Can't compare yet: each one needs at least {{min}} days with it and {{min}} without it ({{n}} days logged).",
+    "compareIntro": "Average uses per day on the days you logged each one, and on the other logged days.",
+    "compareRow": "{{nA}} days with, {{nB}} without — the difference {{verdict}}.",
+    "compareMultiple": "These are {{k}} comparisons at once: it's normal for one or another to look different just by chance.",
+    "compareFew": "{{n}} more with too few days to compare ({{min}} days with and {{min}} without needed).",
+    "exCons": "🔢 Uses: {{a}} per day on exercise days ({{nA}} days) and {{b}} on other days ({{nB}} days) — {{verdict}}.",
+    "exMood": "😊 Mood: {{a}}/10 on exercise days ({{nA}} days) and {{b}}/10 on other days ({{nB}} days) — {{verdict}}.",
+    "exEnergy": "⚡ Energy: {{a}}/10 on exercise days ({{nA}} days) and {{b}}/10 on other days ({{nB}} days) — {{verdict}}.",
+    "symCons": "🔢 Uses: {{a}} per day on days with symptoms ({{nA}} days) and {{b}} on other days ({{nB}} days) — {{verdict}}.",
+    "symMood": "😊 Mood: {{a}}/10 on days with symptoms ({{nA}} days) and {{b}}/10 on other days ({{nB}} days) — {{verdict}}.",
+    "whatCons": "Uses",
+    "whatMood": "Mood",
+    "whatEnergy": "Energy",
+    "togetherNote": "Going together doesn't mean one causes the other.",
+    "withLabel": "with",
+    "withoutLabel": "without"
   }
 }

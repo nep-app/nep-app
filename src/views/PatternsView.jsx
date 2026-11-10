@@ -6,13 +6,13 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, datesInRange, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog, meetsGoal } from '../utils/helpers';
+import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, datesInRange, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog, meetsGoal, GOAL_DIRECTION, bedtimeMeetsTarget } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-import { averageRanks, spearmanPermutation } from '../utils/stats';
+import { averageRanks, spearmanPermutation, MIN_SHIFT } from '../utils/stats';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel, getGoalAchievement } = analyticsService;
 
@@ -41,6 +41,59 @@ export function PatternsView({
     };
     const metrics = useMetrics();
     const { t, i18n } = useTranslation();
+
+    // Meta ativa de um tipo (a mais recente que não está concluída), ou null.
+    // É ela — e só ela — que dá licença para cor de juízo, ✓ ou "na direção
+    // da tua meta" (regra do elogio). Sem meta: só descrição, cor neutra.
+    const activeGoal = (type) => (goals || [])
+        .filter(g => g.type === type && !g.completed)
+        .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))[0] || null;
+
+    // Números com vírgula em PT e sinal de menos a sério (como no cartão "Sinais de hoje").
+    const fmtNum = (v, dec = 1) => {
+        const s = Math.abs(v).toFixed(dec);
+        return (v < 0 ? '−' : '') + (i18n.language === 'en' ? s : s.replace('.', ','));
+    };
+    // p para o ecrã: nunca "0" — com b = 0 diz-se "menos de 1 em m".
+    const fmtP = (r) => r.b === 0
+        ? t('patterns.riskLevel.pLessThan', { m: r.m })
+        : t('patterns.riskLevel.pValue', { p: fmtNum(Number(r.p.toFixed(3)), 3) });
+
+    // ===== COMPARAR DUAS JANELAS DE DIAS (antes vs agora) =====
+    // Cada lado é uma lista de valores POR DIA, por ordem de data (o antes
+    // primeiro). Testa-se com spearmanPermutation entre "que janela" (0/1) e o
+    // valor do dia: desliza-se a fila dos dias como uma roda, por isso as
+    // semanas pesadas continuam juntas e o acaso não parece mais fraco do que é.
+    // Limiares (simples, para não dizer nada com quase nada):
+    // - pelo menos WIN_MIN_SIDE dias com valor em CADA janela;
+    // - pelo menos 2×MIN_SHIFT+1 (= 15) dias no total — é o mínimo com que o
+    //   teste por deslocamento consegue correr (stats.js).
+    // Abaixo disso a app mostra os números, mas diz que não sabe se a diferença
+    // é mais do que acaso.
+    const WIN_MIN_SIDE = 5;
+    const windowTest = (prev, recent) => {
+        const nPrev = prev.length, nRecent = recent.length;
+        const minTotal = 2 * MIN_SHIFT + 1;
+        if (nPrev < WIN_MIN_SIDE || nRecent < WIN_MIN_SIDE || nPrev + nRecent < minTotal) {
+            return { status: 'few', nPrev, nRecent, minTotal };
+        }
+        const r = spearmanPermutation([...prev.map(() => 0), ...recent.map(() => 1)], [...prev, ...recent]);
+        if (r.rho == null) return { status: 'flat', nPrev, nRecent, minTotal };
+        // Decide com o MESMO p que se mostra (3 casas), como no cartão de hoje.
+        const sig = Number(r.p.toFixed(3)) < 0.05;
+        return { status: 'tested', nPrev, nRecent, minTotal, ...r, sig };
+    };
+    // Linha pequena, por baixo de cada comparação: em quantos dias se baseia
+    // e se a diferença se distingue do acaso.
+    const windowTestLine = (wt) => {
+        if (!wt) return null;
+        const a = wt.nPrev, b = wt.nRecent;
+        if (wt.status === 'few') return t('patterns.cmp.few', 'Dias: {{a}} antes, {{b}} agora — poucos para saber se a diferença é mais do que acaso (são precisos {{side}} de cada lado e {{min}} no total).', { a, b, side: WIN_MIN_SIDE, min: wt.minTotal });
+        if (wt.status === 'flat') return t('patterns.cmp.flat', 'Dias: {{a}} antes, {{b}} agora — os valores não variam, não há nada a comparar.', { a, b });
+        return wt.sig
+            ? t('patterns.cmp.sig', 'Dias: {{a}} antes, {{b}} agora — a diferença distingue-se do acaso ({{p}}).', { a, b, p: fmtP(wt) })
+            : t('patterns.cmp.chance', 'Dias: {{a}} antes, {{b}} agora — a diferença não se distingue do acaso ({{p}}).', { a, b, p: fmtP(wt) });
+    };
     // Cartão de meta com a lista dos dias aberta (id da meta) — para se ver dia
     // a dia de onde vem a percentagem.
     const [openGoalDays, setOpenGoalDays] = useState(null);
@@ -461,6 +514,20 @@ export function PatternsView({
                                         // Usar dados pré-computados do useMemo (evita recomputação em cada render)
                                         const { dateRange, atypicalDates, excludedDates, atypicalCount, unloggedCount, filteredConsumptions, filteredWellbeingLogs, filteredCycles, filteredDailyLogs, periodMgDays } = patternsData;
 
+                                        // DIAS COMPLETOS DO PERÍODO que contam para médias e padrões: conhecidos
+                                        // (com algum registo), fora dos atípicos/"não registei", desde o 1.º
+                                        // registo de sempre — e SEM HOJE, que ainda vai a meio (os consumos que
+                                        // faltam puxavam médias e tendências para baixo). Hoje continua nos
+                                        // totais e no registo em si.
+                                        const todayKeyP = getTodayKey();
+                                        const periodDoneDays = (() => {
+                                            if (!firstRecordDay) return [];
+                                            const fromKey = [dateRange.start ? safeToISODate(dateRange.start) : null, firstRecordDay].filter(Boolean).sort().pop();
+                                            const toKey = [dateRange.end ? safeToISODate(dateRange.end) : todayKeyP, todayKeyP].sort()[0];
+                                            return datesInRange(fromKey, toKey).filter(d => d !== todayKeyP && !excludedDates.has(d) && knownDays.has(d));
+                                        })();
+                                        const periodHasToday = !dateRange.start || (safeToISODate(dateRange.start) <= todayKeyP && todayKeyP <= safeToISODate(dateRange.end));
+
                                         // Nota dias atípicos (mostrar em qualquer view)
                                         const atypicalBanner = (atypicalCount > 0 || unloggedCount > 0) ? (
                                             <div className="bg-yellow-900/20 border border-yellow-700/40 rounded-lg px-3 py-2 text-xs text-yellow-400 flex items-center gap-2 mb-2">
@@ -507,14 +574,14 @@ export function PatternsView({
                                             // até hoje. Um dia sem consumos conta como 0; os dias de antes de a
                                             // pessoa começar a usar a app não contam. Antes dividia só pelos dias
                                             // COM consumo, o que escondia os dias a zero e inchava a média.
-                                            const avgPerDay = (() => {
-                                                if (!firstRecordDay) return '—';
-                                                const todayKey = getTodayKey();
-                                                const fromKey = [dateRange.start ? safeToISODate(dateRange.start) : null, firstRecordDay].filter(Boolean).sort().pop();
-                                                const toKey = [dateRange.end ? safeToISODate(dateRange.end) : todayKey, todayKey].sort()[0];
-                                                const countedDays = datesInRange(fromKey, toKey).filter(d => !excludedDates.has(d) && knownDays.has(d)).length;
-                                                return countedDays > 0 ? (totalConsumptions / countedDays).toFixed(1) : '—';
-                                            })();
+                                            // HOJE FICA DE FORA DA MÉDIA (mas não do Total): o dia de hoje ainda vai a
+                                            // meio e os consumos que faltam puxavam a média para baixo. Numerador e
+                                            // denominador são os MESMOS dias (conhecidos, não excluídos, completos).
+                                            const avgDays = periodDoneDays;
+                                            const avgPerDay = avgDays.length > 0
+                                                ? (avgDays.reduce((s, d) => s + (rollup[d]?.count || 0), 0) / avgDays.length).toFixed(1)
+                                                : '—';
+                                            const todayInPeriod = periodHasToday;
 
                                             // Calculate average interval
                                             const sorted = [...filteredConsumptions].sort((a,b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
@@ -528,101 +595,89 @@ export function PatternsView({
                                                 if (getDateKeyFromItem(sorted[i]) !== getDateKeyFromItem(sorted[i-1])) continue;
                                                 intervals.push((t1 - t0) / 3600000);
                                             }
-                                            const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : 0;
+                                            // Sem intervalos não há média: "—", nunca um "0h" inventado.
+                                            const avgInterval = intervals.length > 0 ? (intervals.reduce((sum, i) => sum + i, 0) / intervals.length).toFixed(1) : null;
 
                                             // Get dates for calendar
                                             const dates = Object.keys(byDate).sort();
 
                                             // (parte-do-dia já calculada acima a partir do resumo)
 
-                                            // Calculate consumption trend (last 30 days)
+                                            // TENDÊNCIA (30 dias). Antes: regressão sobre os 31 dias até HOJE, com
+                                            // hoje (a meio) a contar como um dia baixo no fim da reta, os dias sem
+                                            // registo nenhum a contar como 0 e os atípicos/"não registei" lá dentro;
+                                            // e uma projeção "daqui a 10 dias" que a app não tem como saber.
+                                            // Agora: os 30 dias COMPLETOS antes de hoje, só dias conhecidos e fora
+                                            // dos excluídos; a direção só se afirma se o teste por deslocamento
+                                            // (spearmanPermutation dia × consumos) a distinguir do acaso. Com menos
+                                            // de 15 dias (2×MIN_SHIFT+1) o teste não corre e a app diz que não sabe.
                                             const calculateTrend = () => {
-                                                const today = new Date();
-                                                const thirtyDaysAgo = new Date(today);
-                                                thirtyDaysAgo.setDate(today.getDate() - 30);
-
-                                                const last30Days = consumptions.filter(c => {
-                                                    const cDate = new Date(c.timestamp || c.createdAt);
-                                                    return cDate >= thirtyDaysAgo && cDate <= today;
-                                                });
-
-                                                if (last30Days.length < 7) return null; // Precisa pelo menos 7 dias de dados
-
-                                                // Agrupar por dia
-                                                const dailyCounts = {};
-                                                for (let i = 0; i <= 30; i++) {
-                                                    const d = new Date(thirtyDaysAgo);
-                                                    d.setDate(d.getDate() + i);
-                                                    const key = safeToISODate(d); // chave local (coerente com c.date)
-                                                    dailyCounts[key] = 0;
-                                                }
-
-                                                last30Days.forEach(c => {
-                                                    const key = (c.date || safeToISODate(c.timestamp));
-                                                    if (dailyCounts[key] !== undefined) dailyCounts[key]++;
-                                                });
-
-                                                // Regressão linear simples: y = mx + b
-                                                const points = Object.entries(dailyCounts).map(([date, count], idx) => ({ x: idx, y: count }));
-                                                const n = points.length;
-                                                const sumX = points.reduce((s, p) => s + p.x, 0);
-                                                const sumY = points.reduce((s, p) => s + p.y, 0);
-                                                const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-                                                const sumX2 = points.reduce((s, p) => s + p.x * p.x, 0);
-
-                                                const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-                                                const intercept = (sumY - slope * sumX) / n;
-
-                                                // Projeção para 10 dias à frente
-                                                const currentAvg = sumY / n;
-                                                const projection10Days = slope * (n + 10) + intercept;
-
-                                                return {
-                                                    slope: slope,
-                                                    direction: Math.abs(slope) < 0.02 ? 'stable' : slope > 0 ? 'increasing' : 'decreasing',
-                                                    slopePerDay: slope.toFixed(2),
-                                                    currentAvg: currentAvg.toFixed(1),
-                                                    projection: projection10Days > 0 ? projection10Days.toFixed(1) : 0
-                                                };
+                                                const outAll = new Set([...(metrics?.atypicalDates || []), ...(metrics?.unloggedDates || [])]);
+                                                const todayKeyT = getTodayKey();
+                                                const from = safeToISODate(subtractDays(new Date(`${todayKeyT}T12:00:00`), 30));
+                                                const to = safeToISODate(subtractDays(new Date(`${todayKeyT}T12:00:00`), 1));
+                                                const days = datesInRange(from, to).filter(d => knownDays.has(d) && !outAll.has(d));
+                                                const minDays = 2 * MIN_SHIFT + 1;
+                                                if (days.length < minDays) return { status: 'few', n: days.length, min: minDays };
+                                                // x = posição do dia na janela de 30 (dias em falta deixam buraco).
+                                                const all = datesInRange(from, to);
+                                                const xs = days.map(d => all.indexOf(d));
+                                                const ys = days.map(d => rollup[d]?.count || 0);
+                                                const n = xs.length;
+                                                const mx = xs.reduce((s, v) => s + v, 0) / n, my = ys.reduce((s, v) => s + v, 0) / n;
+                                                let sxy = 0, sxx = 0;
+                                                for (let i = 0; i < n; i++) { sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) ** 2; }
+                                                const slope = sxx > 0 ? sxy / sxx : 0;
+                                                // Valores da reta no 1.º e no último dia da janela: "de ~A para ~B por dia".
+                                                const fitFirst = Math.max(0, my + slope * (0 - mx));
+                                                const fitLast = Math.max(0, my + slope * ((all.length - 1) - mx));
+                                                const test = spearmanPermutation(xs, ys);
+                                                if (test.rho == null) return { status: 'flat', n, avg: my };
+                                                const sig = Number(test.p.toFixed(3)) < 0.05;
+                                                const direction = !sig ? 'chance' : test.rho > 0 ? 'increasing' : 'decreasing';
+                                                return { status: 'tested', n, avg: my, fitFirst, fitLast, direction, ...test };
                                             };
 
                                             const trend = calculateTrend();
 
-                                            // Generate insights
+                                            // "Padrões identificados" — só descrição, e cada frase tem um ramo onde
+                                            // recusa: com menos de INSIGHT_MIN_DAYS dias completos (7 = uma semana)
+                                            // o "dia com menos" e as percentagens por parte do dia são quase só acaso,
+                                            // por isso diz-se quantos dias há e quantos faltam.
+                                            // Dias que contam: conhecidos, fora dos atípicos/"não registei" e SEM HOJE
+                                            // (a meio: parecia sempre "o dia com menos" e enviesava as partes do dia
+                                            // para as horas que já passaram). Um dia conhecido sem consumos é um 0 e
+                                            // entra (antes só entravam dias com consumo).
+                                            const INSIGHT_MIN_DAYS = 7;
                                             const insights = [];
-
-                                            // Best day insight (excluir o dia de hoje exceto quando filtrado por "dia")
-                                            // IMPORTANTE: usar a data LOCAL (getTodayKey), não toISOString() (UTC),
-                                            // senão de madrugada o "hoje" em UTC é o dia anterior e o dia de hoje
-                                            // (ainda a meio) acaba contado como "melhor dia".
-                                            if (dates.length > 0) {
-                                                const today = getTodayKey();
-                                                const completedDates = patternsPeriod === 'hoje' ? dates : dates.filter(d => d !== today);
-                                                if (completedDates.length > 0) {
-                                                    const sortedDates = completedDates.sort((a, b) => byDate[a] - byDate[b]);
-                                                    const bestDate = sortedDates[0];
-                                                    const bestCount = byDate[bestDate];
-                                                    const bestDayName = new Date(bestDate + 'T12:00:00').toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
-                                                    const countStr = bestCount === 1 ? t('patterns.bestDay.oneUse') : t('patterns.bestDay.multiUse', { count: bestCount });
-                                                    // Sem sufixo de incentivo: 'Identifica o que funcionou!' e 'Continua a
-                                                    // melhorar!' partiam do princípio de que menos é melhor.
-                                                    const suffixStr = '';
-                                                    const prefix = completedDates.length === 1 ? t('patterns.bestDay.single', { date: bestDayName, count: countStr }) : t('patterns.bestDay.multi', { date: bestDayName, count: countStr });
+                                            if (patternsPeriod !== 'hoje') {
+                                                const doneDays = avgDays; // mesmos dias da média por dia (sem hoje)
+                                                if (doneDays.length < INSIGHT_MIN_DAYS) {
+                                                    insights.push({ text: t('patterns.insight.few', 'Ainda há poucos dias para procurar padrões — há {{n}} dias completos com registos; são precisos {{min}}.', { n: doneDays.length, min: INSIGHT_MIN_DAYS }), type: 'info' });
+                                                } else {
+                                                    // Dia com menos consumos (o mais recente, se houver empate).
+                                                    const minCount = Math.min(...doneDays.map(d => rollup[d]?.count || 0));
+                                                    const minDays = doneDays.filter(d => (rollup[d]?.count || 0) === minCount);
+                                                    const lastMin = minDays[minDays.length - 1];
+                                                    const dayName = new Date(lastMin + 'T12:00:00').toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'pt-PT', { weekday: 'long', day: 'numeric', month: 'short' });
                                                     insights.push({
-                                                        text: `${prefix} ${suffixStr}`,
-                                                        type: 'positive'
+                                                        text: minDays.length === 1
+                                                            ? t('patterns.insight.minDay', 'Em {{n}} dias completos, o dia com menos consumos foi {{date}}, com {{count}}.', { n: doneDays.length, date: dayName, count: minCount })
+                                                            : t('patterns.insight.minDayTie', 'Em {{n}} dias completos, o mínimo foi {{count}} consumos por dia, em {{k}} dias (o mais recente: {{date}}).', { n: doneDays.length, date: dayName, count: minCount, k: minDays.length }),
+                                                        type: 'info'
                                                     });
+                                                    // Parte do dia com mais consumos, nos mesmos dias.
+                                                    const parts = { manha: 0, tarde: 0, noite: 0, madrugada: 0 };
+                                                    doneDays.forEach(d => { const v = rollup[d]; if (v) Object.keys(parts).forEach(k => { parts[k] += v[k] || 0; }); });
+                                                    const partsTotal = Object.values(parts).reduce((a, b) => a + b, 0);
+                                                    const top = Object.entries(parts).reduce((m, c) => c[1] > m[1] ? c : m, ['', 0]);
+                                                    if (partsTotal > 0 && top[1] > 0) {
+                                                        insights.push({
+                                                            text: t('patterns.insight.partOfDay', 'Em {{n}} dias completos, {{percent}}% dos consumos ({{k}} de {{total}}) foram de {{part}}.', { n: doneDays.length, percent: Math.round((top[1] / partsTotal) * 100), k: top[1], total: partsTotal, part: t('patterns.partOfDay.' + top[0]).toLowerCase() }),
+                                                            type: 'info'
+                                                        });
+                                                    }
                                                 }
-                                            }
-
-                                            // Time pattern insight
-                                            const maxPartOfDay = Object.entries(byPartOfDay).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['', 0]);
-                                            if (maxPartOfDay[1] > 0) {
-                                                const percentage = ((maxPartOfDay[1] / filteredConsumptions.length) * 100).toFixed(0);
-                                                insights.push({
-                                                    text: t('patterns.patternInsight', { percent: percentage, part: t('patterns.partOfDay.' + maxPartOfDay[0]) }),
-                                                    type: 'info'
-                                                });
                                             }
 
                                             // Calculate goals analysis for dashboard
@@ -640,10 +695,8 @@ export function PatternsView({
 
                                                 uniqueGoals.push(...Object.values(goalsByType));
 
-                                                const periodDays = patternsPeriod === 'hoje' ? 1 :
-                                                                 patternsPeriod === 'semana' ? 7 :
-                                                                 patternsPeriod === 'mes' ? 30 :
-                                                                 uniqueDays || 1;
+                                                // (o número de dias da "Média por dia" é calculado abaixo, a partir dos
+                                                //  dias que as metas contam de facto.)
 
                                                 // (totalAchievements é calculado ABAIXO, a partir do goalBreakdown, para
                                                 //  respeitar a guarda createdAt e bater certo com a soma dos cartões.)
@@ -714,13 +767,20 @@ export function PatternsView({
                                                 // Antes somava dados em bruto (contava até de antes de a meta existir),
                                                 // por isso dava números impossíveis tipo "700".
                                                 const totalAchievements = goalBreakdown.reduce((sum, gb) => sum + (gb.achievementCount || 0), 0);
-                                                const avgAchievementsPerDay = periodDays > 0 ? totalAchievements / periodDays : 0;
+                                                // Média por dia: cumprimentos ÷ dias que as metas CONTAM (a união dos
+                                                // dias de getGoalAchievement). Antes dividia por 7/30 fixos (ou pelos
+                                                // dias com consumo, em "Tudo"), contando hoje — que as metas do dia não
+                                                // contam, por ainda ir a meio (as do sono contam a noite de hoje, que já
+                                                // acabou) — e dias de antes de haver metas.
+                                                // Sem dias que contem → null ("não se sabe"), nunca 0.
+                                                const periodDays = new Set(goalBreakdown.flatMap(gb => (gb.goalDays || []).map(dd => dd.d))).size;
+                                                const avgAchievementsPerDay = periodDays > 0 ? totalAchievements / periodDays : null;
                                                 const goalsWithAchievements = goalBreakdown.filter(g => g.achievementCount > 0).length;
 
                                                 goalsAnalysis = {
                                                     totalAchievements,
                                                     totalGoals: uniqueGoals.length,
-                                                    avgAchievementsPerDay: avgAchievementsPerDay.toFixed(1),
+                                                    avgAchievementsPerDay: avgAchievementsPerDay == null ? '—' : fmtNum(avgAchievementsPerDay, 1),
                                                     goalsWithAchievements,
                                                     goalBreakdown,
                                                     activeGoals: uniqueGoals.filter(g => !g.completed).length,
@@ -741,23 +801,36 @@ export function PatternsView({
                                                         <div className="px-2 py-1 text-center">
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgDay')}</div>
                                                             <div className={goalTone('reduce_frequency', freqGoal, avgPerDay) + ' text-2xl font-bold font-mono-theme'}>{avgPerDay}</div>
+                                                            {/* Em quantos dias se baseia a média e porque é que hoje não entra. */}
+                                                            <div className="text-[10px] text-gray-500 leading-tight mt-0.5">
+                                                                {avgDays.length > 0
+                                                                    ? (todayInPeriod
+                                                                        ? t('patterns.dashboard.avgDaysNoToday', '{{n}} dia(s), sem hoje', { n: avgDays.length })
+                                                                        : t('patterns.dashboard.avgDays', '{{n}} dia(s)', { n: avgDays.length }))
+                                                                    : todayInPeriod
+                                                                        ? t('patterns.dashboard.avgNoDays', 'hoje ainda vai a meio')
+                                                                        : t('patterns.dashboard.avgNoKnownDays', 'sem dias com registos')}
+                                                            </div>
                                                         </div>
                                                         <div className="px-2 py-1 text-center">
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgInterval')}</div>
-                                                            <div className={goalTone('increase_interval', intervalGoal, avgInterval) + ' text-2xl font-bold font-mono-theme'}>{avgInterval}h</div>
+                                                            <div className={goalTone('increase_interval', intervalGoal, avgInterval) + ' text-2xl font-bold font-mono-theme'}>{avgInterval == null ? '—' : `${avgInterval}h`}</div>
                                                         </div>
 
                                                     </div>
                                                         {/* Esta semana: 7 barrinhas num só roxo apagado (sem verde/amarelo: a pedido
                                                             da Teresa). Com meta de frequência, uma linha tracejada marca o limite — a
                                                             pessoa vê se passou sem a cor julgar. Dia marcado "não registei" = "?",
-                                                            não um zero. */}
+                                                            não um zero; dia sem registo nenhum também é "?" (não se sabe). Hoje
+                                                            ainda vai a meio: a barra fica mais clara, com contorno tracejado, e
+                                                            diz "até agora" — não se lê como um dia baixo. */}
                                                         {(() => {
                                                             const unknown = metrics?.unloggedDates || new Set();
                                                             const days = Array.from({ length: 7 }, (_, i) => {
                                                                 const d = subtractDays(new Date(), 6 - i);
                                                                 const k = safeToISODate(d);
-                                                                return { k, n: rollup[k]?.count || 0, unk: unknown.has(k), label: i === 6 ? t('home.today') : d.toLocaleDateString(i18n.language, { weekday: 'short' }).replace(/\.$/, '') };
+                                                                const isToday = i === 6;
+                                                                return { k, isToday, n: rollup[k]?.count || 0, unk: unknown.has(k) || (!isToday && !knownDays.has(k)), label: isToday ? t('home.today') : d.toLocaleDateString(i18n.language, { weekday: 'short' }).replace(/\.$/, '') };
                                                             });
                                                             const tg = freqGoal ? parseFloat(freqGoal.target) : NaN;
                                                             const top = Math.max(1, ...days.map(d => d.n), Number.isFinite(tg) ? tg : 0);
@@ -770,7 +843,7 @@ export function PatternsView({
                                                                     <div className="relative grid grid-cols-7 gap-1.5 items-end h-14">
                                                                         {days.map(d => (
                                                                             <div key={d.k} className="h-full flex items-end">
-                                                                                <div className="w-full rounded-t" style={{ height: d.unk ? '100%' : `${Math.max(4, (d.n / top) * 100)}%`, background: d.unk ? 'transparent' : 'rgb(124 58 237 / 0.45)', border: d.unk ? '1px dashed rgb(255 255 255 / 0.2)' : 'none' }} />
+                                                                                <div className="w-full rounded-t" style={{ height: d.unk ? '100%' : `${Math.max(4, (d.n / top) * 100)}%`, background: d.unk ? 'transparent' : d.isToday ? 'rgb(124 58 237 / 0.2)' : 'rgb(124 58 237 / 0.45)', border: d.unk ? '1px dashed rgb(255 255 255 / 0.2)' : d.isToday ? '1px dashed rgb(196 181 253 / 0.6)' : 'none' }} />
                                                                             </div>
                                                                         ))}
                                                                         {Number.isFinite(tg) && (
@@ -779,7 +852,7 @@ export function PatternsView({
                                                                     </div>
                                                                     <div className="grid grid-cols-7 gap-1.5 mt-1 text-center text-[10px] text-gray-500">
                                                                         {days.map(d => (
-                                                                            <span key={d.k}><b className="block font-mono-theme text-[11px] text-gray-200">{d.unk ? '?' : d.n}</b>{d.label}</span>
+                                                                            <span key={d.k}><b className="block font-mono-theme text-[11px] text-gray-200">{d.unk ? '?' : d.n}</b>{d.label}{d.isToday && <span className="block text-[9px] leading-tight text-gray-500">{t('patterns.week.soFar', 'até agora')}</span>}</span>
                                                                         ))}
                                                                     </div>
                                                                 </div>
@@ -787,67 +860,44 @@ export function PatternsView({
                                                         })()}
 
                                                     {/* Tendência (30 dias) */}
-                                                    {trend && (
-                                                        // Cor só com meta de reduzir a frequência (regra do elogio):
-                                                        // a descer = verde (é a direção que a pessoa escolheu);
-                                                        // a subir = amarelo, como os avisos "fora da meta" do Início
-                                                        // (nunca vermelho). Sem meta, ou estável: neutro.
-                                                        <div className={
-                                                            (freqGoal && trend.direction === 'decreasing'
-                                                                ? 'bg-green-900/30 border-green-700/50'
-                                                                : freqGoal && trend.direction === 'increasing'
-                                                                    ? 'bg-yellow-900/20 border-yellow-600/50'
-                                                                    : 'bg-gray-700/30 border-gray-600'
-                                                            ) + ' rounded-lg p-4 border'
-                                                        }>
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <div className={'text-xs font-semibold uppercase tracking-wide ' + (
-                                                                    freqGoal && trend.direction === 'decreasing'
-                                                                        ? 'text-green-400'
-                                                                        : freqGoal && trend.direction === 'increasing'
-                                                                            ? 'text-yellow-400'
-                                                                            : 'text-gray-400'
-                                                                )}>
-                                                                    {t('patterns.trend.title')}
+                                                    {(() => {
+                                                        // Cor só com meta de reduzir a frequência (regra do elogio) E só
+                                                        // quando a direção se distingue do acaso: a descer = verde (é a
+                                                        // direção que a pessoa escolheu); a subir = amarelo, como os avisos
+                                                        // "fora da meta" do Início (nunca vermelho). Resto: neutro.
+                                                        const dir = trend.status === 'tested' ? trend.direction : null;
+                                                        const tone = freqGoal && dir === 'decreasing' ? 'green' : freqGoal && dir === 'increasing' ? 'yellow' : 'gray';
+                                                        const box = tone === 'green' ? 'bg-green-900/30 border-green-700/50' : tone === 'yellow' ? 'bg-yellow-900/20 border-yellow-600/50' : 'bg-gray-700/30 border-gray-600';
+                                                        const head = tone === 'green' ? 'text-green-400' : tone === 'yellow' ? 'text-yellow-400' : 'text-gray-400';
+                                                        let main, detail;
+                                                        if (trend.status === 'few') {
+                                                            main = t('patterns.trend.few', 'Ainda há poucos dias para isto — há {{n}} dias completos com registos nos últimos 30; são precisos {{min}}.', { n: trend.n, min: trend.min });
+                                                        } else if (trend.status === 'flat') {
+                                                            main = t('patterns.trend.flat', 'O mesmo número de consumos todos os dias (~{{avg}}/dia) — não há subida nem descida.', { avg: fmtNum(trend.avg, 1) });
+                                                            detail = t('patterns.trend.basis', 'Em {{n}} dias completos (hoje fica de fora: ainda vai a meio).', { n: trend.n });
+                                                        } else {
+                                                            const vals = { from: fmtNum(trend.fitFirst, 1), to: fmtNum(trend.fitLast, 1), n: trend.n, rho: fmtNum(trend.rho, 2), p: fmtP(trend) };
+                                                            main = trend.direction === 'increasing'
+                                                                ? t('patterns.trend.up', 'A subir: a reta passa de ~{{from}} para ~{{to}} consumos/dia.', vals)
+                                                                : trend.direction === 'decreasing'
+                                                                    ? t('patterns.trend.down', 'A descer: a reta passa de ~{{from}} para ~{{to}} consumos/dia.', vals)
+                                                                    : t('patterns.trend.chance', 'Sem subida nem descida que se distinga do acaso (~{{from}} → ~{{to}} consumos/dia na reta).', vals);
+                                                            detail = t('patterns.trend.testNote', 'Em {{n}} dias completos (hoje fica de fora: ainda vai a meio). ρ = {{rho}}, {{p}}.', vals);
+                                                        }
+                                                        return (
+                                                            <div className={box + ' rounded-lg p-4 border'}>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <div className={'text-xs font-semibold uppercase tracking-wide ' + head}>
+                                                                        {t('patterns.trend.title')}
+                                                                    </div>
+                                                                    {/* Sem ⚠️/✅: quem decide a direção é a meta da pessoa. */}
+                                                                    <span className="text-2xl">📊</span>
                                                                 </div>
-                                                                <span className={'text-2xl ' + (
-                                                                    // Sem ⚠️/✅: a app não decide que subir é mau e
-                                                                    // descer é bom. Quem decide a direcção é a meta
-                                                                    // da pessoa, e isso vê-se no sítio das metas.
-                                                                    trend.direction === 'stable' ? '➖' : '📊'
-                                                                )}></span>
+                                                                <div className="text-sm leading-relaxed text-gray-200">{main}</div>
+                                                                {detail && <div className="text-xs mt-1 text-gray-400">{detail}</div>}
                                                             </div>
-                                                            <div className={'text-sm leading-relaxed ' + 'text-gray-200'}>
-                                                                {trend.direction === 'increasing' && (
-                                                                    <>
-                                                                        <strong className={'text-gray-200'}>{t('patterns.trend.increasing')}</strong> +{trend.slopePerDay} {i18n.language === 'en' ? 'uses/day avg.' : 'consumos/dia em média.'}
-                                                                        <br />
-                                                                        <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
-                                                                            {t('patterns.trend.increasingDetail', { slope: trend.slopePerDay, projection: trend.projection })}
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                                {trend.direction === 'decreasing' && (
-                                                                    <>
-                                                                        <strong className={'text-gray-200'}>{t('patterns.trend.decreasing')}</strong> {trend.slopePerDay} {i18n.language === 'en' ? 'uses/day avg.' : 'consumos/dia em média.'}
-                                                                        <br />
-                                                                        <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
-                                                                            {t('patterns.trend.decreasingDetail', { slope: Math.abs(parseFloat(trend.slopePerDay)), projection: trend.projection })}
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                                {trend.direction === 'stable' && (
-                                                                    <>
-                                                                        <strong className={'text-gray-400'}>{t('patterns.trend.stable')}</strong> ~{trend.currentAvg} {i18n.language === 'en' ? 'uses/day (minimal variation)' : 'consumos/dia (variação mínima)'}
-                                                                        <br />
-                                                                        <span className={'text-xs mt-1 block ' + 'text-gray-400'}>
-                                                                            {t('patterns.trend.stableDetail')}
-                                                                        </span>
-                                                                    </>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                        );
+                                                    })()}
 
                                                     {/* Alertas Preditivos */}
                                                     {(() => {
@@ -1103,7 +1153,7 @@ export function PatternsView({
                                                                                         ))}
                                                                                         <div className="flex items-center gap-1">
                                                                                             <div className="w-3 h-3 rounded" style={{ background: 'transparent', boxShadow: TODAY_RING }}></div>
-                                                                                            <span>{t('patterns.freq.today')}</span>
+                                                                                            <span>{t('patterns.freq.todaySoFar', 'hoje (até agora)')}</span>
                                                                                         </div>
                                                                                     </>
                                                                                 );
@@ -1156,7 +1206,7 @@ export function PatternsView({
                                                                         </span>
                                                                     </div>
                                                                     <div className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                                                        {t('patterns.goals.metAchieved', { achieved: goalsAnalysis.goalsWithAchievements, total: goalsAnalysis.totalGoals })}
+                                                                        {t('patterns.goals.metSomeDay', '{{achieved}} de {{total}} metas cumpridas em pelo menos um dia', { achieved: goalsAnalysis.goalsWithAchievements, total: goalsAnalysis.totalGoals })}
                                                                     </div>
                                                                 </div>
 
@@ -1173,7 +1223,9 @@ export function PatternsView({
                                                                         </span>
                                                                     </div>
                                                                     <div className={'text-xs mt-1 ' + ('text-gray-400')}>
-                                                                        {t('patterns.goals.avgPerDayLast', { days: goalsAnalysis.periodDays })}
+                                                                        {goalsAnalysis.periodDays > 0
+                                                                            ? t('patterns.goals.avgPerDayCounted', 'em {{days}} dia(s) que as metas contam', { days: goalsAnalysis.periodDays })
+                                                                            : t('patterns.goals.noData')}
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -1238,7 +1290,7 @@ export function PatternsView({
                                                                                     </div>
                                                                                     <div className={'bg-gray-600' + ' rounded-full h-2 overflow-hidden'}>
                                                                                         <div
-                                                                                            className={'h-full transition-all duration-500 ' + (goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : goal.successRate >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')}
+                                                                                            className={/* cor de meta (a pessoa escolheu-a), mas nunca vermelho: abaixo de 40% fica laranja */ 'h-full transition-all duration-500 ' + (goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : goal.successRate >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-orange-500')}
                                                                                             style={{width: `${Math.min(100, goal.successRate)}%`}}
                                                                                         ></div>
                                                                                     </div>
@@ -1309,6 +1361,14 @@ export function PatternsView({
                                             // "Tudo" não tem início: compara os últimos 30 dias com os 30 antes.
                                             // Antes isto usava "agora − N×24h" sobre os dados em bruto e ignorava
                                             // as setas: via-se sempre o presente, fosse qual fosse o período.
+                                            //
+                                            // REGRA DO ELOGIO: sem meta da pessoa para aquela métrica, só descrição
+                                            // (número, diferença, seta cinzenta). Cor e ✓ só para métricas COM meta
+                                            // (frequência → reduce_frequency, mg → reduce_quantity, sono →
+                                            // sleep_hours, hora de deitar → bedtime_before), na direção da meta, e
+                                            // só quando a diferença se distingue do acaso (windowTest).
+                                            // Antes: verde/vermelho e "melhoria" decididos pela app (menos consumo =
+                                            // melhor), uma percentagem de "progresso" e frases de incentivo.
                                             const todayKey = getTodayKey();
                                             let recentFrom, recentTo;
                                             if (dateRange?.start && dateRange?.end) {
@@ -1324,6 +1384,14 @@ export function PatternsView({
                                                 safeToISODate(subtractDays(new Date(`${recentFrom}T12:00:00`), periodDays)),
                                                 safeToISODate(subtractDays(new Date(`${recentFrom}T12:00:00`), 1))
                                             );
+                                            // HOJE AINDA VAI A MEIO: sai das médias que SOMAM coisas ao longo do dia
+                                            // (consumos/dia, mg/dia, autocuidado) — os consumos e registos que ainda
+                                            // faltam puxavam a média para baixo. Fica no sono (a noite de ontem já
+                                            // acabou), no humor/energia e nas emoções (amostras, não somas).
+                                            const todayInRecent = recentAllDays.includes(todayKey);
+                                            const recentDoneDays = recentAllDays.filter(d => d !== todayKey);
+                                            // Janela recente só com hoje (período "Hoje"): nada de completo para comparar.
+                                            const todayOnly = todayInRecent && recentDoneDays.length === 0;
 
                                             // Dias de fora, nas DUAS janelas (a anterior fica fora do período, por
                                             // isso juntam-se também os atípicos de sempre, de metrics). Como nas
@@ -1333,13 +1401,14 @@ export function PatternsView({
                                             const progAtypical = new Set([...atypicalDates, ...(metrics?.atypicalDates || [])]);
                                             const progExcluded = new Set([...excludedDates, ...progAtypical, ...(metrics?.unloggedDates || [])]);
 
-                                            // Dias que CONTAM para uma média "por dia": não estão de fora e são do
-                                            // 1.º registo de sempre em diante (dias com algum registo: um dia sem registo nenhum não se sabe, não é zero).
+                                            // Dias que CONTAM para uma média "por dia": não estão de fora e têm algum
+                                            // registo (um dia sem registo nenhum não se sabe, não é zero).
                                             const countableDays = (days) => days.filter(d => !progExcluded.has(d) && knownDays.has(d));
-                                            const recentCountDays = countableDays(recentAllDays);
+                                            const recentCountDays = countableDays(recentDoneDays);
                                             const previousCountDays = countableDays(previousAllDays);
 
                                             const recentDaySet = new Set(recentAllDays);
+                                            const recentDoneSet = new Set(recentDoneDays);
                                             const previousDaySet = new Set(previousAllDays);
                                             const inWindow = (daySet, outSet) => (item) => {
                                                 const k = getDateKeyFromItem(item);
@@ -1347,7 +1416,7 @@ export function PatternsView({
                                             };
 
                                             // Filter data for both periods
-                                            const recentConsumptions = consumptions.filter(inWindow(recentDaySet, progExcluded));
+                                            const recentConsumptions = consumptions.filter(inWindow(recentDoneSet, progExcluded));
                                             const previousConsumptions = consumptions.filter(inWindow(previousDaySet, progExcluded));
 
                                             const recentWellbeing = wellbeingLogs.filter(inWindow(recentDaySet, progAtypical));
@@ -1359,49 +1428,60 @@ export function PatternsView({
                                             // Média de uma lista de números; sem números → null ("não se sabe"),
                                             // nunca 0. Um 0 inventado dava "Humor 0.0/10" ou "↓100%".
                                             const avgOrNull = (arr) => arr.length > 0 ? arr.reduce((sum, v) => sum + v, 0) / arr.length : null;
+                                            // Valores por dia (para o teste), por ordem de data.
+                                            const byDaySeries = (map) => Object.keys(map).sort().map(d => map[d]);
+                                            const dailyMeans = (items, field) => {
+                                                const acc = {};
+                                                items.forEach(w => {
+                                                    const v = parseInt(w[field]);
+                                                    const d = getDateKeyFromItem(w);
+                                                    if (!d || isNaN(v)) return;
+                                                    (acc[d] = acc[d] || []).push(v);
+                                                });
+                                                const out = {};
+                                                Object.entries(acc).forEach(([d, vs]) => { out[d] = vs.reduce((a, b) => a + b, 0) / vs.length; });
+                                                return out;
+                                            };
 
-                                            // Helper to calculate change percentage and direction
-                                            // Devolve null quando não há comparação possível: falta um dos lados
-                                            // (null) ou o anterior é 0 (não há % de mudança a partir de zero). O
-                                            // ecrã mostra então os valores que existem, sem seta nem %.
-                                            const calculateChange = (recent, previous, lowerIsBetter = true) => {
+                                            // Percentagem e sentido da mudança (só descrição: NÃO diz se é melhor).
+                                            // null quando não há comparação possível: falta um dos lados (null) ou
+                                            // o anterior é 0 (não há % de mudança a partir de zero).
+                                            const calculateChange = (recent, previous) => {
                                                 if (recent == null || previous == null) return null;
-                                                // Se ambos são 0, não há mudança
-                                                if (previous === 0 && recent === 0) return { percent: 0, direction: 'stable', isImprovement: false };
-                                                // Anterior a 0 e agora não: % de mudança não existe.
+                                                if (previous === 0 && recent === 0) return { percent: 0, direction: 'stable' };
                                                 if (previous === 0) return null;
-
-                                                // Se previous > 0 mas recent é 0, tudo parou
-                                                if (recent === 0) {
-                                                    return { percent: 100, direction: 'down', isImprovement: lowerIsBetter, rawChange: -previous };
-                                                }
-
-                                                // Caso normal: ambos têm valores
                                                 const change = ((recent - previous) / previous) * 100;
                                                 const direction = change > 5 ? 'up' : change < -5 ? 'down' : 'stable';
-                                                const isImprovement = lowerIsBetter ? change < 0 : change > 0;
-                                                return { percent: Math.abs(change), direction, isImprovement, rawChange: change };
+                                                return { percent: Math.abs(change), direction, rawChange: change };
                                             };
 
                                             const progressData = {};
 
-                                            // 1. CONSUMO - Frequência
-                                            if (recentConsumptions.length > 0 || previousConsumptions.length > 0) {
+                                            // 1. CONSUMO - Frequência (sem hoje)
+                                            if (recentConsumptions.length > 0 || previousConsumptions.length > 0 || todayInRecent) {
                                                 // Consumos ÷ dias que contam na janela (um dia sem consumos conta
                                                 // como 0). Antes dividia só pelos dias COM consumo, e um dia a zero
                                                 // desaparecia da média em vez de a baixar.
-                                                const recentAvgFreq = recentCountDays.length > 0 ? recentConsumptions.length / recentCountDays.length : null;
-                                                const previousAvgFreq = previousCountDays.length > 0 ? previousConsumptions.length / previousCountDays.length : null;
-
-                                                progressData.frequency = {
-                                                    recent: recentAvgFreq,
-                                                    previous: previousAvgFreq,
-                                                    change: calculateChange(recentAvgFreq, previousAvgFreq, true),
-                                                    label: t('patterns.progress.freqLabel')
-                                                };
+                                                const countOf = (list) => { const m = {}; list.forEach(c => { const k = getDateKeyFromItem(c); if (k) m[k] = (m[k] || 0) + 1; }); return m; };
+                                                const rc = countOf(recentConsumptions), pc = countOf(previousConsumptions);
+                                                const recentSeries = recentCountDays.map(d => rc[d] || 0);
+                                                const previousSeries = previousCountDays.map(d => pc[d] || 0);
+                                                const recentAvgFreq = avgOrNull(recentSeries);
+                                                const previousAvgFreq = avgOrNull(previousSeries);
+                                                if (recentAvgFreq != null || previousAvgFreq != null || todayOnly) {
+                                                    progressData.frequency = {
+                                                        recent: recentAvgFreq,
+                                                        previous: previousAvgFreq,
+                                                        change: calculateChange(recentAvgFreq, previousAvgFreq),
+                                                        test: windowTest(previousSeries, recentSeries),
+                                                        goalType: 'reduce_frequency',
+                                                        noToday: true,
+                                                        label: t('patterns.progress.freqLabel')
+                                                    };
+                                                }
                                             }
 
-                                            // 2. CONSUMO - Dosagem
+                                            // 2. CONSUMO - Dosagem (sem hoje)
                                             // mg POR DIA da fonte unificada (metrics.dailySummary, a mesma do resto
                                             // desta página): o "Registar mg" à mão manda, as pesagens medidas
                                             // preenchem os outros dias. Só dias com medição real (mg > 0) — nunca
@@ -1411,7 +1491,7 @@ export function PatternsView({
                                                 .filter(d => !progExcluded.has(d))
                                                 .map(d => mgSummary[d]?.mg)
                                                 .filter(v => v != null && v > 0);
-                                            const recentMgValues = mgOfDays(recentAllDays);
+                                            const recentMgValues = mgOfDays(recentDoneDays);
                                             const previousMgValues = mgOfDays(previousAllDays);
 
                                             if (recentMgValues.length > 0 || previousMgValues.length > 0) {
@@ -1421,7 +1501,10 @@ export function PatternsView({
                                                 progressData.dosage = {
                                                     recent: recentAvgDosage,
                                                     previous: previousAvgDosage,
-                                                    change: calculateChange(recentAvgDosage, previousAvgDosage, true),
+                                                    change: calculateChange(recentAvgDosage, previousAvgDosage),
+                                                    test: windowTest(previousMgValues, recentMgValues),
+                                                    goalType: 'reduce_quantity',
+                                                    noToday: true,
                                                     label: t('patterns.progress.dosageLabel')
                                                 };
                                             }
@@ -1463,28 +1546,13 @@ export function PatternsView({
                                                 return null;
                                             };
 
-                                            // Obter todas as datas únicas dos períodos para sono
-                                            const recentSleepDates = new Set([
-                                                ...recentCycles.map(c => getDateKeyFromItem(c)),
-                                                ...recentWellbeing.map(w => getDateKeyFromItem(w))
-                                            ]);
-                                            const previousSleepDates = new Set([
-                                                ...previousCycles.map(c => getDateKeyFromItem(c)),
-                                                ...previousWellbeing.map(w => getDateKeyFromItem(w))
-                                            ]);
-
-                                            // Coletar valores de sono
-                                            const recentSleepValues = [];
-                                            recentSleepDates.forEach(date => {
-                                                const sleep = getSleepForDate(date, recentCycles, recentWellbeing);
-                                                if (sleep !== null) recentSleepValues.push(sleep);
-                                            });
-
-                                            const previousSleepValues = [];
-                                            previousSleepDates.forEach(date => {
-                                                const sleep = getSleepForDate(date, previousCycles, previousWellbeing);
-                                                if (sleep !== null) previousSleepValues.push(sleep);
-                                            });
+                                            // Obter todas as datas únicas dos períodos para sono (por ordem)
+                                            const sleepSeries = (cyc, wb) => [...new Set([...cyc.map(c => getDateKeyFromItem(c)), ...wb.map(w => getDateKeyFromItem(w))])]
+                                                .filter(Boolean).sort()
+                                                .map(date => getSleepForDate(date, cyc, wb))
+                                                .filter(v => v !== null);
+                                            const recentSleepValues = sleepSeries(recentCycles, recentWellbeing);
+                                            const previousSleepValues = sleepSeries(previousCycles, previousWellbeing);
 
                                             if (recentSleepValues.length > 0 || previousSleepValues.length > 0) {
                                                 const recentAvgSleep = avgOrNull(recentSleepValues);
@@ -1493,12 +1561,14 @@ export function PatternsView({
                                                 progressData.sleep = {
                                                     recent: recentAvgSleep,
                                                     previous: previousAvgSleep,
-                                                    change: calculateChange(recentAvgSleep, previousAvgSleep, false), // Higher sleep is better
+                                                    change: calculateChange(recentAvgSleep, previousAvgSleep),
+                                                    test: windowTest(previousSleepValues, recentSleepValues),
+                                                    goalType: 'sleep_hours',
                                                     label: t('patterns.progress.sleepLabel')
                                                 };
                                             }
 
-                                            // 4. BEM-ESTAR - Humor
+                                            // 4. BEM-ESTAR - Humor (média dos registos; o teste usa a média de cada dia)
                                             const recentMoodLogs = recentWellbeing.filter(w => w.mood !== undefined && w.mood !== null && w.mood !== '' && !isNaN(parseInt(w.mood)));
                                             const previousMoodLogs = previousWellbeing.filter(w => w.mood !== undefined && w.mood !== null && w.mood !== '' && !isNaN(parseInt(w.mood)));
 
@@ -1509,7 +1579,8 @@ export function PatternsView({
                                                 progressData.mood = {
                                                     recent: recentAvgMood,
                                                     previous: previousAvgMood,
-                                                    change: calculateChange(recentAvgMood, previousAvgMood, false), // Higher mood is better
+                                                    change: calculateChange(recentAvgMood, previousAvgMood),
+                                                    test: windowTest(byDaySeries(dailyMeans(previousMoodLogs, 'mood')), byDaySeries(dailyMeans(recentMoodLogs, 'mood'))),
                                                     label: t('patterns.progress.moodLabel')
                                                 };
                                             }
@@ -1525,12 +1596,14 @@ export function PatternsView({
                                                 progressData.energy = {
                                                     recent: recentAvgEnergy,
                                                     previous: previousAvgEnergy,
-                                                    change: calculateChange(recentAvgEnergy, previousAvgEnergy, false), // Higher energy is better
+                                                    change: calculateChange(recentAvgEnergy, previousAvgEnergy),
+                                                    test: windowTest(byDaySeries(dailyMeans(previousEnergyLogs, 'energy')), byDaySeries(dailyMeans(recentEnergyLogs, 'energy'))),
                                                     label: t('patterns.progress.energyLabel')
                                                 };
                                             }
 
                                             // 6. CICLOS - Consistência da hora de deitar + Média
+                                            const bedtimeGoal = activeGoal('bedtime_before');
                                             if (recentCycles.length > 0 || previousCycles.length > 0) {
                                                 const getBedtimeMinutes = (bedtime) => {
                                                     const [hours, minutes] = bedtime.split(':').map(Number);
@@ -1549,11 +1622,13 @@ export function PatternsView({
                                                     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
                                                 };
 
-                                                const recentBedtimes = recentCycles.filter(c => c.bedtime).map(c => getBedtimeMinutes(c.bedtime));
-                                                const previousBedtimes = previousCycles.filter(c => c.bedtime).map(c => getBedtimeMinutes(c.bedtime));
+                                                const bedSeries = (cyc) => cyc.filter(c => c.bedtime)
+                                                    .sort((a, b) => String(getDateKeyFromItem(a)).localeCompare(String(getDateKeyFromItem(b))))
+                                                    .map(c => getBedtimeMinutes(c.bedtime));
+                                                const recentBedtimes = bedSeries(recentCycles);
+                                                const previousBedtimes = bedSeries(previousCycles);
 
                                                 if (recentBedtimes.length > 0 || previousBedtimes.length > 0) {
-                                                    // Calculate standard deviation (lower is better = more consistent)
                                                     const getStdDev = (arr) => {
                                                         const mean = arr.reduce((sum, v) => sum + v, 0) / arr.length;
                                                         const variance = arr.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / arr.length;
@@ -1562,6 +1637,7 @@ export function PatternsView({
 
                                                     // Consistência só com pelo menos 3 horas de deitar em CADA janela:
                                                     // com 1 só, a "variação" dava 0 e lia-se "Muito consistente".
+                                                    // Só descrição: não há meta de "consistência".
                                                     if (recentBedtimes.length >= 3 && previousBedtimes.length >= 3) {
                                                         const recentStdDev = getStdDev(recentBedtimes);
                                                         const previousStdDev = getStdDev(previousBedtimes);
@@ -1569,7 +1645,9 @@ export function PatternsView({
                                                         progressData.bedtimeConsistency = {
                                                             recent: recentStdDev,
                                                             previous: previousStdDev,
-                                                            change: calculateChange(recentStdDev, previousStdDev, true), // Lower std dev is better
+                                                            nRecent: recentBedtimes.length,
+                                                            nPrevious: previousBedtimes.length,
+                                                            change: calculateChange(recentStdDev, previousStdDev),
                                                             label: t('patterns.progress.bedtimeConsistLabel')
                                                         };
                                                     }
@@ -1583,31 +1661,36 @@ export function PatternsView({
                                                         previous: previousAvgBedtime,
                                                         recentTime: recentAvgBedtime == null ? null : minutesToTime(recentAvgBedtime),
                                                         previousTime: previousAvgBedtime == null ? null : minutesToTime(previousAvgBedtime),
-                                                        // Earlier bedtime is generally better (but depends on sleep quality)
-                                                        change: calculateChange(recentAvgBedtime, previousAvgBedtime, true),
+                                                        change: calculateChange(recentAvgBedtime, previousAvgBedtime),
+                                                        test: windowTest(previousBedtimes, recentBedtimes),
+                                                        goalType: 'bedtime_before',
                                                         label: t('patterns.progress.avgBedtimeLabel')
                                                     };
                                                 }
                                             }
 
-                                            // 7. AUTOCUIDADO - Análise detalhada por área
-                                            const recentSelfCareActivities = recentCycles.flatMap(c => c.selfCareActivities || []);
+                                            // 7. AUTOCUIDADO - atividades por ciclo (sem o ciclo de hoje, a meio)
+                                            const recentDoneCycles = recentCycles.filter(c => getDateKeyFromItem(c) !== todayKey);
+                                            const recentSelfCareActivities = recentDoneCycles.flatMap(c => c.selfCareActivities || []);
                                             const previousSelfCareActivities = previousCycles.flatMap(c => c.selfCareActivities || []);
 
                                             if (recentSelfCareActivities.length > 0 || previousSelfCareActivities.length > 0) {
-                                                const recentAvgSelfCare = recentCycles.length > 0 ? recentSelfCareActivities.length / recentCycles.length : null;
+                                                const recentAvgSelfCare = recentDoneCycles.length > 0 ? recentSelfCareActivities.length / recentDoneCycles.length : null;
                                                 const previousAvgSelfCare = previousCycles.length > 0 ? previousSelfCareActivities.length / previousCycles.length : null;
 
                                                 progressData.selfCare = {
                                                     recent: recentAvgSelfCare,
                                                     previous: previousAvgSelfCare,
-                                                    change: calculateChange(recentAvgSelfCare, previousAvgSelfCare, false), // More is better
+                                                    change: calculateChange(recentAvgSelfCare, previousAvgSelfCare),
+                                                    test: windowTest(previousCycles.map(c => (c.selfCareActivities || []).length), recentDoneCycles.map(c => (c.selfCareActivities || []).length)),
+                                                    noToday: true,
                                                     label: t('patterns.progress.selfCareLabel')
                                                 };
                                             }
 
-                                            // AUTOCUIDADO - Análise por área (water, rest, social, food)
-                                            if (recentWellbeing.length > 0) {
+                                            // AUTOCUIDADO - Análise por área (water, rest, social, food), sem hoje
+                                            const recentDoneWellbeing = recentWellbeing.filter(w => getDateKeyFromItem(w) !== todayKey);
+                                            if (recentDoneWellbeing.length > 0) {
                                                 const areas = {
                                                     water: { name: t('patterns.areas.water'), emoji: '💧' },
                                                     food: { name: t('patterns.areas.food'), emoji: '🍎' },
@@ -1619,7 +1702,7 @@ export function PatternsView({
                                                 const previousAreaStats = {};
 
                                                 // Agrupar wellbeing por data (1 data = 1 ciclo aprox)
-                                                const recentDates = new Set(recentWellbeing.map(w => w.date));
+                                                const recentDates = new Set(recentDoneWellbeing.map(w => w.date));
                                                 const previousDates = new Set(previousWellbeing.map(w => w.date));
 
                                                 const isAreaActive = (w, area) => {
@@ -1628,91 +1711,46 @@ export function PatternsView({
                                                     return w[area] === true;
                                                 };
                                                 Object.keys(areas).forEach(area => {
-                                                    // Para cada ciclo (data), verificar se ALGUM registo tem area activa
-                                                    const recentCyclesWithArea = Array.from(recentDates).filter(date => {
-                                                        return recentWellbeing.some(w => w.date === date && isAreaActive(w, area));
-                                                    }).length;
-
-                                                    const previousCyclesWithArea = Array.from(previousDates).filter(date => {
-                                                        return previousWellbeing.some(w => w.date === date && isAreaActive(w, area));
-                                                    }).length;
-
-                                                    const recentPercent = recentDates.size > 0 ? (recentCyclesWithArea / recentDates.size) * 100 : 0;
-                                                    const previousPercent = previousDates.size > 0 ? (previousCyclesWithArea / previousDates.size) * 100 : null;
-
-                                                    recentAreaStats[area] = recentPercent;
-                                                    previousAreaStats[area] = previousPercent;
+                                                    const recentCyclesWithArea = Array.from(recentDates).filter(date => recentDoneWellbeing.some(w => w.date === date && isAreaActive(w, area))).length;
+                                                    const previousCyclesWithArea = Array.from(previousDates).filter(date => previousWellbeing.some(w => w.date === date && isAreaActive(w, area))).length;
+                                                    recentAreaStats[area] = recentDates.size > 0 ? (recentCyclesWithArea / recentDates.size) * 100 : 0;
+                                                    previousAreaStats[area] = previousDates.size > 0 ? (previousCyclesWithArea / previousDates.size) * 100 : null;
                                                 });
 
-                                                // Calculate overall completion rate (média dos indicadores)
                                                 const recentOverall = Object.values(recentAreaStats).reduce((sum, v) => sum + v, 0) / 4;
                                                 // Sem registos de bem-estar no período anterior → null (não 0%).
                                                 const previousOverall = previousDates.size > 0 ? Object.values(previousAreaStats).reduce((sum, v) => sum + v, 0) / 4 : null;
 
-                                                // Calculate complete cycles (ciclos onde completaste os 4 indicadores)
-                                                const recentCompleteCycles = Array.from(recentDates).filter(date => {
-                                                    return Object.keys(areas).every(area => {
-                                                        return recentWellbeing.some(w => w.date === date && isAreaActive(w, area));
-                                                    });
-                                                }).length;
-
-                                                const previousCompleteCycles = Array.from(previousDates).filter(date => {
-                                                    return Object.keys(areas).every(area => {
-                                                        return previousWellbeing.some(w => w.date === date && isAreaActive(w, area));
-                                                    });
-                                                }).length;
-
+                                                const recentCompleteCycles = Array.from(recentDates).filter(date => Object.keys(areas).every(area => recentDoneWellbeing.some(w => w.date === date && isAreaActive(w, area)))).length;
                                                 const recentCompleteCyclesPercent = recentDates.size > 0 ? (recentCompleteCycles / recentDates.size) * 100 : 0;
-                                                const previousCompleteCyclesPercent = previousDates.size > 0 ? (previousCompleteCycles / previousDates.size) * 100 : null;
 
-                                                // Identify low areas (< 50%)
-                                                const lowAreas = Object.entries(recentAreaStats)
-                                                    .filter(([_, percent]) => percent < 50)
-                                                    .map(([area, percent]) => ({ area, percent, ...areas[area] }))
-                                                    .sort((a, b) => a.percent - b.percent);
-
-                                                // Generate suggestions
-                                                let suggestion = '';
-                                                if (lowAreas.length >= 3) {
-                                                    // Mencionar as 2 áreas MAIS BAIXAS
-                                                    suggestion = i18n.language === 'en' ? `Below 50% in several areas. Small daily habits make a difference - start with ${lowAreas[0].name.toLowerCase()} and ${lowAreas[1].name.toLowerCase()}.` : `Abaixo de 50% em várias áreas. Pequenos hábitos diários fazem diferença - começa por ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}.`;
-                                                } else if (lowAreas.length === 2) {
-                                                    suggestion = i18n.language === 'en' ? `Focus on ${lowAreas[0].name.toLowerCase()} and ${lowAreas[1].name.toLowerCase()}. Simple routines can help!` : `Atenção a ${lowAreas[0].name.toLowerCase()} e ${lowAreas[1].name.toLowerCase()}. Criar rotinas simples pode ajudar!`;
-                                                } else if (lowAreas.length === 1) {
-                                                    suggestion = i18n.language === 'en' ? `Focus on improving ${lowAreas[0].name.toLowerCase()} - small steps count!` : `Foca em melhorar ${lowAreas[0].name.toLowerCase()} - pequenos passos contam!`;
-                                                } else {
-                                                    suggestion = i18n.language === 'en' ? `Excellent! You're maintaining good self-care habits in all areas (≥50%).` : `Excelente! Estás a manter bons hábitos de autocuidado em todas as áreas (≥50%).`;
-                                                }
+                                                // Áreas em menos de metade dos dias — só descrição (antes: "começa
+                                                // por…", "pequenos passos contam!", "Excelente!").
+                                                const lowAreas = Object.keys(areas).filter(a => recentAreaStats[a] < 50).map(a => areas[a].name.toLowerCase());
+                                                const suggestion = lowAreas.length > 0
+                                                    ? t('patterns.progress.selfCareLow', 'Em menos de metade dos dias ({{n}} com registo): {{areas}}.', { n: recentDates.size, areas: lowAreas.join(', ') })
+                                                    : t('patterns.progress.selfCareAllHalf', 'Todas as áreas aparecem em pelo menos metade dos dias ({{n}} com registo).', { n: recentDates.size });
 
                                                 progressData.selfCareDetailed = {
                                                     recentOverall,
                                                     previousOverall,
                                                     areas: recentAreaStats,
                                                     previousAreas: previousAreaStats,
-                                                    lowAreas,
                                                     suggestion,
-                                                    change: calculateChange(recentOverall, previousOverall, false),
+                                                    change: calculateChange(recentOverall, previousOverall),
                                                     label: t('patterns.progress.selfCareOverallLabel'),
-                                                    // Ciclos completos (onde completaste os 4 indicadores)
                                                     completeCycles: {
                                                         recent: recentCompleteCyclesPercent,
-                                                        previous: previousCompleteCyclesPercent,
                                                         recentCount: recentCompleteCycles,
                                                         recentTotal: recentDates.size,
-                                                        previousCount: previousCompleteCycles,
-                                                        previousTotal: previousDates.size,
-                                                        change: calculateChange(recentCompleteCyclesPercent, previousCompleteCyclesPercent, false)
                                                     }
                                                 };
                                             }
 
-                                            // 8. EMOÇÕES E TRIGGERS
+                                            // 8. EMOÇÕES
                                             const recentEmotions = recentWellbeing.flatMap(w => w.emotions || []);
                                             const previousEmotions = previousWellbeing.flatMap(w => w.emotions || []);
-                                            const recentTriggers = recentCycles.flatMap(c => c.triggers || []);
-                                            const previousTriggers = previousCycles.flatMap(c => c.triggers || []);
 
-                                            // Count emotions by category (usando getEmotionCategory)
                                             const recentNegativeCount = recentEmotions.filter(e => getEmotionCategory(e) === 'negative').length;
                                             const previousNegativeCount = previousEmotions.filter(e => getEmotionCategory(e) === 'negative').length;
                                             const recentPositiveCount = recentEmotions.filter(e => getEmotionCategory(e) === 'positive').length;
@@ -1720,73 +1758,67 @@ export function PatternsView({
 
                                             // Top 3 emoções mais frequentes (período recente)
                                             const emotionFreq = {};
-                                            recentEmotions.forEach(e => {
-                                                emotionFreq[e] = (emotionFreq[e] || 0) + 1;
-                                            });
+                                            recentEmotions.forEach(e => { emotionFreq[e] = (emotionFreq[e] || 0) + 1; });
                                             const topEmotions = Object.entries(emotionFreq)
                                                 .sort((a, b) => b[1] - a[1])
                                                 .slice(0, 3)
-                                                .map(([emotion, count]) => ({
-                                                    emotion,
-                                                    count,
-                                                    category: getEmotionCategory(emotion)
-                                                }));
+                                                .map(([emotion, count]) => ({ emotion, count, category: getEmotionCategory(emotion) }));
 
-                                            // Só mostrar emoções negativas se houver pelo menos uma emoção negativa registada
                                             if (recentNegativeCount > 0 || previousNegativeCount > 0) {
                                                 const recentNegativePercent = recentEmotions.length > 0 ? (recentNegativeCount / recentEmotions.length) * 100 : null;
                                                 const previousNegativePercent = previousEmotions.length > 0 ? (previousNegativeCount / previousEmotions.length) * 100 : null;
-
                                                 progressData.negativeEmotions = {
                                                     recent: recentNegativePercent,
                                                     previous: previousNegativePercent,
-                                                    change: calculateChange(recentNegativePercent, previousNegativePercent, true), // Lower is better
+                                                    change: calculateChange(recentNegativePercent, previousNegativePercent),
                                                     label: t('patterns.progress.negEmotionsLabel'),
                                                     recentCount: recentNegativeCount,
                                                     recentTotal: recentEmotions.length,
-                                                    previousCount: previousNegativeCount,
-                                                    previousTotal: previousEmotions.length
                                                 };
                                             }
 
-                                            // Emoções positivas
                                             if (recentPositiveCount > 0 || previousPositiveCount > 0) {
                                                 const recentPositivePercent = recentEmotions.length > 0 ? (recentPositiveCount / recentEmotions.length) * 100 : null;
                                                 const previousPositivePercent = previousEmotions.length > 0 ? (previousPositiveCount / previousEmotions.length) * 100 : null;
-
                                                 progressData.positiveEmotions = {
                                                     recent: recentPositivePercent,
                                                     previous: previousPositivePercent,
-                                                    change: calculateChange(recentPositivePercent, previousPositivePercent, false), // Higher is better
+                                                    change: calculateChange(recentPositivePercent, previousPositivePercent),
                                                     label: t('patterns.progress.posEmotionsLabel'),
                                                     recentCount: recentPositiveCount,
                                                     recentTotal: recentEmotions.length,
-                                                    previousCount: previousPositiveCount,
-                                                    previousTotal: previousEmotions.length
                                                 };
                                             }
 
-                                            // Top emoções
-                                            if (topEmotions.length > 0) {
-                                                progressData.topEmotions = topEmotions;
-                                            }
+                                            if (topEmotions.length > 0) progressData.topEmotions = topEmotions;
 
-                                            // Calculate overall progress score (0-100)
-                                            // Excluir métricas com isNew (dados novos sem comparação válida)
-                                            const scorableMetrics = Object.values(progressData).filter(m => m.change && m.change.direction !== 'stable' && !m.change.isNew);
-                                            const improvements = scorableMetrics.filter(m => m.change.isImprovement).length;
-                                            const total = scorableMetrics.length;
-                                            // Métricas com os DOIS lados medidos (dá para comparar, mesmo que estável).
-                                            const comparableCount = Object.values(progressData).filter(m => m.change).length;
-                                            // Sem nada que mudou mais de 5% não há percentagem: antes mostrava "50%"
-                                            // + "Progresso moderado" sem dados nenhuns para comparar.
-                                            const progressScore = total > 0 ? Math.round((improvements / total) * 100) : null;
+                                            // VEREDICTO DE META (o único sítio onde há cor/✓): a métrica tem meta
+                                            // ativa, a diferença distingue-se do acaso e o teste aponta para o
+                                            // mesmo lado que as médias. 'toward' = na direção da meta; 'away' = ao
+                                            // contrário (amarelo, como no Início; nunca vermelho). Resto: null.
+                                            const metricEntries = Object.entries(progressData).filter(([k]) => k !== 'topEmotions');
+                                            metricEntries.forEach(([, m]) => {
+                                                m.goal = m.goalType ? activeGoal(m.goalType) : null;
+                                                m.verdict = null;
+                                                if (!m.goal || !m.change || m.change.direction === 'stable' || m.test?.status !== 'tested' || !m.test.sig) return;
+                                                const up = m.recent > m.previous;
+                                                if ((m.test.rho > 0) !== up) return;
+                                                const lowerIsToward = m.goalType === 'bedtime_before' || GOAL_DIRECTION[m.goalType] === 'max';
+                                                m.verdict = (lowerIsToward ? !up : up) ? 'toward' : 'away';
+                                            });
+                                            const comparableCount = metricEntries.filter(([, m]) => m.change).length;
+                                            const withGoal = metricEntries.filter(([, m]) => m.goal && m.change);
+                                            const toward = withGoal.filter(([, m]) => m.verdict === 'toward');
+                                            const away = withGoal.filter(([, m]) => m.verdict === 'away');
+                                            const changedNoVerdict = metricEntries.filter(([, m]) => m.change && m.change.direction !== 'stable' && !m.verdict);
+
                                             const isEn = i18n.language === 'en';
                                             const noDataTxt = isEn ? 'no data' : 'sem dados';
                                             const noPrevTxt = isEn ? 'no data in the previous period' : 'sem dados no período anterior';
+                                            const halfDayTxt = t('patterns.progress.todayHalf', 'hoje ainda vai a meio');
                                             // Valor recente (grande) — ou "sem dados", nunca um 0 inventado.
-                                            const recentVal = (v, digits, unit) => v == null
-                                                ? <span className={'text-sm italic text-gray-400'}>{noDataTxt}</span>
+                                            const recentVal = (v, digits, unit, m) => v == null
+                                                ? <span className={'text-sm italic text-gray-400'}>{m?.noToday && todayOnly ? halfDayTxt : noDataTxt}</span>
                                                 : <>
                                                     <span className={'text-2xl font-bold font-mono-theme ' + 'text-white'}>{v.toFixed(digits)}</span>
                                                     {unit && <span className={'text-sm ' + ('text-gray-400')}>{unit}</span>}
@@ -1795,6 +1827,43 @@ export function PatternsView({
                                             const prevVal = (v, digits, suffix = '') => v == null
                                                 ? noPrevTxt
                                                 : `${t('patterns.progress.before')} ${v.toFixed(digits)}${suffix}`;
+                                            // Etiqueta da mudança: seta + %, CINZENTA salvo veredicto de meta.
+                                            const badge = (m, text) => {
+                                                if (!m?.change || m.change.direction === 'stable') return null;
+                                                const cls = m.verdict === 'toward' ? 'bg-green-900/30 text-green-400'
+                                                    : m.verdict === 'away' ? 'bg-yellow-900/20 text-yellow-400'
+                                                    : 'bg-gray-700/40 text-gray-300';
+                                                return (
+                                                    <span className={'text-xs px-2 py-1 rounded-full font-medium ' + cls}>
+                                                        {text ?? `${m.change.direction === 'up' ? '↑' : '↓'} ${m.change.percent.toFixed(0)}%`}
+                                                    </span>
+                                                );
+                                            };
+                                            // Linha pequena: n de cada lado, acaso ou não, e (com meta) o veredicto.
+                                            const basisLine = (m) => {
+                                                const line = windowTestLine(m?.test);
+                                                if (!line) return null;
+                                                return (
+                                                    <p className="text-[11px] leading-snug text-gray-500 mt-1">
+                                                        {line}
+                                                        {m.verdict === 'toward' && <span className="text-green-400"> {t('patterns.progress.towardGoal', '✓ Na direção da tua meta.')}</span>}
+                                                        {m.verdict === 'away' && <span className="text-yellow-400"> {t('patterns.progress.awayGoal', 'No sentido contrário ao da tua meta.')}</span>}
+                                                    </p>
+                                                );
+                                            };
+                                            const row = (m, digits, unit, prevSuffix = '') => (
+                                                <div className={'py-3'}>
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className={'text-sm font-medium text-gray-300'}>{m.label}</span>
+                                                        {badge(m)}
+                                                    </div>
+                                                    <div className="flex items-baseline gap-2">
+                                                        {recentVal(m.recent, digits, unit, m)}
+                                                        <span className={'text-sm ml-auto text-gray-500'}>{prevVal(m.previous, digits, prevSuffix)}</span>
+                                                    </div>
+                                                    {basisLine(m)}
+                                                </div>
+                                            );
                                             // O texto do topo: com as setas no presente, as frases de sempre; num
                                             // período passado, diz-se que dias se estão a comparar.
                                             const shortDay = (k) => new Date(`${k}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
@@ -1807,98 +1876,40 @@ export function PatternsView({
                                                 : patternsPeriod === 'semana' ? t('patterns.progress.comparisons.semana')
                                                 : patternsPeriod === 'mes' ? t('patterns.progress.comparisons.mes')
                                                 : t('patterns.progress.comparisons.tudo', { days: periodDays });
+                                            const notEnoughTxt = isEn ? 'Not enough data yet to compare' : 'Ainda não há dados suficientes para comparar';
 
                                             return (
                                                 <div className="space-y-4">
                                                     {atypicalBanner}
-                                                    {/* Period comparison header */}
+                                                    {/* Period comparison header — sem percentagem de "progresso" nem cor:
+                                                        só se diz o que se compara e, com metas, quantas mudaram na
+                                                        direção delas de forma que se distingue do acaso. */}
                                                     <div className={'bg-gray-800/40 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <h3 className={'text-xl font-bold ' + ('text-white')}>
-                                                                {t('patterns.progress.title')}
-                                                            </h3>
-                                                            {progressScore != null && (
-                                                            <div className={'text-4xl font-black font-mono-theme ' + (progressScore >= 70 ? 'text-green-400' : progressScore >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
-                                                                {progressScore}%
-                                                            </div>
-                                                            )}
-                                                        </div>
-                                                        <p className={'text-sm mb-3 ' + ('text-gray-300')}>
-                                                            {comparisonText}
-                                                        </p>
-                                                        {progressScore == null ? (
-                                                            <p className={'text-sm italic text-gray-400'}>
-                                                                {comparableCount === 0
-                                                                    ? (isEn ? 'Not enough data yet to compare' : 'Ainda não há dados suficientes para comparar')
-                                                                    : (isEn ? 'No change larger than 5% between the two periods' : 'Sem mudanças maiores do que 5% entre os dois períodos')}
+                                                        <h3 className={'text-xl font-bold mb-3 text-white'}>
+                                                            {t('patterns.progress.titleCompare', '📈 Este período e o anterior')}
+                                                        </h3>
+                                                        <p className={'text-sm mb-2 text-gray-300'}>{comparisonText}</p>
+                                                        {todayInRecent && (
+                                                            <p className="text-xs mb-2 text-gray-400">
+                                                                {t('patterns.progress.todayNote', 'Hoje ainda vai a meio: fica fora das médias de consumos, mg e autocuidado (conta no sono, humor, energia e emoções).')}
                                                             </p>
-                                                        ) : (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={'flex-1 h-3 rounded-full overflow-hidden ' + ('bg-gray-700')}>
-                                                                <div className={'h-full transition-all duration-500 ' + (progressScore >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : progressScore >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-orange-500 to-red-500')} style={{width: progressScore + '%'}}></div>
-                                                            </div>
-                                                            <span className={'text-xs font-medium ' + ('text-gray-400')}>
-                                                                {t('patterns.progress.metricsImproving', { count: improvements, total: total })}
-                                                            </span>
-                                                        </div>
                                                         )}
+                                                        <p className="text-xs text-gray-400">
+                                                            {comparableCount === 0
+                                                                ? notEnoughTxt
+                                                                : withGoal.length === 0
+                                                                    ? t('patterns.progress.noGoalsNote', 'Nenhuma destas medidas tem uma meta tua: as setas só dizem para que lado mudou, não se é melhor ou pior.')
+                                                                    : t('patterns.progress.goalsNote', 'Com meta tua: {{toward}} de {{total}} mudaram na direção da meta, com uma diferença que se distingue do acaso. As outras setas são só descrição.', { toward: toward.length, total: withGoal.length })}
+                                                        </p>
                                                     </div>
 
                                                     {/* Consumption metrics */}
                                                     {(progressData.frequency || progressData.dosage) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                {t('patterns.progress.consumption')}
-                                                            </h3>
+                                                            <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('patterns.progress.consumption')}</h3>
                                                             <div className="divide-y divide-gray-700">
-                                                                {progressData.frequency && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
-                                                                                {progressData.frequency.label}
-                                                                            </span>
-                                                                            {progressData.frequency.change && progressData.frequency.recent !== progressData.frequency.previous && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (
-                                                                                    progressData.frequency.change.direction !== 'stable'
-                                                                                        ? (progressData.frequency.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')
-                                                                                        : 'bg-gray-700/30 text-gray-400'
-                                                                                )}>
-                                                                                    {progressData.frequency.recent > progressData.frequency.previous ? '↑' : '↓'} {progressData.frequency.change.percent.toFixed(1)}%
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            {recentVal(progressData.frequency.recent, 1, t('patterns.progress.usesPerDay'))}
-                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                {prevVal(progressData.frequency.previous, 1, '')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {progressData.dosage && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
-                                                                                {progressData.dosage.label}
-                                                                            </span>
-                                                                            {progressData.dosage.change && progressData.dosage.recent !== progressData.dosage.previous && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (
-                                                                                    progressData.dosage.change.direction !== 'stable'
-                                                                                        ? (progressData.dosage.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')
-                                                                                        : 'bg-gray-700/30 text-gray-400'
-                                                                                )}>
-                                                                                    {progressData.dosage.recent > progressData.dosage.previous ? '↑' : '↓'} {progressData.dosage.change.percent.toFixed(1)}%
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            {recentVal(progressData.dosage.recent, 0, 'mg/dia')}
-                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                {prevVal(progressData.dosage.previous, 0, ' mg')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+                                                                {progressData.frequency && row(progressData.frequency, 1, t('patterns.progress.usesPerDay'))}
+                                                                {progressData.dosage && row(progressData.dosage, 0, 'mg/dia', ' mg')}
                                                             </div>
                                                         </div>
                                                     )}
@@ -1906,70 +1917,11 @@ export function PatternsView({
                                                     {/* Wellbeing metrics */}
                                                     {(progressData.sleep || progressData.mood || progressData.energy) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                {t('patterns.progress.wellbeing')}
-                                                            </h3>
+                                                            <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('patterns.progress.wellbeing')}</h3>
                                                             <div className="divide-y divide-gray-700">
-                                                                {progressData.sleep && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
-                                                                                {progressData.sleep.label}
-                                                                            </span>
-                                                                            {progressData.sleep.change && progressData.sleep.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.sleep.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
-                                                                                    {progressData.sleep.change.direction === 'up' ? '↑' : '↓'} {progressData.sleep.change.percent.toFixed(0)}%
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            {recentVal(progressData.sleep.recent, 1, t('patterns.progress.hours'))}
-                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                {prevVal(progressData.sleep.previous, 1, 'h')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {progressData.mood && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
-                                                                                {progressData.mood.label}
-                                                                            </span>
-                                                                            {progressData.mood.change && progressData.mood.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.mood.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
-                                                                                    {progressData.mood.change.direction === 'up' ? '↑' : '↓'} {progressData.mood.change.percent.toFixed(0)}%
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            {recentVal(progressData.mood.recent, 1, '/10')}
-                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                {prevVal(progressData.mood.previous, 1, '')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {progressData.energy && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
-                                                                                {progressData.energy.label}
-                                                                            </span>
-                                                                            {progressData.energy.change && progressData.energy.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.energy.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
-                                                                                    {progressData.energy.change.direction === 'up' ? '↑' : '↓'} {progressData.energy.change.percent.toFixed(0)}%
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            {recentVal(progressData.energy.recent, 1, '/10')}
-                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                {prevVal(progressData.energy.previous, 1, '')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+                                                                {progressData.sleep && row(progressData.sleep, 1, t('patterns.progress.hours'), 'h')}
+                                                                {progressData.mood && row(progressData.mood, 1, '/10')}
+                                                                {progressData.energy && row(progressData.energy, 1, '/10')}
                                                             </div>
                                                         </div>
                                                     )}
@@ -1977,202 +1929,119 @@ export function PatternsView({
                                                     {/* Lifestyle metrics */}
                                                     {(progressData.bedtimeConsistency || progressData.avgBedtime || progressData.selfCare) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                {t('patterns.progress.routines')}
-                                                            </h3>
+                                                            <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('patterns.progress.routines')}</h3>
                                                             <div className="divide-y divide-gray-700">
-                                                                {progressData.bedtimeConsistency && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
-                                                                                {progressData.bedtimeConsistency.label}
-                                                                            </span>
-                                                                            {progressData.bedtimeConsistency.change && progressData.bedtimeConsistency.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.bedtimeConsistency.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
-                                                                                    {progressData.bedtimeConsistency.change.isImprovement ? '↓' : '↑'} {progressData.bedtimeConsistency.change.percent.toFixed(0)}%
+                                                                {progressData.bedtimeConsistency && (() => {
+                                                                    const bc = progressData.bedtimeConsistency;
+                                                                    const sdH = bc.recent / 60;
+                                                                    return (
+                                                                        <div className={'py-3'}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <span className={'text-sm font-medium text-gray-300'}>{bc.label}</span>
+                                                                                {badge(bc, bc.change && `${t('patterns.progress.variationShort', 'variação')} ${bc.change.direction === 'up' ? '↑' : '↓'} ${bc.change.percent.toFixed(0)}%`)}
+                                                                            </div>
+                                                                            <div className="flex items-baseline gap-2 mb-1">
+                                                                                <span className={'text-2xl font-bold text-white'}>
+                                                                                    {bc.recent < 30 ? t('patterns.progress.bedtimeConsist.veryConsistent') : bc.recent < 60 ? t('patterns.progress.bedtimeConsist.consistent') : t('patterns.progress.bedtimeConsist.variable')}
                                                                                 </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-baseline gap-2 mb-2">
-                                                                            <span className={'text-2xl font-bold ' + 'text-white'}>
-                                                                                {progressData.bedtimeConsistency.recent < 30 ? t('patterns.progress.bedtimeConsist.veryConsistent') : progressData.bedtimeConsistency.recent < 60 ? t('patterns.progress.bedtimeConsist.consistent') : t('patterns.progress.bedtimeConsist.variable')}
-                                                                            </span>
-                                                                            <span className={'text-xs ml-auto ' + 'text-gray-500'}>
-                                                                                {t('patterns.progress.bedtimeConsist.variation', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(0) })}
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className={'mt-1'}>
-                                                                            <p className={'text-xs italic ' + ('text-gray-400')}>
-                                                                                {progressData.bedtimeConsistency.recent < 30
-                                                                                    ? t('patterns.progress.bedtimeConsist.msgVeryConsistent')
-                                                                                    : progressData.bedtimeConsistency.recent < 60
-                                                                                    ? t('patterns.progress.bedtimeConsist.msgConsistent', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(1) })
-                                                                                    : t('patterns.progress.bedtimeConsist.msgVariable', { val: (progressData.bedtimeConsistency.recent / 60).toFixed(1) })}
+                                                                                <span className={'text-xs ml-auto text-gray-500'}>
+                                                                                    {t('patterns.progress.bedtimeConsist.variation', { val: fmtNum(sdH, 1) })}
+                                                                                </span>
+                                                                            </div>
+                                                                            {/* Só descrição (antes: "Isto é excelente!", "podes melhorar",
+                                                                                "confunde o ritmo circadiano"). */}
+                                                                            <p className={'text-[11px] text-gray-500'}>
+                                                                                {t('patterns.progress.bedtimeConsist.msgNeutral', 'As horas de deitar ficaram, em média, a ±{{val}}h umas das outras ({{n}} noites agora, {{prev}} antes).', { val: fmtNum(sdH, 1), n: bc.nRecent, prev: bc.nPrevious })}
                                                                             </p>
                                                                         </div>
-                                                                    </div>
-                                                                )}
-                                                                {progressData.avgBedtime && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
-                                                                                {progressData.avgBedtime.label}
-                                                                            </span>
-                                                                            {progressData.avgBedtime.change && progressData.avgBedtime.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.avgBedtime.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
-                                                                                    {progressData.avgBedtime.change.direction === 'up' ? t('patterns.progress.avgBedtime.later') : t('patterns.progress.avgBedtime.earlier')}
+                                                                    );
+                                                                })()}
+                                                                {progressData.avgBedtime && (() => {
+                                                                    const ab = progressData.avgBedtime;
+                                                                    // Com meta de deitar: diz-se se a hora média fica dentro dela.
+                                                                    // Sem meta: nada (antes: "Boa janela!", "pode afetar o sono",
+                                                                    // "pode indicar inversão do ciclo").
+                                                                    const inGoal = bedtimeGoal && ab.recentTime ? bedtimeMeetsTarget(ab.recentTime, bedtimeGoal.target) : null;
+                                                                    return (
+                                                                        <div className={'py-3'}>
+                                                                            <div className="flex items-center justify-between mb-2">
+                                                                                <span className={'text-sm font-medium text-gray-300'}>{ab.label}</span>
+                                                                                {badge(ab, ab.change && (ab.change.direction === 'up' ? t('patterns.progress.avgBedtime.later') : t('patterns.progress.avgBedtime.earlier')))}
+                                                                            </div>
+                                                                            <div className="flex items-baseline gap-2">
+                                                                                {ab.recentTime == null
+                                                                                    ? <span className={'text-sm italic text-gray-400'}>{noDataTxt}</span>
+                                                                                    : <span className={'text-2xl font-bold font-mono-theme text-white'}>{ab.recentTime}</span>}
+                                                                                <span className={'text-sm ml-auto text-gray-500'}>
+                                                                                    {ab.previousTime == null ? noPrevTxt : t('patterns.progress.avgBedtime.wasBefore', { time: ab.previousTime })}
                                                                                 </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            {progressData.avgBedtime.recentTime == null
-                                                                                ? <span className={'text-sm italic text-gray-400'}>{noDataTxt}</span>
-                                                                                : <span className={'text-2xl font-bold font-mono-theme ' + 'text-white'}>
-                                                                                    {progressData.avgBedtime.recentTime}
-                                                                                  </span>}
-                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                {progressData.avgBedtime.previousTime == null
-                                                                                    ? noPrevTxt
-                                                                                    : t('patterns.progress.avgBedtime.wasBefore', { time: progressData.avgBedtime.previousTime })}
-                                                                            </span>
-                                                                        </div>
-                                                                        {progressData.avgBedtime.recentTime != null && (() => {
-                                                                            const hour = parseInt(progressData.avgBedtime.recentTime.split(':')[0]);
-                                                                            let feedback = '';
-                                                                            if (hour >= 0 && hour < 6) {
-                                                                                feedback = t('patterns.progress.avgBedtime.lateNight');
-                                                                            } else if (hour >= 22 && hour < 24) {
-                                                                                feedback = t('patterns.progress.avgBedtime.goodWindow');
-                                                                            } else if (hour >= 6 && hour < 12) {
-                                                                                feedback = t('patterns.progress.avgBedtime.morning');
-                                                                            }
-                                                                            return feedback ? (
-                                                                                <div className={'text-xs mt-2 ' + ('text-gray-400')}>
-                                                                                    {feedback}
+                                                                            </div>
+                                                                            {inGoal != null && (
+                                                                                <div className={'text-xs mt-2 ' + (inGoal ? 'text-green-400' : 'text-yellow-400')}>
+                                                                                    {inGoal
+                                                                                        ? t('patterns.progress.avgBedtime.inGoal', 'A hora média fica dentro da tua meta (até às {{target}}).', { target: bedtimeGoal.target })
+                                                                                        : t('patterns.progress.avgBedtime.outGoal', 'A hora média fica depois da tua meta (até às {{target}}).', { target: bedtimeGoal.target })}
                                                                                 </div>
-                                                                            ) : null;
-                                                                        })()}
-                                                                    </div>
-                                                                )}
-                                                                {progressData.selfCare && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center justify-between mb-2">
-                                                                            <span className={'text-sm font-medium ' + ('text-gray-300')}>
-                                                                                {progressData.selfCare.label}
-                                                                            </span>
-                                                                            {progressData.selfCare.change && progressData.selfCare.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-1 rounded-full font-medium ' + (progressData.selfCare.change.isImprovement ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400')}>
-                                                                                    {progressData.selfCare.change.direction === 'up' ? '↑' : '↓'} {progressData.selfCare.change.percent.toFixed(0)}%
-                                                                                </span>
                                                                             )}
+                                                                            {basisLine(ab)}
                                                                         </div>
-                                                                        <div className="flex items-baseline gap-2">
-                                                                            {recentVal(progressData.selfCare.recent, 1, t('patterns.progress.activitiesPerCycle'))}
-                                                                            <span className={'text-sm ml-auto ' + 'text-gray-500'}>
-                                                                                {prevVal(progressData.selfCare.previous, 1, '')}
-                                                                            </span>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+                                                                    );
+                                                                })()}
+                                                                {progressData.selfCare && row(progressData.selfCare, 1, t('patterns.progress.activitiesPerCycle'))}
                                                             </div>
                                                         </div>
                                                     )}
 
-                                                    {/* Emotional metrics */}
+                                                    {/* Emotional metrics — só descrição (seta cinzenta). */}
                                                     {(progressData.negativeEmotions || progressData.positiveEmotions || progressData.topEmotions) && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                {t('patterns.progress.emotional')}
-                                                            </h3>
+                                                            <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('patterns.progress.emotional')}</h3>
                                                             <div className="divide-y divide-gray-700">
-                                                                {progressData.negativeEmotions && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center gap-2 mb-2">
-                                                                            <span className="text-lg">😔</span>
-                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-gray-400'}>
-                                                                                {t('patterns.progress.negEmotions')}
-                                                                            </span>
-                                                                            {progressData.negativeEmotions.change && progressData.negativeEmotions.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.negativeEmotions.change.isImprovement ? ('bg-green-900/50 text-green-300 border border-green-700') : ('bg-red-900/50 text-red-300 border border-red-700'))}>
-                                                                                    {progressData.negativeEmotions.change.direction === 'up' ? '↑' : '↓'}{progressData.negativeEmotions.change.percent.toFixed(0)}%
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-center justify-between">
-                                                                            <div>
-                                                                                <div className="flex items-baseline gap-1">
-                                                                                    <span className={'text-3xl font-black font-mono-theme ' + 'text-white'}>
-                                                                                        {progressData.negativeEmotions.recent == null ? noDataTxt : progressData.negativeEmotions.recent.toFixed(0) + '%'}
-                                                                                    </span>
-                                                                                    <span className={'text-xs font-medium ' + 'text-gray-400'}>
-                                                                                        {t('patterns.progress.ofTotal')}
-                                                                                    </span>
-                                                                                </div>
-                                                                                {progressData.negativeEmotions.recentTotal > 0 && (
-                                                                                <div className={'text-xs mt-1 ' + 'text-gray-400'}>
-                                                                                    {t('patterns.progress.ofEmotions', { count: progressData.negativeEmotions.recentCount, total: progressData.negativeEmotions.recentTotal })}
-                                                                                </div>
-                                                                                )}
+                                                                {[['negativeEmotions', '😔', 'patterns.progress.negEmotions'], ['positiveEmotions', '😊', 'patterns.progress.posEmotions']].map(([key, emoji, titleKey]) => {
+                                                                    const em = progressData[key];
+                                                                    if (!em) return null;
+                                                                    return (
+                                                                        <div key={key} className={'py-3'}>
+                                                                            <div className="flex items-center gap-2 mb-2">
+                                                                                <span className="text-lg">{emoji}</span>
+                                                                                <span className={'text-xs font-semibold uppercase tracking-wide text-gray-400'}>{t(titleKey)}</span>
+                                                                                <span className="ml-auto">{badge(em)}</span>
                                                                             </div>
-                                                                            <div className={'text-xs text-gray-400'}>
-                                                                                {progressData.negativeEmotions.previous == null ? noPrevTxt : t('patterns.progress.wasPercent', { val: progressData.negativeEmotions.previous.toFixed(0) })}
+                                                                            <div className="flex items-center justify-between">
+                                                                                <div>
+                                                                                    <div className="flex items-baseline gap-1">
+                                                                                        <span className={'text-3xl font-black font-mono-theme text-white'}>
+                                                                                            {em.recent == null ? noDataTxt : em.recent.toFixed(0) + '%'}
+                                                                                        </span>
+                                                                                        <span className={'text-xs font-medium text-gray-400'}>{t('patterns.progress.ofTotal')}</span>
+                                                                                    </div>
+                                                                                    {em.recentTotal > 0 && (
+                                                                                        <div className={'text-xs mt-1 text-gray-400'}>
+                                                                                            {t('patterns.progress.ofEmotions', { count: em.recentCount, total: em.recentTotal })}
+                                                                                        </div>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className={'text-xs text-gray-400'}>
+                                                                                    {em.previous == null ? noPrevTxt : t('patterns.progress.wasPercent', { val: em.previous.toFixed(0) })}
+                                                                                </div>
                                                                             </div>
                                                                         </div>
-                                                                    </div>
-                                                                )}
-                                                                {progressData.positiveEmotions && (
-                                                                    <div className={'py-3'}>
-                                                                        <div className="flex items-center gap-2 mb-2">
-                                                                            <span className="text-lg">😊</span>
-                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-green-400'}>
-                                                                                {t('patterns.progress.posEmotions')}
-                                                                            </span>
-                                                                            {progressData.positiveEmotions.change && progressData.positiveEmotions.change.direction !== 'stable' && (
-                                                                                <span className={'text-xs px-2 py-0.5 rounded-full font-bold ml-auto ' + (progressData.positiveEmotions.change.isImprovement ? ('bg-green-900/50 text-green-300 border border-green-700') : ('bg-red-900/50 text-red-300 border border-red-700'))}>
-                                                                                    {progressData.positiveEmotions.change.direction === 'up' ? '↑' : '↓'}{progressData.positiveEmotions.change.percent.toFixed(0)}%
-                                                                                </span>
-                                                                            )}
-                                                                        </div>
-                                                                        <div className="flex items-center justify-between">
-                                                                            <div>
-                                                                                <div className="flex items-baseline gap-1">
-                                                                                    <span className={'text-3xl font-black font-mono-theme ' + 'text-green-400'}>
-                                                                                        {progressData.positiveEmotions.recent == null ? noDataTxt : progressData.positiveEmotions.recent.toFixed(0) + '%'}
-                                                                                    </span>
-                                                                                    <span className={'text-xs font-medium ' + 'text-green-300/70'}>
-                                                                                        {t('patterns.progress.ofTotal')}
-                                                                                    </span>
-                                                                                </div>
-                                                                                {progressData.positiveEmotions.recentTotal > 0 && (
-                                                                                <div className={'text-xs mt-1 ' + 'text-green-400/60'}>
-                                                                                    {t('patterns.progress.ofEmotions', { count: progressData.positiveEmotions.recentCount, total: progressData.positiveEmotions.recentTotal })}
-                                                                                </div>
-                                                                                )}
-                                                                            </div>
-                                                                            <div className={'text-xs text-gray-400'}>
-                                                                                {progressData.positiveEmotions.previous == null ? noPrevTxt : t('patterns.progress.wasPercent', { val: progressData.positiveEmotions.previous.toFixed(0) })}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
+                                                                    );
+                                                                })}
                                                                 {progressData.topEmotions && (
                                                                     <div className={'py-3'}>
                                                                         <div className="flex items-center gap-2 mb-3">
                                                                             <span className="text-lg">🌟</span>
-                                                                            <span className={'text-xs font-semibold uppercase tracking-wide ' + 'text-blue-400'}>
-                                                                                {t('patterns.progress.top3Emotions')}
-                                                                            </span>
+                                                                            <span className={'text-xs font-semibold uppercase tracking-wide text-gray-400'}>{t('patterns.progress.top3Emotions')}</span>
                                                                         </div>
                                                                         <div className="space-y-2">
                                                                             {progressData.topEmotions.map((item, idx) => (
                                                                                 <div key={idx} className="flex items-center justify-between">
                                                                                     <div className="flex items-center gap-2">
-                                                                                        <span className={'text-xs font-bold ' + 'text-blue-400/50'}>#{idx + 1}</span>
-                                                                                        <span className={'text-sm ' + 'text-blue-300'}>{i18n.language === 'en' ? (EMOTION_EN[item.emotion] || item.emotion) : item.emotion}</span>
+                                                                                        <span className={'text-xs font-bold text-gray-500'}>#{idx + 1}</span>
+                                                                                        <span className={'text-sm text-gray-200'}>{i18n.language === 'en' ? (EMOTION_EN[item.emotion] || item.emotion) : item.emotion}</span>
                                                                                     </div>
-                                                                                    <span className={'text-xs px-2 py-0.5 rounded ' + 'bg-gray-800/50 text-gray-400'}>
-                                                                                        {item.count}×
-                                                                                    </span>
+                                                                                    <span className={'text-xs px-2 py-0.5 rounded bg-gray-800/50 text-gray-400'}>{item.count}×</span>
                                                                                 </div>
                                                                             ))}
                                                                         </div>
@@ -2182,56 +2051,33 @@ export function PatternsView({
                                                         </div>
                                                     )}
 
-                                                    {/* Autocuidado Detalhado */}
+                                                    {/* Autocuidado Detalhado — números e barras neutros (não há meta de
+                                                        autocuidado; antes: verde ≥70%, laranja abaixo). */}
                                                     {progressData.selfCareDetailed && (
                                                         <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                            <h3 className={'text-lg font-semibold mb-4 ' + ('text-white')}>
-                                                                {t('patterns.progress.selfCare')}
-                                                            </h3>
-
-                                                            {/* Overall score */}
+                                                            <h3 className={'text-lg font-semibold mb-4 text-white'}>{t('patterns.progress.selfCare')}</h3>
                                                             <div className={'pb-3 mb-3 border-b border-gray-700'}>
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className={'text-sm font-semibold ' + ('text-gray-300')}>
-                                                                        {t('patterns.progress.overallRate')}
-                                                                    </span>
-                                                                    <span className={'text-2xl font-black font-mono-theme ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'text-green-400' : 'text-orange-400')}>
-                                                                        {progressData.selfCareDetailed.recentOverall.toFixed(0)}%
-                                                                    </span>
+                                                                    <span className={'text-sm font-semibold text-gray-300'}>{t('patterns.progress.overallRate')}</span>
+                                                                    <span className={'text-2xl font-black font-mono-theme text-white'}>{progressData.selfCareDetailed.recentOverall.toFixed(0)}%</span>
                                                                 </div>
-                                                                <div className={('bg-gray-700') + ' rounded-full h-3 overflow-hidden'}>
-                                                                    <div
-                                                                        className={'h-full transition-all duration-500 ' + (progressData.selfCareDetailed.recentOverall >= 70 ? 'bg-green-500' : 'bg-orange-500')}
-                                                                        style={{width: `${progressData.selfCareDetailed.recentOverall}%`}}
-                                                                    ></div>
+                                                                <div className={'bg-gray-700 rounded-full h-3 overflow-hidden'}>
+                                                                    <div className={'h-full bg-gray-400 transition-all duration-500'} style={{width: `${progressData.selfCareDetailed.recentOverall}%`}}></div>
                                                                 </div>
-                                                                <div className={'text-xs mt-2 italic ' + ('text-gray-400')}>
-                                                                    {progressData.selfCareDetailed.suggestion}
-                                                                </div>
+                                                                <div className={'text-xs mt-2 text-gray-400'}>{progressData.selfCareDetailed.suggestion}</div>
                                                             </div>
-
-                                                            {/* Complete cycles */}
                                                             <div className={'pb-3 mb-3 border-b border-gray-700'}>
                                                                 <div className="flex items-center justify-between mb-2">
-                                                                    <span className={'text-sm font-semibold ' + ('text-gray-300')}>
-                                                                        {t('patterns.progress.completeCycles')}
-                                                                    </span>
-                                                                    <span className={'text-2xl font-black font-mono-theme ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'text-blue-400' : 'text-orange-400')}>
-                                                                        {progressData.selfCareDetailed.completeCycles.recent.toFixed(0)}%
-                                                                    </span>
+                                                                    <span className={'text-sm font-semibold text-gray-300'}>{t('patterns.progress.completeCycles')}</span>
+                                                                    <span className={'text-2xl font-black font-mono-theme text-white'}>{progressData.selfCareDetailed.completeCycles.recent.toFixed(0)}%</span>
                                                                 </div>
-                                                                <div className={('bg-gray-700') + ' rounded-full h-3 overflow-hidden'}>
-                                                                    <div
-                                                                        className={'h-full transition-all duration-500 ' + (progressData.selfCareDetailed.completeCycles.recent >= 50 ? 'bg-blue-500' : 'bg-orange-500')}
-                                                                        style={{width: `${progressData.selfCareDetailed.completeCycles.recent}%`}}
-                                                                    ></div>
+                                                                <div className={'bg-gray-700 rounded-full h-3 overflow-hidden'}>
+                                                                    <div className={'h-full bg-gray-400 transition-all duration-500'} style={{width: `${progressData.selfCareDetailed.completeCycles.recent}%`}}></div>
                                                                 </div>
-                                                                <div className={'text-xs mt-2 ' + ('text-gray-400')}>
+                                                                <div className={'text-xs mt-2 text-gray-400'}>
                                                                     {t('patterns.progress.completeCyclesDetail', { count: progressData.selfCareDetailed.completeCycles.recentCount, total: progressData.selfCareDetailed.completeCycles.recentTotal })}
                                                                 </div>
                                                             </div>
-
-                                                            {/* Per-area breakdown */}
                                                             <div className="grid grid-cols-2 gap-3">
                                                                 {Object.entries(progressData.selfCareDetailed.areas).map(([areaKey, percent]) => {
                                                                     const areaNames = {
@@ -2245,20 +2091,13 @@ export function PatternsView({
                                                                         <div key={areaKey} className={'py-2'}>
                                                                             <div className="flex items-center gap-2 mb-2">
                                                                                 <span className="text-lg">{area.emoji}</span>
-                                                                                <span className={'text-xs font-medium ' + ('text-gray-300')}>
-                                                                                    {area.name}
-                                                                                </span>
+                                                                                <span className={'text-xs font-medium text-gray-300'}>{area.name}</span>
                                                                             </div>
                                                                             <div className="flex items-baseline gap-1">
-                                                                                <span className={'text-2xl font-bold font-mono-theme ' + (percent >= 70 ? 'text-green-400' : 'text-orange-400')}>
-                                                                                    {percent.toFixed(0)}%
-                                                                                </span>
+                                                                                <span className={'text-2xl font-bold font-mono-theme text-white'}>{percent.toFixed(0)}%</span>
                                                                             </div>
-                                                                            <div className={'bg-gray-600' + ' rounded-full h-1.5 overflow-hidden mt-2'}>
-                                                                                <div
-                                                                                    className={'h-full ' + (percent >= 70 ? 'bg-green-500' : 'bg-orange-500')}
-                                                                                    style={{width: `${percent}%`}}
-                                                                                ></div>
+                                                                            <div className={'bg-gray-600 rounded-full h-1.5 overflow-hidden mt-2'}>
+                                                                                <div className={'h-full bg-gray-400'} style={{width: `${percent}%`}}></div>
                                                                             </div>
                                                                         </div>
                                                                     );
@@ -2267,56 +2106,37 @@ export function PatternsView({
                                                         </div>
                                                     )}
 
-                                                    {/* Summary insights */}
-                                                    <div className={('bg-gray-800/40 border-gray-700') + ' rounded-xl p-6 border'}>
-                                                        <h3 className={'text-lg font-semibold mb-3 ' + ('text-white')}>
-                                                            {t('patterns.progress.summaryTitle')}
-                                                        </h3>
-                                                        <div className={'text-sm leading-relaxed space-y-2 ' + ('text-gray-300')}>
-                                                            {/* Sem percentagem (nada mudou >5%, ou nada comparável) não há
-                                                                frase de juízo: só a descrição neutra. */}
-                                                            {progressScore == null && (
-                                                                <p>{comparableCount === 0
-                                                                    ? (isEn ? 'Not enough data yet to compare' : 'Ainda não há dados suficientes para comparar')
-                                                                    : (isEn ? 'No change larger than 5% between the two periods' : 'Sem mudanças maiores do que 5% entre os dois períodos')}</p>
+                                                    {/* Resumo — sem "Excelente progresso!", "Momento desafiante" nem ⚠️.
+                                                        Listas por ordem FIXA (a das secções acima), nunca pela maior
+                                                        mudança: a maior, com poucos dias, é quase sempre ruído. */}
+                                                    <div className={'bg-gray-800/40 border-gray-700 rounded-xl p-6 border'}>
+                                                        <h3 className={'text-lg font-semibold mb-3 text-white'}>{t('patterns.progress.summaryTitleNeutral', '💡 Resumo')}</h3>
+                                                        <div className={'text-sm leading-relaxed space-y-2 text-gray-300'}>
+                                                            {comparableCount === 0 && <p>{notEnoughTxt}</p>}
+                                                            {comparableCount > 0 && changedNoVerdict.length === 0 && toward.length === 0 && away.length === 0 && (
+                                                                <p>{isEn ? 'No change larger than 5% between the two periods' : 'Sem mudanças maiores do que 5% entre os dois períodos'}</p>
                                                             )}
-                                                            {progressScore != null && progressScore >= 70 && (
-                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.excellent') }} />
-                                                            )}
-                                                            {progressScore != null && progressScore >= 40 && progressScore < 70 && (
-                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.moderate') }} />
-                                                            )}
-                                                            {progressScore != null && progressScore < 40 && (
-                                                                <p dangerouslySetInnerHTML={{ __html: t('patterns.progress.challenging') }} />
-                                                            )}
-                                                            {comparableCount > 0 && (
-                                                            <div className={'mt-3 pt-3 border-t ' + ('border-gray-700')}>
-                                                                <p className="text-xs font-medium mb-1">{t('patterns.progress.improvingAreas')}</p>
-                                                                <ul className="text-xs space-y-1">
-                                                                    {Object.entries(progressData)
-                                                                        .filter(([_, data]) => data.change && data.change.isImprovement && data.change.direction !== 'stable')
-                                                                        .sort((a, b) => b[1].change.percent - a[1].change.percent)
-                                                                        .slice(0, 3)
-                                                                        .map(([key, data], i) => (
-                                                                            <li key={i}>✅ {data.label} ({data.change.direction === 'up' ? '↑' : '↓'}{data.change.percent.toFixed(0)}%)</li>
-                                                                        ))}
-                                                                    {Object.entries(progressData).filter(([_, data]) => data.change && data.change.isImprovement && data.change.direction !== 'stable').length === 0 && (
-                                                                        <li className="text-gray-500 italic">{t('patterns.progress.noImprovement')}</li>
-                                                                    )}
-                                                                </ul>
-                                                            </div>
-                                                            )}
-                                                            {Object.entries(progressData).filter(([_, data]) => data.change && !data.change.isImprovement && data.change.direction !== 'stable' && !data.change.isNew).length > 0 && (
-                                                                <div className={'mt-3 pt-3 border-t ' + ('border-gray-700')}>
-                                                                    <p className="text-xs font-medium mb-1">{t('patterns.progress.attentionAreas')}</p>
+                                                            {toward.length > 0 && (
+                                                                <div>
+                                                                    <p className="text-xs font-medium mb-1">{t('patterns.progress.towardList', 'Na direção das tuas metas:')}</p>
                                                                     <ul className="text-xs space-y-1">
-                                                                        {Object.entries(progressData)
-                                                                            .filter(([_, data]) => data.change && !data.change.isImprovement && data.change.direction !== 'stable' && !data.change.isNew)
-                                                                            .sort((a, b) => b[1].change.percent - a[1].change.percent)
-                                                                            .slice(0, 3)
-                                                                            .map(([key, data], i) => (
-                                                                                <li key={i}>⚠️ {data.label} ({data.change.direction === 'up' ? '↑' : '↓'}{data.change.percent.toFixed(0)}%)</li>
-                                                                            ))}
+                                                                        {toward.map(([key, m]) => <li key={key} className="text-green-400">✓ {m.label} ({m.change.direction === 'up' ? '↑' : '↓'}{m.change.percent.toFixed(0)}%)</li>)}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                            {away.length > 0 && (
+                                                                <div>
+                                                                    <p className="text-xs font-medium mb-1">{t('patterns.progress.awayList', 'No sentido contrário ao das tuas metas:')}</p>
+                                                                    <ul className="text-xs space-y-1">
+                                                                        {away.map(([key, m]) => <li key={key} className="text-yellow-400">{m.label} ({m.change.direction === 'up' ? '↑' : '↓'}{m.change.percent.toFixed(0)}%)</li>)}
+                                                                    </ul>
+                                                                </div>
+                                                            )}
+                                                            {changedNoVerdict.length > 0 && (
+                                                                <div>
+                                                                    <p className="text-xs font-medium mb-1">{t('patterns.progress.changedList', 'Mudaram mais de 5% (só descrição — sem meta, ou a diferença não se distingue do acaso):')}</p>
+                                                                    <ul className="text-xs space-y-1 text-gray-400">
+                                                                        {changedNoVerdict.map(([key, m]) => <li key={key}>{m.label} ({m.change.direction === 'up' ? '↑' : '↓'}{m.change.percent.toFixed(0)}%)</li>)}
                                                                     </ul>
                                                                 </div>
                                                             )}
@@ -2328,9 +2148,21 @@ export function PatternsView({
 
                                         // TEMPORAL
                                         if (patternView === 'temporal') {
-                                            // Calculate byDate for temporal analyses
+                                            // Calculate byDate for temporal analyses (dia LOCAL do registo)
                                             const byDate = {};
                                             filteredConsumptions.forEach(c => { const dk = c.date || safeToISODate(c.timestamp); if (dk) byDate[dk] = (byDate[dk] || 0) + 1; });
+                                            // Em quantos dias se baseiam as contas por hora / parte do dia (totais:
+                                            // aqui hoje entra, com o que já foi registado).
+                                            const nDaysWithUse = Object.keys(byDate).length;
+                                            // Abaixo de uma semana de dias com consumo, as PERCENTAGENS por hora e
+                                            // por parte do dia dizem quase só como correu um ou dois dias: mostram-
+                                            // -se as contagens e a app diz que ainda é cedo para percentagens.
+                                            const PCT_MIN_DAYS = 7;
+                                            const showPct = nDaysWithUse >= PCT_MIN_DAYS;
+                                            const basisTxt = (k) => periodHasToday
+                                                ? t('patterns.temporal.basisToday', '{{k}} consumo(s) em {{n}} dia(s) com consumo (hoje entra com o que já registaste).', { k, n: nDaysWithUse })
+                                                : t('patterns.temporal.basis', '{{k}} consumo(s) em {{n}} dia(s) com consumo.', { k, n: nDaysWithUse });
+                                            const fewPctTxt = t('patterns.temporal.fewPct', 'Percentagens só a partir de {{min}} dias com consumo (há {{n}}).', { min: PCT_MIN_DAYS, n: nDaysWithUse });
 
                                             // Calculate byHour
                                             const byHour = {};
@@ -2349,13 +2181,22 @@ export function PatternsView({
                                                 else byPartOfDay.madrugada++;
                                             });
 
-                                            // Calculate byWeekday
-                                            const byWeekday = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+                                            // DIA DA SEMANA: MÉDIA de consumos por dia, em dias completos (sem hoje)
+                                            // e conhecidos. Antes eram TOTAIS por dia da semana — um mês com 5
+                                            // terças e 4 quartas fazia a terça "subir" sem nada mudar, e hoje (a
+                                            // meio) puxava o seu dia para baixo. O dia com mais/menos só se diz com
+                                            // pelo menos WEEKDAY_MIN_DAYS dias de CADA dia da semana (4 = um mês),
+                                            // como o fator "dia da semana" dos Sinais de hoje.
+                                            const WEEKDAY_MIN_DAYS = 4;
                                             const weekdayNames = t('analyses.dayNames', { returnObjects: true });
-                                            filteredConsumptions.forEach(c => {
-                                                const day = new Date(c.timestamp).getDay();
-                                                byWeekday[day]++;
+                                            const wd = Array.from({ length: 7 }, () => ({ sum: 0, n: 0 }));
+                                            periodDoneDays.forEach(d => {
+                                                const dow = new Date(`${d}T12:00:00`).getDay(); // dia LOCAL
+                                                wd[dow].sum += byDate[d] || 0;
+                                                wd[dow].n++;
                                             });
+                                            const wdMean = wd.map(w => w.n > 0 ? w.sum / w.n : null);
+                                            const minPerWeekday = Math.min(...wd.map(w => w.n));
 
                                             return (
                                         <div className="space-y-4">
@@ -2393,11 +2234,10 @@ export function PatternsView({
                                                                 const blockPercent = totalHour > 0 ? Math.round((blockCount / totalHour) * 100) : 0;
                                                                 const intensity = maxBlockCount > 0 ? (blockCount / maxBlockCount) : 0;
 
-                                                                // Cores por período
                                                                 // Um só roxo, mais vivo = mais consumos (como o mapa de calor). Antes cada
-                                                                    // período tinha a sua cor (laranja, amarelo, azul), que não queria dizer nada.
-                                                                    const colorClass = intensity > 0.1 ? '' : 'bg-gray-700';
-                                                                    const barBg = intensity > 0.7 ? '#7c3aed' : intensity > 0.4 ? '#7c3aeda0' : intensity > 0.1 ? '#7c3aed70' : undefined;
+                                                                // período tinha a sua cor (laranja, amarelo, azul), que não queria dizer nada.
+                                                                const colorClass = intensity > 0.1 ? '' : 'bg-gray-700';
+                                                                const barBg = intensity > 0.7 ? '#7c3aed' : intensity > 0.4 ? '#7c3aeda0' : intensity > 0.1 ? '#7c3aed70' : undefined;
 
                                                                 return (
                                                                     <div key={block.range} className="flex items-center gap-3">
@@ -2412,7 +2252,7 @@ export function PatternsView({
                                                                                 <div className={colorClass + ' h-full flex items-center px-4 text-white text-sm font-bold font-mono-theme transition-all duration-300'} style={{width: Math.max(intensity * 100, blockCount > 0 ? 8 : 0) + '%', background: barBg}}>
                                                                                     {blockCount > 0 && (
                                                                                         <span className="whitespace-nowrap">
-                                                                                            {blockCount}x {blockPercent > 0 && `· ${blockPercent}%`}
+                                                                                            {blockCount}x {showPct && blockPercent > 0 && `· ${blockPercent}%`}
                                                                                         </span>
                                                                                     )}
                                                                                 </div>
@@ -2422,9 +2262,10 @@ export function PatternsView({
                                                                 );
                                                             })}
 
-                                                            {/* Legenda */}
-                                                            <div className={'text-xs mt-4 pt-3 border-t flex items-center justify-center gap-4 ' + 'text-gray-400 border-gray-700'}>
-                                                                <span>{t('patterns.freq.intensityLegend')}</span>
+                                                            {/* Legenda + em quantos dias se baseia */}
+                                                            <div className={'text-xs mt-4 pt-3 border-t text-center space-y-1 ' + 'text-gray-400 border-gray-700'}>
+                                                                <div>{t('patterns.freq.intensityLegend')}</div>
+                                                                <div className="text-gray-500">{basisTxt(totalHour)}{!showPct && ` ${fewPctTxt}`}</div>
                                                             </div>
                                                         </div>
                                                     );
@@ -2438,183 +2279,177 @@ export function PatternsView({
                                                     const total = byPartOfDay.manha + byPartOfDay.tarde + byPartOfDay.noite + byPartOfDay.madrugada;
                                                     if (total === 0) return <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>{t('patterns.temporal.noData')}</div>;
 
-                                                    const manhaPercent = Math.round((byPartOfDay.manha / total) * 100);
-                                                    const tardePercent = Math.round((byPartOfDay.tarde / total) * 100);
-                                                    const noitePercent = Math.round((byPartOfDay.noite / total) * 100);
-                                                    const madrugadaPercent = Math.round((byPartOfDay.madrugada / total) * 100);
-
+                                                    const cells = [
+                                                        ['manha', '🌅', '6h-12h'],
+                                                        ['tarde', '☀️', '12h-18h'],
+                                                        ['noite', '🌙', '18h-24h'],
+                                                        ['madrugada', '⭐', '0h-6h'],
+                                                    ];
                                                     return (
-                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-y-3 divide-x divide-gray-700 border-y border-gray-700 py-3">
-                                                            <div className="px-2 text-center">
-                                                                <div className="text-2xl mb-2">🌅</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.manha')}</div>
-                                                                <div className={'text-xs mb-2 ' + 'text-gray-500'}>6h-12h</div>
-                                                                <div className={'text-xl font-bold font-mono-theme ' + 'text-white'}>{manhaPercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.manha}x</div>
+                                                        <>
+                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-3 divide-x divide-gray-700 border-y border-gray-700 py-3">
+                                                                {cells.map(([key, icon, hours]) => (
+                                                                    <div key={key} className="px-2 text-center">
+                                                                        <div className="text-2xl mb-2">{icon}</div>
+                                                                        <div className={'text-xs mb-1 text-gray-300'}>{t('patterns.temporal.' + key)}</div>
+                                                                        <div className={'text-xs mb-2 text-gray-500'}>{hours}</div>
+                                                                        {/* Com poucos dias: a contagem em grande, sem percentagem. */}
+                                                                        <div className={'text-xl font-bold font-mono-theme text-white'}>
+                                                                            {showPct ? `${Math.round((byPartOfDay[key] / total) * 100)}%` : `${byPartOfDay[key]}x`}
+                                                                        </div>
+                                                                        {showPct && <div className={'text-xs mt-1 text-gray-400'}>{byPartOfDay[key]}x</div>}
+                                                                    </div>
+                                                                ))}
                                                             </div>
-                                                            <div className="px-2 text-center">
-                                                                <div className="text-2xl mb-2">☀️</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.tarde')}</div>
-                                                                <div className={'text-xs mb-2 ' + 'text-gray-500'}>12h-18h</div>
-                                                                <div className={'text-xl font-bold font-mono-theme ' + 'text-white'}>{tardePercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.tarde}x</div>
-                                                            </div>
-                                                            <div className="px-2 text-center">
-                                                                <div className="text-2xl mb-2">🌙</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.noite')}</div>
-                                                                <div className={'text-xs mb-2 ' + 'text-gray-500'}>18h-24h</div>
-                                                                <div className={'text-xl font-bold font-mono-theme ' + ('text-white')}>{noitePercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.noite}x</div>
-                                                            </div>
-                                                            <div className="px-2 text-center">
-                                                                <div className="text-2xl mb-2">⭐</div>
-                                                                <div className={'text-xs mb-1 ' + ('text-gray-300')}>{t('patterns.temporal.madrugada')}</div>
-                                                                <div className={'text-xs mb-2 ' + 'text-gray-500'}>0h-6h</div>
-                                                                <div className={'text-xl font-bold font-mono-theme ' + 'text-white'}>{madrugadaPercent}%</div>
-                                                                <div className={'text-xs mt-1 ' + ('text-gray-400')}>{byPartOfDay.madrugada}x</div>
-                                                            </div>
-                                                        </div>
+                                                            <p className="text-xs mt-3 text-center text-gray-500">{basisTxt(total)}{!showPct && ` ${fewPctTxt}`}</p>
+                                                        </>
                                                     );
                                                 })()}
                                             </div>
 
-                                            {/* Por dia da semana */}
+                                            {/* Por dia da semana — média por dia, em dias completos */}
                                             <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
-                                                <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.temporal.byWeekday')}</h3>
+                                                <h3 className={'font-semibold mb-1 text-white'}>{t('patterns.temporal.byWeekday')}</h3>
+                                                <p className="text-xs mb-4 text-gray-400">
+                                                    {periodDoneDays.length > 0
+                                                        ? t('patterns.temporal.weekdayDesc', 'Média de consumos por dia, em {{n}} dias completos (hoje fica de fora: ainda vai a meio).', { n: periodDoneDays.length })
+                                                        : periodHasToday ? t('patterns.progress.todayHalf', 'hoje ainda vai a meio') : t('patterns.temporal.noData')}
+                                                </p>
                                                 <div className="space-y-3">
-                                                    {Object.values(byWeekday).every(v => v === 0) ? (
-                                                        <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>{t('patterns.temporal.noData')}</div>
+                                                    {periodDoneDays.length === 0 ? (
+                                                        <div className={'text-center py-4 text-sm text-gray-400'}>{t('patterns.temporal.noData')}</div>
                                                     ) : (() => {
-                                                        const totalWeekday = Object.values(byWeekday).reduce((a, b) => a + b, 0);
-                                                        const weekdayEntries = Object.entries(byWeekday).filter(([_, count]) => count > 0);
-                                                        const maxEntry = weekdayEntries.reduce((max, [day, count]) => count > max[1] ? [day, count] : max, ['0', 0]);
-                                                        const minEntry = weekdayEntries.reduce((min, [day, count]) => count < min[1] ? [day, count] : min, [maxEntry[0], maxEntry[1]]);
-
+                                                        const present = wdMean.map((m, i) => [i, m]).filter(([, m]) => m != null);
+                                                        const topMean = Math.max(...present.map(([, m]) => m), 0);
+                                                        // O mais alto e o mais baixo só com dias suficientes de CADA dia da semana.
+                                                        const canRank = minPerWeekday >= WEEKDAY_MIN_DAYS && topMean > 0;
+                                                        const maxDow = canRank ? present.reduce((a, b) => b[1] > a[1] ? b : a)[0] : null;
+                                                        const minDow = canRank ? present.reduce((a, b) => b[1] < a[1] ? b : a)[0] : null;
                                                         return (
                                                             <>
-                                                                {Object.entries(byWeekday).map(([day, count]) => {
-                                                                    const percent = totalWeekday > 0 ? Math.round((count / totalWeekday) * 100) : 0;
-                                                                    const isMax = day === maxEntry[0] && count > 0;
-                                                                    const isMin = day === minEntry[0] && weekdayEntries.length > 1 && count > 0;
-
+                                                                {wd.map((w, day) => {
+                                                                    const mean = wdMean[day];
+                                                                    const isMax = day === maxDow;
+                                                                    const isMin = day === minDow && maxDow !== minDow;
                                                                     return (
                                                                         <div key={day} className="flex items-center gap-2">
-                                                                            <div className={'text-xs w-10 font-medium flex items-center gap-1 ' + 'text-gray-300'}>
-                                                                                {weekdayNames[parseInt(day)]}
-                                                                                {isMax && <span title="Dia com mais consumo">↑</span>}
-                                                                                {isMin && <span title="Dia com menos consumo">↓</span>}
+                                                                            <div className={'text-xs w-10 font-medium flex items-center gap-1 text-gray-300'}>
+                                                                                {weekdayNames[day]}
+                                                                                {isMax && <span>↑</span>}
+                                                                                {isMin && <span>↓</span>}
                                                                             </div>
-                                                                            <div className={'flex-1 rounded-full h-7 overflow-hidden ' + ('bg-gray-700')}>
+                                                                            <div className={'flex-1 rounded-full h-7 overflow-hidden bg-gray-700'}>
                                                                                 {/* Sem vermelho no dia de mais consumo nem verde no de menos: sem meta, a app
-                                                                                    não diz qual é o bom. Um só roxo (como o mapa de calor); o mais alto e o
-                                                                                    mais baixo marcam-se com ↑/↓ ao lado do nome do dia. */}
-                                                                                <div
-                                                                                    className="h-full flex items-center justify-between px-3 text-white text-xs font-medium transition-all"
-                                                                                style={{width: Math.min(100, (count / Math.max(...Object.values(byWeekday))) * 100) + '%', background: isMax ? '#7c3aed' : isMin ? '#7c3aed70' : '#7c3aeda0'}}
-                                                                                >
-                                                                                    <span>{count}x</span>
-                                                                                    <span>{percent}%</span>
-                                                                                </div>
+                                                                                    não diz qual é o bom. Um só roxo (como o mapa de calor). */}
+                                                                                {mean != null && (
+                                                                                    <div
+                                                                                        className="h-full flex items-center justify-between px-3 text-white text-xs font-medium font-mono-theme transition-all"
+                                                                                        style={{ width: Math.max(18, topMean > 0 ? (mean / topMean) * 100 : 0) + '%', background: isMax ? '#7c3aed' : isMin ? '#7c3aed70' : '#7c3aeda0' }}
+                                                                                    >
+                                                                                        <span>{fmtNum(mean, 1)}</span>
+                                                                                        <span className="text-white/70">{t('patterns.temporal.nDaysShort', '{{n}}d', { n: w.n })}</span>
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
                                                                         </div>
                                                                     );
                                                                 })}
 
-                                                                {/* Padrão Semanal */}
-                                                                {weekdayEntries.length > 1 && (
-                                                                    <div className={'mt-4 pt-3 border-t text-xs ' + ('border-gray-700 text-gray-400')}>
-                                                                        <span className={'font-semibold ' + 'text-white'}>↑ {weekdayNames[parseInt(maxEntry[0])]}</span>: {i18n.language === 'en' ? `highest-use day (${maxEntry[1]}x, ${Math.round((maxEntry[1] / totalWeekday) * 100)}%)` : `dia com mais consumo (${maxEntry[1]}x, ${Math.round((maxEntry[1] / totalWeekday) * 100)}%)`}
-                                                                        {' • '}
-                                                                        <span className={'font-semibold ' + 'text-white'}>↓ {weekdayNames[parseInt(minEntry[0])]}</span>: {i18n.language === 'en' ? `lowest-use day (${minEntry[1]}x, ${Math.round((minEntry[1] / totalWeekday) * 100)}%)` : `dia com menos consumo (${minEntry[1]}x, ${Math.round((minEntry[1] / totalWeekday) * 100)}%)`}
-                                                                    </div>
-                                                                )}
+                                                                <div className={'mt-4 pt-3 border-t text-xs border-gray-700 text-gray-400'}>
+                                                                    {canRank ? (
+                                                                        <>
+                                                                            <span className={'font-semibold text-white'}>↑ {weekdayNames[maxDow]}</span>: {t('patterns.temporal.weekdayHigh', 'média mais alta ({{v}}/dia em {{n}} dias)', { v: fmtNum(wdMean[maxDow], 1), n: wd[maxDow].n })}
+                                                                            {maxDow !== minDow && <>{' • '}<span className={'font-semibold text-white'}>↓ {weekdayNames[minDow]}</span>: {t('patterns.temporal.weekdayLow', 'média mais baixa ({{v}}/dia em {{n}} dias)', { v: fmtNum(wdMean[minDow], 1), n: wd[minDow].n })}</>}
+                                                                            <span className="block mt-1 text-gray-500">{t('patterns.temporal.weekdayCaveat', 'Com 7 dias para comparar, há sempre um mais alto e um mais baixo, mesmo só por acaso.')}</span>
+                                                                        </>
+                                                                    ) : (
+                                                                        t('patterns.temporal.weekdayFew', 'Para dizer qual o dia da semana com mais ou menos consumos são precisos pelo menos {{min}} dias completos de cada dia da semana — o que tem menos tem {{n}}.', { min: WEEKDAY_MIN_DAYS, n: minPerWeekday })
+                                                                    )}
+                                                                </div>
                                                             </>
                                                         );
                                                     })()}
                                                 </div>
                                             </div>
 
-                                            {/* 📆 CICLO MENSUAL */}
+                                            {/* 📆 CICLO MENSAL */}
                                             {Object.keys(byDate).length >= 15 && (() => {
+                                                // Dias completos e conhecidos (um dia conhecido sem consumos é 0;
+                                                // antes só entravam dias com consumo, e o dia do mês lia-se com
+                                                // new Date('YYYY-MM-DD'), meia-noite UTC — noutros fusos dava o
+                                                // dia anterior).
+                                                // Limiar: MONTHLY_MIN_DAYS = 56 dias (≈ 2 meses, para cada dia do mês
+                                                // aparecer pelo menos ~2 vezes). Abaixo disso, a app diz que não sabe.
+                                                const MONTHLY_MIN_DAYS = 56;
+                                                const days = periodDoneDays;
+                                                if (days.length < MONTHLY_MIN_DAYS) {
+                                                    return (
+                                                        <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
+                                                            <h3 className={'font-semibold mb-2 text-white'}>{t('patterns.structural.monthlyCycle')}</h3>
+                                                            <p className="text-sm text-gray-400">{t('patterns.structural.monthlyFew', 'Ainda há poucos dias para isto — há {{n}} dias completos; são precisos {{min}} (cerca de 2 meses).', { n: days.length, min: MONTHLY_MIN_DAYS })}</p>
+                                                        </div>
+                                                    );
+                                                }
+                                                const domOf = (d) => new Date(`${d}T12:00:00`).getDate();
                                                 const dayOfMonthData = {};
-                                                for (let i = 1; i <= 31; i++) dayOfMonthData[i] = [];
-                                                Object.entries(byDate).forEach(([date, count]) => {
-                                                    dayOfMonthData[new Date(date).getDate()].push(count);
-                                                });
-                                                const dayOfMonthAverages = {};
-                                                Object.entries(dayOfMonthData).forEach(([day, counts]) => {
-                                                    if (counts.length > 0) dayOfMonthAverages[day] = counts.reduce((sum, c) => sum + c, 0) / counts.length;
-                                                });
-                                                const sortedDays = Object.entries(dayOfMonthAverages).filter(([_, avg]) => avg > 0).sort(([,a], [,b]) => b - a);
-                                                if (sortedDays.length < 5) return null;
+                                                days.forEach(d => { (dayOfMonthData[domOf(d)] = dayOfMonthData[domOf(d)] || []).push(byDate[d] || 0); });
+                                                const dayOfMonthAverages = Object.entries(dayOfMonthData).map(([day, counts]) => [day, counts.reduce((s, c) => s + c, 0) / counts.length, counts.length]);
+                                                // Ordenados pela média só para escolher os 5 de cima/baixo (é uma lista de
+                                                // dias, não de relações); cada um diz em quantos meses se baseia.
+                                                const sortedDays = dayOfMonthAverages.sort((a, b) => b[1] - a[1]);
+                                                const maxAvg = sortedDays[0][1] || 1;
 
-                                                const days2025 = sortedDays.filter(([day]) => parseInt(day) >= 20 && parseInt(day) <= 25);
-                                                const avgDays2025 = days2025.length > 0 ? days2025.reduce((sum, [_, avg]) => sum + avg, 0) / days2025.length : 0;
-                                                const overallAvg = sortedDays.reduce((sum, [_, avg]) => sum + avg, 0) / sortedDays.length;
-                                                const hasPeak2025 = avgDays2025 > overallAvg * 1.2;
-                                                const maxDay = sortedDays[0];
-                                                const minDay = sortedDays[sortedDays.length - 1];
+                                                // Dias 20–25 vs os outros: série de dias por ordem de data, teste por
+                                                // deslocamento (spearmanPermutation entre "é dia 20–25" e os consumos).
+                                                // Antes bastava a média ser 20% maior para dizer "Padrão detetado".
+                                                const inPeak = days.map(d => { const n = domOf(d); return n >= 20 && n <= 25 ? 1 : 0; });
+                                                const counts = days.map(d => byDate[d] || 0);
+                                                const nPeak = inPeak.reduce((a, b) => a + b, 0);
+                                                const mean = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
+                                                const avgPeak = mean(counts.filter((_, i) => inPeak[i]));
+                                                const avgRest = mean(counts.filter((_, i) => !inPeak[i]));
+                                                const PEAK_MIN_DAYS = 10;
+                                                const peakTest = nPeak >= PEAK_MIN_DAYS && days.length - nPeak >= PEAK_MIN_DAYS ? spearmanPermutation(inPeak, counts) : null;
+                                                const peakSig = peakTest?.rho != null && Number(peakTest.p.toFixed(3)) < 0.05;
+
+                                                const bar = (day, avg, nMonths) => (
+                                                    <div key={day} className="flex items-center gap-2">
+                                                        <div className={'text-xs w-12 font-medium text-right text-gray-300'}>{t('patterns.structural.day', { n: day })}</div>
+                                                        <div className={'flex-1 rounded-full h-6 overflow-hidden bg-gray-700'}>
+                                                            <div className="h-full flex items-center justify-between px-2 text-white text-xs font-medium font-mono-theme transition-all" style={{ width: `${Math.max(20, (avg / maxAvg) * 100)}%`, background: '#7c3aeda0' }}>
+                                                                <span>{fmtNum(avg, 1)}</span>
+                                                                <span className="text-white/70">×{nMonths}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
 
                                                 return (
                                                     <div className="bg-gray-800 border-gray-700 rounded-xl p-6 border">
-                                                        <h3 className={'font-semibold mb-3 ' + ('text-white')}>{t('patterns.structural.monthlyCycle')}</h3>
-
+                                                        <h3 className={'font-semibold mb-1 text-white'}>{t('patterns.structural.monthlyCycle')}</h3>
+                                                        <p className="text-xs mb-3 text-gray-400">{t('patterns.structural.monthlyDesc', 'Média de consumos por dia, para cada dia do mês, em {{n}} dias completos. "×2" = esse dia do mês apareceu 2 vezes.', { n: days.length })}</p>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                                            {/* Top 5 dias com MAIS consumo */}
                                                             <div className="space-y-2">
-                                                                <div className={'text-xs font-semibold mb-2 ' + 'text-white'}>↑ {t('patterns.structural.moreConsumption')}</div>
-                                                                {sortedDays.slice(0, 5).map(([day, avg]) => {
-                                                                    const dayNum = parseInt(day);
-                                                                    const maxAvg = parseFloat(sortedDays[0][1]);
-                                                                    const widthPercent = (avg / maxAvg) * 100;
-                                                                    const isPeak = dayNum >= 20 && dayNum <= 25 && hasPeak2025;
-                                                                    return (
-                                                                        <div key={day} className="flex items-center gap-2">
-                                                                            <div className={'text-xs w-12 font-medium text-right ' + 'text-gray-300'}>{t('patterns.structural.day', { n: day })}</div>
-                                                                            <div className={'flex-1 rounded-full h-6 overflow-hidden ' + ('bg-gray-700')}>
-                                                                                <div
-                                                                                    className="h-full flex items-center justify-between px-2 text-white text-xs font-medium font-mono-theme transition-all"
-                                                                                    style={{width: `${widthPercent}%`, background: '#7c3aeda0'}}
-                                                                                >
-                                                                                    <span>{avg.toFixed(1)}</span>
-                                                                                    {isPeak && <span>🔥</span>}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
+                                                                <div className={'text-xs font-semibold mb-2 text-white'}>↑ {t('patterns.structural.moreConsumption')}</div>
+                                                                {sortedDays.slice(0, 5).map(([day, avg, n]) => bar(day, avg, n))}
                                                             </div>
-
-                                                            {/* Top 5 dias com MENOS consumo */}
                                                             <div className="space-y-2">
-                                                                <div className={'text-xs font-semibold mb-2 ' + 'text-white'}>↓ {t('patterns.structural.lessConsumption')}</div>
-                                                                {sortedDays.slice(-5).reverse().map(([day, avg]) => {
-                                                                    const minAvg = parseFloat(sortedDays[sortedDays.length - 1][1]);
-                                                                    const maxAvg = parseFloat(sortedDays[0][1]);
-                                                                    const widthPercent = (avg / maxAvg) * 100;
-                                                                    return (
-                                                                        <div key={day} className="flex items-center gap-2">
-                                                                            <div className={'text-xs w-12 font-medium text-right ' + 'text-gray-300'}>{t('patterns.structural.day', { n: day })}</div>
-                                                                            <div className={'flex-1 rounded-full h-6 overflow-hidden ' + ('bg-gray-700')}>
-                                                                                <div
-                                                                                    className="h-full flex items-center justify-between px-2 text-white text-xs font-medium font-mono-theme transition-all"
-                                                                                    style={{width: `${widthPercent}%`, background: '#7c3aeda0'}}
-                                                                                >
-                                                                                    <span>{avg.toFixed(1)}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                })}
+                                                                <div className={'text-xs font-semibold mb-2 text-white'}>↓ {t('patterns.structural.lessConsumption')}</div>
+                                                                {sortedDays.slice(-5).reverse().map(([day, avg, n]) => bar(day, avg, n))}
                                                             </div>
                                                         </div>
-
-                                                        {/* Resumo interpretativo */}
-                                                        {hasPeak2025 && (
-                                                            <div className={'pt-3 border-t text-sm ' + ('border-gray-700 text-gray-300')}>
-                                                                🔍 <span className={'font-semibold ' + 'text-orange-400'}>{t('patterns.structural.patternDetectedLabel')}</span> {t('patterns.structural.peakSummaryRest', { avg: avgDays2025.toFixed(1), overall: overallAvg.toFixed(1) })}
-                                                            </div>
-                                                        )}
+                                                        {/* Dias 20–25: só se afirma "mais alto" se se distinguir do acaso. */}
+                                                        <div className={'pt-3 border-t text-xs border-gray-700 text-gray-400'}>
+                                                            {!peakTest
+                                                                ? t('patterns.structural.peakFew', 'Dias 20–25 vs o resto do mês: são precisos pelo menos {{min}} dias de cada lado (há {{a}} e {{b}}).', { min: PEAK_MIN_DAYS, a: nPeak, b: days.length - nPeak })
+                                                                : peakTest.rho == null
+                                                                    ? t('patterns.structural.peakFlat', 'Dias 20–25 vs o resto do mês: os valores não variam, não há nada a comparar.')
+                                                                    : peakSig
+                                                                        ? t(peakTest.rho > 0 ? 'patterns.structural.peakSigHigh' : 'patterns.structural.peakSigLow', peakTest.rho > 0
+                                                                            ? 'Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais alto, e a diferença distingue-se do acaso ({{n}} dias, {{p}}).'
+                                                                            : 'Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais baixo, e a diferença distingue-se do acaso ({{n}} dias, {{p}}).', { a: fmtNum(avgPeak, 1), b: fmtNum(avgRest, 1), n: days.length, p: fmtP(peakTest) })
+                                                                        : t('patterns.structural.peakChance', 'Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — a diferença não se distingue do acaso ({{n}} dias, {{p}}).', { a: fmtNum(avgPeak, 1), b: fmtNum(avgRest, 1), n: days.length, p: fmtP(peakTest) })}
+                                                        </div>
                                                     </div>
                                                 );
                                             })()}
@@ -2638,11 +2473,19 @@ export function PatternsView({
                                                 intervals.push({ hours: (t1 - t0) / 3600000, date: sorted[i].date });
                                             }
 
+                                            // mg por dia SEM HOJE: o mg de hoje (à mão ou da balança) pode ser só o que
+                                            // já se usou até agora, e puxava as médias, os mínimos e as tendências
+                                            // para baixo. Os outros dias ficam todos (só dias com medição real).
+                                            const doneMgDays = periodMgDays.filter(r => r.date !== todayKeyP);
+                                            const mgTodayLeftOut = doneMgDays.length !== periodMgDays.length;
+                                            const mgTodayNote = mgTodayLeftOut ? t('patterns.structural.mgNoToday', 'Hoje fica de fora: ainda vai a meio.') : null;
+
                                             return (
                                                 <div className="space-y-4">
+                                                    {atypicalBanner}
                                                     {/* 📊 DOSAGEM SEMANAL */}
                                                     {(() => {
-                                                        if (periodMgDays.length < 7) return null;
+                                                        if (doneMgDays.length < 7) return null;
                                                         // Semana ISO de um dia 'YYYY-MM-DD', lido ao MEIO-DIA local (new Date('YYYY-MM-DD')
                                                         // é meia-noite UTC: em fusos atrás de UTC caía no dia anterior).
                                                         const getISOWeek = (dateKey) => {
@@ -2654,14 +2497,15 @@ export function PatternsView({
                                                             return `${d.getFullYear()}-W${String(weekNo).padStart(2, '0')}`;
                                                         };
                                                         const weeklyData = {};
-                                                        periodMgDays.forEach(log => {
+                                                        doneMgDays.forEach(log => {
                                                             const mg = parseFloat(log.mg);
                                                             if (!mg || mg <= 0) return;
                                                             const logDate = log.date || safeToISODate(log.timestamp);
                                                             const week = getISOWeek(logDate);
-                                                            if (!weeklyData[week]) weeklyData[week] = { week, totalMg: 0, days: 0 };
+                                                            if (!weeklyData[week]) weeklyData[week] = { week, totalMg: 0, days: 0, vals: [] };
                                                             weeklyData[week].totalMg += mg;
                                                             weeklyData[week].days++;
+                                                            weeklyData[week].vals.push({ date: logDate, mg });
                                                         });
                                                         // Por semana: mg POR DIA MEDIDO (total ÷ dias com medição). Antes somava a
                                                         // semana, e uma semana com 2 dias medidos parecia "menos" do que uma com 7.
@@ -2683,10 +2527,13 @@ export function PatternsView({
                                                         const avgOld = perMeasuredDay(oldWeeks);
                                                         // Sem semanas mais antigas não há tendência: null (não "Estável 0%").
                                                         const trendPct = (avgRecent != null && avgOld != null && avgOld > 0) ? ((avgRecent - avgOld) / avgOld * 100) : null;
-                                                        let trendKey = 'stable', trendIcon = '➡️';
-                                                        if (trendPct != null && trendPct > 15) { trendKey = 'increasing'; trendIcon = '📈'; }
-                                                        else if (trendPct != null && trendPct < -15) { trendKey = 'decreasing'; trendIcon = '📉'; }
-                                                        const trendLabel = t('patterns.structural.' + (trendKey === 'increasing' ? 'increasingTrend' : trendKey === 'decreasing' ? 'decreasingTrend' : 'stableTrend'));
+                                                        // A seta 📈/📉 só aparece se a diferença entre os dias medidos das
+                                                        // semanas antigas e das 4 recentes se distinguir do acaso (windowTest,
+                                                        // por deslocamento). Antes bastavam ±15%.
+                                                        const daysOf = (weeks) => weeks.flatMap(w => w.vals).sort((a, b) => a.date.localeCompare(b.date)).map(v => v.mg);
+                                                        const weeksTest = trendPct != null ? windowTest(daysOf(oldWeeks), daysOf(recentWeeks)) : null;
+                                                        const weeksSig = weeksTest?.status === 'tested' && weeksTest.sig && (weeksTest.rho > 0) === (trendPct > 0);
+                                                        const trendIcon = !weeksSig ? '' : trendPct > 0 ? '📈' : '📉';
                                                         const weekPrefix = i18n.language === 'pt' ? 'S' : 'W';
                                                         const chartData = sortedWeeks.slice(-12).map(w => ({ week: w.week.replace(/^\d{4}-W/, weekPrefix), dosagem: Math.round(w.avgMg), days: w.days, current: w.week === currentWeek }));
                                                         const avgWeekly = perMeasuredDay(sortedWeeks).toFixed(0);
@@ -2706,8 +2553,9 @@ export function PatternsView({
                                                                         <div className="text-xl font-bold font-mono-theme flex items-center justify-center gap-1 text-white">
                                                                             {trendPct == null
                                                                                 ? <span className="text-xs font-normal">{i18n.language === 'en' ? 'no older weeks to compare' : 'sem semanas anteriores para comparar'}</span>
-                                                                                : <><span>{trendIcon}</span><span className="text-sm">{trendPct.toFixed(0)}%</span></>}
+                                                                                : <>{trendIcon && <span>{trendIcon}</span>}<span className="text-sm">{trendPct > 0 ? '+' : ''}{fmtNum(trendPct, 0)}%</span></>}
                                                                         </div>
+                                                                        {weeksTest && <div className="text-[10px] leading-tight mt-1 text-gray-500">{windowTestLine(weeksTest)}</div>}
                                                                     </div>
                                                                 </div>
                                                                 <div style={{ width: '100%', height: 200 }}>
@@ -2721,7 +2569,7 @@ export function PatternsView({
                                                                         </BarChart>
                                                                     </ResponsiveContainer>
                                                                 </div>
-                                                                <p className={'text-xs italic mt-2 text-center ' + ('text-gray-400')}>{t('patterns.structural.lastNWeeks', { n: Math.min(12, sortedWeeks.length) })}</p>
+                                                                <p className={'text-xs italic mt-2 text-center ' + ('text-gray-400')}>{t('patterns.structural.lastNWeeks', { n: Math.min(12, sortedWeeks.length) })}{mgTodayNote && ` · ${mgTodayNote}`}</p>
                                                                 {completeWeeks.length >= 2 && (() => {
                                                                     // 1.ª e última semana COMPLETAS, em mg por dia medido (a semana em
                                                                     // curso fica de fora: ainda não acabou).
@@ -2730,15 +2578,20 @@ export function PatternsView({
                                                                     const change = lastWeek.avgMg - firstWeek.avgMg;
                                                                     const changePct = (change / firstWeek.avgMg * 100);
                                                                     if (Math.abs(changePct) < 5) return null;
+                                                                    // Só descrição, com os dias medidos de cada semana (antes: "Bom
+                                                                    // progresso!" a descer e "Possível tolerância?" a subir — juízo e
+                                                                    // causa que os números não dizem). Duas semanas soltas, com poucos
+                                                                    // dias medidos, não chegam: pelo menos 3 em cada uma.
+                                                                    if (firstWeek.days < 3 || lastWeek.days < 3) return null;
+                                                                    const vals = { first: firstWeek.avgMg.toFixed(0), last: lastWeek.avgMg.toFixed(0), pct: Math.abs(changePct).toFixed(0), a: firstWeek.days, b: lastWeek.days };
                                                                     return (
                                                                         <div className={'mt-3 pt-3 border-t text-sm ' + ('border-gray-700')}>
                                                                             <p className={'text-gray-300'}>
-                                                                                {change > 0 ? (
-                                                                                <>{t('patterns.structural.dosageRose', { first: firstWeek.avgMg.toFixed(0), last: lastWeek.avgMg.toFixed(0), pct: Math.abs(changePct).toFixed(0) })}{changePct > 30 && <span className={'ml-1 font-semibold ' + 'text-yellow-400'}>{t('patterns.structural.possibleTolerance')}</span>}</>
-                                                                            ) : (
-                                                                                <>{t('patterns.structural.dosageDropped', { first: firstWeek.avgMg.toFixed(0), last: lastWeek.avgMg.toFixed(0), pct: Math.abs(changePct).toFixed(0) })}</>
-                                                                            )}
+                                                                                {change > 0
+                                                                                    ? t('patterns.structural.dosageRoseN', 'A média por dia medido passou de {{first}} mg (1.ª semana completa, {{a}} dias medidos) para {{last}} mg (última, {{b}} dias) — mais {{pct}}%.', vals)
+                                                                                    : t('patterns.structural.dosageDroppedN', 'A média por dia medido passou de {{first}} mg (1.ª semana completa, {{a}} dias medidos) para {{last}} mg (última, {{b}} dias) — menos {{pct}}%.', vals)}
                                                                             </p>
+                                                                            <p className="text-[11px] mt-1 text-gray-500">{t('patterns.structural.twoWeeksNote', 'São duas semanas soltas: diz o que aconteceu, não se é uma tendência.')}</p>
                                                                         </div>
                                                                     );
                                                                 })()}
@@ -2844,14 +2697,16 @@ export function PatternsView({
                                                     {(() => {
                                                         // mg por dia da fonte unificada ("Registar mg" à mão ou pesagens do
                                                         // saco); não cycles.mg, que pode ser o total de vários dias.
-                                                        const dailyDosageRecords = periodMgDays;
+                                                        const dailyDosageRecords = doneMgDays; // sem hoje (a meio)
 
                                                         if (dailyDosageRecords.length === 0) {
                                                             return (
                                                                 <div className={'bg-gray-800 border-gray-700' + ' rounded-xl p-6 border'}>
                                                                     <h3 className={'font-semibold mb-4 ' + ('text-white')}>{t('patterns.structural.dosageAnalysis')}</h3>
                                                                     <div className={'text-center py-4 text-sm ' + ('text-gray-400')}>
-                                                                        {t('patterns.structural.noDosageData')}
+                                                                        {mgTodayLeftOut
+                                                                            ? t('patterns.structural.mgOnlyToday', 'Só há mg de hoje, que ainda vai a meio — as contas começam amanhã.')
+                                                                            : t('patterns.structural.noDosageData')}
                                                                     </div>
                                                                 </div>
                                                             );
@@ -2870,26 +2725,32 @@ export function PatternsView({
                                                         const firstHalf = sortedByDate.slice(0, midpoint);
                                                         const secondHalf = sortedByDate.slice(midpoint);
 
+                                                        // 1.ª vs 2.ª metade dos dias medidos. "Aumentaram/Diminuíram X%" só se a
+                                                        // diferença se distinguir do acaso (windowTest, por deslocamento); senão
+                                                        // mostra-se a % como descrição, com o n e o p. Sem cor de juízo.
                                                         let trendIcon = '➡️';
                                                         let trendText = t('patterns.structural.trendStable');
-                                                        let trendPercent = 0;
-                                                        let trendColor = 'text-white';
-                                                        // (sem cor de juízo: a tendência é descrição)
-
+                                                        const trendColor = 'text-white';
+                                                        const halvesTest = windowTest(firstHalf.map(r => r.mg), secondHalf.map(r => r.mg));
                                                         if (firstHalf.length > 0 && secondHalf.length > 0) {
                                                             const avgFirst = firstHalf.reduce((sum, log) => sum + log.mg, 0) / firstHalf.length;
                                                             const avgSecond = secondHalf.reduce((sum, log) => sum + log.mg, 0) / secondHalf.length;
                                                             const change = ((avgSecond - avgFirst) / avgFirst) * 100;
-                                                            trendPercent = Math.abs(change);
-
-                                                            if (change > 5) {
-                                                                trendIcon = '📈';
-                                                                trendText = t('patterns.structural.increasedByPct', { pct: trendPercent.toFixed(0) });
-                                                                trendColor = 'text-white';
-                                                            } else if (change < -5) {
-                                                                trendIcon = '📉';
-                                                                trendText = t('patterns.structural.decreasedByPct', { pct: Math.abs(trendPercent).toFixed(0) });
-                                                                trendColor = 'text-white';
+                                                            const trendPercent = Math.abs(change);
+                                                            const sigSameWay = halvesTest.status === 'tested' && halvesTest.sig && (halvesTest.rho > 0) === (change > 0);
+                                                            if (halvesTest.status === 'few') {
+                                                                // Poucos dias: nem "Estáveis" nem "Aumentaram" — só a diferença.
+                                                                trendIcon = '';
+                                                                trendText = `${change > 0 ? '+' : change < 0 ? '−' : ''}${trendPercent.toFixed(0)}%`;
+                                                            } else if (Math.abs(change) > 5 && sigSameWay) {
+                                                                trendIcon = change > 0 ? '📈' : '📉';
+                                                                trendText = change > 0
+                                                                    ? t('patterns.structural.increasedByPct', { pct: trendPercent.toFixed(0) })
+                                                                    : t('patterns.structural.decreasedByPct', { pct: trendPercent.toFixed(0) });
+                                                            } else if (Math.abs(change) > 5) {
+                                                                // Mudou, mas não se sabe se é mais do que acaso: sem seta de tendência.
+                                                                trendIcon = '';
+                                                                trendText = t('patterns.structural.halvesChangeOnly', '{{sign}}{{pct}}% (sem tendência que se distinga do acaso)', { sign: change > 0 ? '+' : '−', pct: trendPercent.toFixed(0) });
                                                             }
                                                         }
 
@@ -2953,7 +2814,7 @@ export function PatternsView({
                                                                     <div className="flex items-center justify-between">
                                                                         <div>
                                                                             <div className={`text-sm font-medium mb-1 ${'text-gray-300'}`}>{t('patterns.structural.periodTrend')}</div>
-                                                                            <div className={`text-2xl font-bold ${trendColor}`}>
+                                                                            <div className={`${trendIcon ? 'text-2xl' : 'text-base'} font-bold ${trendColor}`}>
                                                                                 {trendIcon} {trendText}
                                                                             </div>
                                                                         </div>
@@ -2961,6 +2822,7 @@ export function PatternsView({
                                                                     <p className={`text-xs mt-2 ${'text-gray-400'}`}>
                                                                         {t('patterns.structural.firstVsSecondHalf')}
                                                                     </p>
+                                                                    <p className="text-[11px] mt-1 text-gray-500">{windowTestLine(halvesTest)}{mgTodayNote && ` ${mgTodayNote}`}</p>
                                                                 </div>
 
                                                                 {/* Distribuição */}

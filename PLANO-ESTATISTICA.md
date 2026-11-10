@@ -1,6 +1,10 @@
 # Plano: a app poder dizer "isto não se distingue do acaso"
 
-Estado: **escrito, não começado.** Decidido em 28-09-2026.
+Estado (10-11-2026): **passos 1, 2 e 4 feitos** — piso de n = 20, pares só de
+dias de calendário seguidos, Correlações com uma pergunta de cada vez (ordem
+fixa) e p por deslocamento circular (`src/utils/stats.js`). O mesmo método está
+nos "Sinais de hoje", Impacto, Estado, Reflexão Geral e Padrões. **Falta o passo
+5** (parcial com Freedman–Lane, no export). Decidido em 28-09-2026.
 
 Regra que manda nisto tudo:
 

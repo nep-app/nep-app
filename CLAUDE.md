@@ -8,8 +8,7 @@
 
 ## ⏳ PENDENTES PARA A PRÓXIMA CONVERSA (Lembrar a Teresa)
 
-1. **Estatísticas de "Surfar o Impulso" nas Análises:** Contabilizar frequência de exercícios, consumos adiados e tempo de adiamento (comparar `getUrgeEvents()` de `utils/urgeLog.js` com consumos subsequentes).
-2. **Diário Falso (2.ª Opção de Disfarce):** Diário genérico que NÃO escreve na coleção real de `thoughts`. Gesto de acesso: abrir data → hora `00:00` → PIN. Criar seletor de disfarce nas Definições e atualizar o modal explicativo do gesto.
+1. **Diário Falso (2.ª Opção de Disfarce):** Diário genérico que NÃO escreve na coleção real de `thoughts`. Gesto de acesso: abrir data → hora `00:00` → PIN. Criar seletor de disfarce nas Definições e atualizar o modal explicativo do gesto.
 
 *(Remover esta secção após a Teresa decidir/concluir).*
 
@@ -44,12 +43,13 @@
   * **Meta de reduzir ou manter → pode reconhecer-se o progresso**, porque é a escolha dela.
   * **Meta de aumentar → só descritivo, nunca celebração.** Não julgar ≠ encorajar: uma app não empurra ninguém para usar mais. O neutro está sempre disponível.
   * Isto vale para bem-estar (sono, humor, autocuidado) de forma mais solta — aí o elogio é sobre cuidar de si, não sobre a direção do consumo.
-  * *Aplicado em v6.50.0. Tipos de meta existentes: `reduce_frequency`, `reduce_quantity`, `increase_interval`, `limit_last`, `sleep_hours`, `bedtime_before`. Não existe "manter" nem "aumentar" — se forem criados, a regra acima já decide o comportamento.*
+  * *Aplicado em v6.50.0. Tipos de meta existentes: `reduce_frequency`, `reduce_quantity`, `increase_interval`, `first_not_before`, `limit_last`, `sleep_hours`, `bedtime_before`. Não existe "manter" nem "aumentar" — se forem criados, a regra acima já decide o comportamento.*
 * **A App Tem de Poder Dizer "Não Sei":** A app pode dizer *"isto não se distingue do acaso"*, e **tem de o poder dizer antes de poder dizer o contrário**. Uma ferramenta que só sabe afirmar é uma ferramenta que só sabe convencer.
   * Nenhum número apresentado como certeza sem a incerteza ao lado (ex.: o "75% probabilidade" fixo no texto, removido na v6.51.0).
   * Ao contar por permutação, usar sempre `(b+1)/(m+1)`: com 5000 baralhações e zero acertos diz-se **"menos de 1 em 5000"**, nunca "zero".
   * *Plano completo em `PLANO-ESTATISTICA.md` (ecrã → n mínimo → p por permutação → parcial com Freedman–Lane).*
 
+* **Estatística partilhada:** usar `src/utils/stats.js` (Spearman + p por deslocamento circular para séries de dias; `diffPermutation` para dois grupos de registos). Não reinventar noutro sítio.
 * **Nunca Ordenar Correlações por Força:** A tab das Correlações mostra os blocos por ordem FIXA no código, nunca por `|r|`. **Não mexer.** Ordenar pelas mais fortes é o tipo de melhoria que se propõe de boa-fé e que embute o problema das comparações múltiplas na própria interface: com 31 correlações no ecrã, a maior é quase sempre ruído, e quem lê lê-a como se fosse a única. Nenhum p-value salva uma interface que já escolheu a resposta.
 * **Regra Testável do "Não Sei":** Nenhum número vai para o ecrã se o código que o pôs lá **não pudesse ter decidido não o pôr**. Todo o caminho que mostra um valor tem de ter um ramo onde recusa mostrá-lo (dados insuficientes, sem meta, sem medição fiável). Verifica-se a ler o código — ao contrário do slogan, que não se testa.
 

@@ -5,6 +5,7 @@ import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/s
 import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
 import { safeToISODate, getTodayKey, gapCrossesDays, datesInRange } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
+import { diffPermutation, spearmanPermutation, MIN_PER_WINDOW, MIN_SHIFT, rangePermutation } from '../../utils/stats';
 
 const { getDateRangeForPeriod, filterByDateRange } = analyticsService;
 
@@ -26,6 +27,25 @@ const diaAnterior = (key) => somaDias(key, -1);
 // (ou vem vazio). Com `c.sleep &&` as noites sem dormir desapareciam das
 // contas — e eram justamente as que mais pesam.
 const temSono = (x) => !!x && x.sleep != null && x.sleep !== '' && !isNaN(parseFloat(x.sleep));
+
+// ===== "A APP TEM DE PODER DIZER NÃO SEI" (CLAUDE.md) =====
+// Toda a frase deste separador que diz que duas coisas andam juntas ou que dois
+// grupos de dias são diferentes passa por um teste e tem um ramo onde recusa:
+//   - dois grupos de dias/registos → diffPermutation (stats.js);
+//   - duas séries diárias (ex.: sono e humor) → spearmanPermutation (stats.js),
+//     com pelo menos MIN_SPEARMAN dias;
+//   - "o dia da semana com mais vs o com menos" → rangePermutation (em utils/stats.js).
+// Poucos dados → diz quantos há e quantos faltam. p ≥ 0,05 → "não se distingue
+// do acaso". E nada de linguagem de causa ("afeta", "provoca"): "anda junto".
+const PERM_M = 2000; // baralhações do diffPermutation (o valor por omissão)
+const MIN_SPEARMAN = 2 * MIN_SHIFT + 1; // o mínimo que o spearmanPermutation aceita
+const media = (arr) => arr.reduce((s, v) => s + v, 0) / arr.length;
+
+// Diferença entre o grupo com a média mais alta e o com a mais baixa + p por
+// permutação (baralham-se as etiquetas dos grupos). Escolher "o maior e o
+// menor" depois de ver os dados faz qualquer diferença parecer grande, por isso
+// o acaso é medido com a MESMA escolha em cada baralhação. p = (b+1)/(m+1).
+// TODO: mudar para utils/stats.js (está duplicada no AnalysesEstadoTab.jsx).
 
 export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
     analysisConsumptions,
@@ -62,7 +82,13 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
         const byDate = {};
         analysisConsumptions.forEach(c => { byDate[c.date] = (byDate[c.date] || 0) + 1; });
         const uniqueDays = Object.keys(byDate).length;
-        const avgPerDay = uniqueDays > 0 ? (totalConsumptions / uniqueDays).toFixed(1) : 0;
+        // Média por dia SEM hoje: hoje ainda vai a meio e puxava a média para
+        // baixo. (Dias com consumo: os dias a zero não entram — o texto diz
+        // "dias com consumo".)
+        const _hoje = getTodayKey();
+        const _diasSemHoje = Object.keys(byDate).filter(d => d !== _hoje);
+        const _totalSemHoje = _diasSemHoje.reduce((s, d) => s + byDate[d], 0);
+        const avgPerDay = _diasSemHoje.length > 0 ? (_totalSemHoje / _diasSemHoje.length).toFixed(1) : 0;
 
         // Wellbeing averages
         const validSleep = analysisWellbeing.filter(w => w.sleep != null && !isNaN(parseFloat(w.sleep)));
@@ -211,6 +237,44 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
         sentimentScore,
     } = coachData;
 
+    // p como aparece no ecrã (3 casas); com b = 0 → "menos de 1 em m", nunca
+    // zero. A decisão (< 0,05) usa o MESMO número que se mostra.
+    const pShown = (p) => Number(p.toFixed(3));
+    const fmtP = (p, m = PERM_M, b = null) => {
+        const hits = b != null ? b : Math.round(p * (m + 1)) - 1;
+        return hits <= 0
+            ? t('coach.pLessThan', { m, defaultValue: 'p: menos de 1 em {{m}}' })
+            : t('coach.pValue', { p: pShown(p).toLocaleString(i18n.language), defaultValue: 'p = {{p}}' });
+    };
+    const isChance = (p) => pShown(p) >= 0.05;
+    // "A diferença …" + veredicto, para juntar a frases que já têm os números.
+    const verdict = (p, m = PERM_M, b = null) => isChance(p)
+        ? t('coach.verdictChance', { p: fmtP(p, m, b), defaultValue: 'não se distingue do acaso ({{p}})' })
+        : t('coach.verdictNotChance', { p: fmtP(p, m, b), defaultValue: 'dificilmente é só acaso ({{p}})' });
+    const rhoTxt = (r) => r.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Dias de calendário que a app CONHECE entre duas datas: a partir do
+    // primeiro registo, sem "não registei os consumos" nem dias atípicos (os
+    // consumos desses dias já vêm tirados — contá-los a zero seria inventar).
+    const foraDias = new Set([...(unloggedDates || []), ...(excludedDays || [])]);
+    const primeiroRegisto = (() => {
+        const ds = [...(consumptions || []), ...analysisWellbeing, ...analysisCycles, ...analysisDailyLogs]
+            .map(x => x.date || safeToISODate(x.timestamp)).filter(Boolean);
+        return ds.length ? ds.reduce((a, b) => (b < a ? b : a)) : null;
+    })();
+    const diasConhecidos = (de, ate) => {
+        if (!primeiroRegisto || !de || !ate) return [];
+        return datesInRange(de < primeiroRegisto ? primeiroRegisto : de, ate).filter(d => !foraDias.has(d));
+    };
+    const consPorDia = {};
+    analysisConsumptions.forEach(c => {
+        const d = c.date || safeToISODate(c.timestamp);
+        if (d) consPorDia[d] = (consPorDia[d] || 0) + 1;
+    });
+    // Meta de frequência (reduzir): a única coisa que deixa a app dizer que
+    // uma direção "vai no sentido da meta" (regra do elogio).
+    const metaFreqAlvo = frequencyGoal ? Number(frequencyGoal.target) : null;
+
     const toggleSection = (key) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
     const sectionBtn = (id, icon, title) => (
         <button
@@ -291,13 +355,10 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Poucos dias conhecidos numa das janelas → não se compara.
                         if (last7Keys.length < 5 || prev21Keys.length < 14) return null;
 
-                        const consPorDia = {};
-                        analysisConsumptions.forEach(c => {
-                            const d = c.date || safeToISODate(c.timestamp);
-                            if (d) consPorDia[d] = (consPorDia[d] || 0) + 1;
-                        });
-                        const somaLast7 = last7Keys.reduce((a, d) => a + (consPorDia[d] || 0), 0);
-                        const somaPrev21 = prev21Keys.reduce((a, d) => a + (consPorDia[d] || 0), 0);
+                        const valsLast7 = last7Keys.map(d => consPorDia[d] || 0);
+                        const valsPrev21 = prev21Keys.map(d => consPorDia[d] || 0);
+                        const somaLast7 = valsLast7.reduce((a, b) => a + b, 0);
+                        const somaPrev21 = valsPrev21.reduce((a, b) => a + b, 0);
 
                         if (somaLast7 < 3 || somaPrev21 < 10) return null;
 
@@ -309,18 +370,21 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         if (Math.abs(percentChange) < 5) return null;
 
+                        // ⚠️ ANTES: "Aumento significativo. Vale a pena perceber a causa"
+                        // / "Redução clara. O que mudou? … repara no que ajudou" — a
+                        // app decidia que descer é bom e chamava "significativo" a
+                        // uma diferença que nunca foi testada. Agora: os números, o
+                        // teste (dias de uma janela vs dias da outra) e, só com meta
+                        // de reduzir, se a diferença vai no sentido dela.
+                        const test = diffPermutation(valsPrev21, valsLast7);
+                        const chance = isChance(test.p);
                         return (
                             <p>
-                                📈 <strong className={('text-blue-400')}>{t('coach.microTrendLabel')}</strong>{' '}
+                                📈 <strong className={('text-white')}>{t('coach.microTrendLabel')}</strong>{' '}
                                 {t('coach.microTrendText', { last7: avgLast7.toFixed(1), prev21: avgPrev21.toFixed(1), pct: `${percentChange > 0 ? '+' : ''}${percentChange}` })}
-                                {percentChange > 15 ? (
-                                    <> <span className={('text-orange-400')}>{t('coach.microTrendIncrease')}</span></>
-                                ) : percentChange < -15 ? (
-                                    <> <span className={('text-gray-300')}>{t('coach.microTrendDecrease')}</span></>
-                                ) : percentChange > 0 ? (
-                                    <> {t('coach.microTrendSlightIncrease')}</>
-                                ) : (
-                                    <> {t('coach.microTrendSlightDecrease')}</>
+                                {' '}<span className="text-gray-400">{t('coach.diffSentence', { verdict: verdict(test.p), defaultValue: 'A diferença {{verdict}}.' })}</span>
+                                {!chance && metaFreqAlvo != null && (
+                                    <> {t(percentChange < 0 ? 'coach.towardGoal' : 'coach.awayFromGoal', { defaultValue: percentChange < 0 ? 'Vai no sentido da tua meta de reduzir.' : 'Vai no sentido contrário ao da tua meta de reduzir.' })}</>
                                 )}
                             </p>
                         );
@@ -329,28 +393,49 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {/* Trend vs previous period */}
                     {(() => {
                         if (totalConsumptions === 0) return null;
+                        // "Tudo" não tem período anterior; "Hoje" é um dia contra um dia.
+                        if (patternsPeriod === 'tudo' || patternsPeriod === 'hoje') return null;
 
-                        // Comparar período atual (analysisConsumptions) vs período anterior
-                        const currentPeriod = analysisConsumptions;
+                        // ⚠️ ANTES: comparava o TOTAL de consumos dos dois períodos
+                        // (com 3 consumos de cada lado bastava) e dizia "O que mudou?
+                        // Identifica o trigger e ajusta o plano" — juízo e conselho
+                        // sem meta, sobre uma diferença nunca testada. E o período
+                        // atual inclui hoje, ainda a meio. Agora: média por dia de
+                        // calendário conhecido (sem hoje), com teste.
+                        const range = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+                        const prevRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset + 1);
+                        if (!range.start || !prevRange.start) return null;
+                        const ontem = somaDias(getTodayKey(), -1);
+                        const fimAtual = safeToISODate(range.end) < ontem ? safeToISODate(range.end) : ontem;
+                        const diasAtual = diasConhecidos(safeToISODate(range.start), fimAtual);
+                        const diasAnterior = diasConhecidos(safeToISODate(prevRange.start), safeToISODate(prevRange.end));
+                        if (diasAtual.length < MIN_PER_WINDOW || diasAnterior.length < MIN_PER_WINDOW) return null;
 
-                        // Pegar o período anterior (mesmo tipo, offset+1)
-                        const previousDateRange = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset + 1);
-                        const previousPeriod = filterByDateRange(consumptions, previousDateRange);
+                        const consAnteriorPorDia = {};
+                        filterByDateRange(consumptions || [], prevRange).forEach(c => {
+                            const d = c.date || safeToISODate(c.timestamp);
+                            if (d) consAnteriorPorDia[d] = (consAnteriorPorDia[d] || 0) + 1;
+                        });
+                        const valsAtual = diasAtual.map(d => consPorDia[d] || 0);
+                        const valsAnterior = diasAnterior.map(d => consAnteriorPorDia[d] || 0);
+                        const mAtual = media(valsAtual), mAnterior = media(valsAnterior);
+                        if (!(mAnterior > 0)) return null;
+                        const pct = ((mAtual - mAnterior) / mAnterior) * 100;
+                        if (Math.abs(pct) < 5) return null;
 
-                        if (currentPeriod.length === 0 || previousPeriod.length === 0) return null;
-                        if (currentPeriod.length < 3 || previousPeriod.length < 3) return null; // Mínimo 3 consumos em cada
-
-                        const percentChange = ((currentPeriod.length - previousPeriod.length) / previousPeriod.length) * 100;
-
-                        // Só mostrar se mudança significativa (>20%)
-                        if (Math.abs(percentChange) < 20) return null;
-
+                        const test = diffPermutation(valsAnterior, valsAtual);
                         return (
                             <p>
-                                {percentChange > 0 ? (
-                                    <>{t('coach.trendIncrease', { pct: Math.abs(percentChange).toFixed(0), prev: previousPeriod.length, curr: currentPeriod.length })}</>
-                                ) : (
-                                    <>{t('coach.trendDecrease', { pct: Math.abs(percentChange).toFixed(0), prev: previousPeriod.length, curr: currentPeriod.length })}</>
+                                📊 <strong className="text-white">{t('coach.trendLabel', 'Comparado com o período anterior:')}</strong>{' '}
+                                {t('coach.trendCompare', {
+                                    curr: mAtual.toFixed(1), nCurr: diasAtual.length,
+                                    prev: mAnterior.toFixed(1), nPrev: diasAnterior.length,
+                                    pct: `${pct > 0 ? '+' : ''}${pct.toFixed(0)}`,
+                                    defaultValue: 'média de {{curr}} consumos por dia neste ({{nCurr}} dias) e {{prev}} no anterior ({{nPrev}} dias), {{pct}}%.',
+                                })}
+                                {' '}<span className="text-gray-400">{t('coach.diffSentence', { verdict: verdict(test.p), defaultValue: 'A diferença {{verdict}}.' })}</span>
+                                {!isChance(test.p) && metaFreqAlvo != null && (
+                                    <> {t(pct < 0 ? 'coach.towardGoal' : 'coach.awayFromGoal')}</>
                                 )}
                             </p>
                         );
@@ -509,32 +594,45 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         if (goodDays.length === 0 && difficultDays.length === 0) return null;
 
-                        // Calcular médias
-                        const calcAvgSleep = (days) => {
-                            const sleepData = days.flatMap(([_, d]) => d.cycles.filter(temSono).map(c => parseFloat(c.sleep)));
-                            return sleepData.length > 0 ? (sleepData.reduce((a, b) => a + b, 0) / sleepData.length).toFixed(1) : null;
-                        };
+                        // Valores por DIA (um por dia, para os dois grupos serem
+                        // comparáveis): sono do ciclo, média do humor do dia.
+                        const sleepVals = (days) => days.flatMap(([_, d]) => {
+                            const v = d.cycles.filter(temSono).map(c => parseFloat(c.sleep));
+                            return v.length ? [media(v)] : [];
+                        });
+                        const moodVals = (days) => days.flatMap(([_, d]) => {
+                            const v = d.wellbeing.filter(w => w.mood).map(w => parseInt(w.mood));
+                            return v.length ? [media(v)] : [];
+                        });
+                        const gSleep = sleepVals(goodDays), dSleep = sleepVals(difficultDays);
+                        const gMood = moodVals(goodDays), dMood = moodVals(difficultDays);
+                        const goodSleep = gSleep.length ? media(gSleep).toFixed(1) : null;
+                        const difficultSleep = dSleep.length ? media(dSleep).toFixed(1) : null;
+                        const goodMood = gMood.length ? media(gMood).toFixed(1) : null;
+                        const difficultMood = dMood.length ? media(dMood).toFixed(1) : null;
 
-                        const calcAvgMood = (days) => {
-                            const moodData = days.flatMap(([_, d]) => d.wellbeing.filter(w => w.mood).map(w => parseInt(w.mood)));
-                            return moodData.length > 0 ? (moodData.reduce((a, b) => a + b, 0) / moodData.length).toFixed(1) : null;
+                        // ⚠️ ANTES: "Nesses dias dormiste mais Xh" só aparecia quando o
+                        // sono era MAIOR nos dias dentro da meta (nunca ao contrário) e
+                        // sem teste. Agora a diferença é testada nos dois sentidos, e
+                        // com poucos dias de um dos lados diz-se que não dá.
+                        const linhaTeste = (a, b, what) => {
+                            if (a.length === 0 || b.length === 0) return null;
+                            if (a.length < MIN_PER_WINDOW || b.length < MIN_PER_WINDOW) {
+                                return t('coach.groupFew', { what, nA: a.length, nB: b.length, min: MIN_PER_WINDOW, defaultValue: '{{what}}: poucos dias para comparar os dois grupos ({{nA}} e {{nB}}; são precisos {{min}} de cada lado).' });
+                            }
+                            const r = diffPermutation(b, a);
+                            return t('coach.groupTest', { what, verdict: verdict(r.p), defaultValue: '{{what}}: a diferença entre os dois grupos {{verdict}}.' });
                         };
-
-                        const goodSleep = calcAvgSleep(goodDays);
-                        const difficultSleep = calcAvgSleep(difficultDays);
-                        const goodMood = calcAvgMood(goodDays);
-                        const difficultMood = calcAvgMood(difficultDays);
+                        const testeSono = linhaTeste(gSleep, dSleep, t('coach.whatSleep', 'Sono'));
+                        const testeHumor = linhaTeste(gMood, dMood, t('coach.whatMood', 'Humor'));
 
                         return (
                             <p>
                                 📊 <strong className={('text-gray-200')}>{t('coach.goodVsDifficultLabel')}</strong>
                                 {goodDays.length > 0 && <> {t('coach.youHad')} <strong>{goodDays.length} {t(goodDays.length === 1 ? 'coach.goodDaysSingular' : 'coach.goodDaysPlural')}</strong> {t('coach.atMostUses', { n: goodThreshold })}{goodSleep && <><strong>{t('coach.withAvgSleep', { h: goodSleep })}</strong></>}{goodMood && <><strong>{t('coach.withMood', { n: goodMood })}</strong></>}.</>}
-                                {difficultDays.length > 0 && <> {goodDays.length > 0 && t('coach.onTheOtherHand')} {t('coach.thereWere')} <strong className={('text-orange-400')}>{difficultDays.length} {t(difficultDays.length === 1 ? 'coach.difficultDaySingular' : 'coach.difficultDayPlural')}</strong> {t('coach.atLeastUses', { n: difficultThreshold })}{difficultSleep && <><strong>{t('coach.withAvgSleep', { h: difficultSleep })}</strong></>}{difficultMood && <><strong>{t('coach.withMood', { n: difficultMood })}</strong></>}.</>}
-                                {goodSleep && difficultSleep && parseFloat(goodSleep) > parseFloat(difficultSleep) + 1 && (
-                                    <> <span className={('text-cyan-400')}>{t('coach.sleepPatternInsight', { diff: (parseFloat(goodSleep) - parseFloat(difficultSleep)).toFixed(1) })}</span></>
-                                )}
-                                {goodMood && difficultMood && parseFloat(goodMood) > parseFloat(difficultMood) + 1.5 && (
-                                    <> <span className={('text-white')}>{t('coach.moodPatternInsight', { diff: (parseFloat(goodMood) - parseFloat(difficultMood)).toFixed(1) })}</span></>
+                                {difficultDays.length > 0 && <> {goodDays.length > 0 && t('coach.onTheOtherHand')} {t('coach.thereWere')} <strong className="text-white">{difficultDays.length} {t(difficultDays.length === 1 ? 'coach.difficultDaySingular' : 'coach.difficultDayPlural')}</strong> {t('coach.atLeastUses', { n: difficultThreshold })}{difficultSleep && <><strong>{t('coach.withAvgSleep', { h: difficultSleep })}</strong></>}{difficultMood && <><strong>{t('coach.withMood', { n: difficultMood })}</strong></>}.</>}
+                                {goodDays.length > 0 && difficultDays.length > 0 && (testeSono || testeHumor) && (
+                                    <> <span className="text-gray-400">{[testeSono, testeHumor].filter(Boolean).join(' ')}</span></>
                                 )}
                             </p>
                         );
@@ -544,47 +642,47 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {(() => {
                         if (analysisConsumptions.length < 7) return null;
 
-                        // Agrupar por dia da semana
                         const dayNames = Array.from({ length: 7 }, (_, i) =>
                             new Date(2024, 0, 7 + i).toLocaleDateString(i18n.language, { weekday: 'long' })
                         );
-                        const byDayOfWeek = {};
-                        for (let i = 0; i < 7; i++) byDayOfWeek[i] = [];
 
-                        analysisConsumptions.forEach(c => {
-                            const dayOfWeek = new Date(c.timestamp).getDay();
-                            byDayOfWeek[dayOfWeek].push(c);
-                        });
+                        // ⚠️ ANTES: "Xs são os teus dias mais difíceis… Ys são melhores",
+                        // com a média só dos dias COM consumo (um dia a zero não
+                        // contava), sem teste, mesmo numa semana (um dia de cada), e
+                        // com conselhos ("Estrutura atividades para esse dia").
+                        // Agora: todos os dias conhecidos do período (zeros
+                        // incluídos, sem hoje); só entram os dias da semana com
+                        // MIN_DIAS_SEMANA dias; o mais alto vs o mais baixo é
+                        // comparado com o acaso baralhando os dias da semana.
+                        const MIN_DIAS_SEMANA = 4;
+                        const range = getDateRangeForPeriod(patternsPeriod, patternsPeriodOffset);
+                        const ontem = somaDias(getTodayKey(), -1);
+                        const inicio = range.start ? safeToISODate(range.start) : primeiroRegisto;
+                        const fim = range.end && safeToISODate(range.end) < ontem ? safeToISODate(range.end) : ontem;
+                        const dias = diasConhecidos(inicio, fim);
+                        const porDiaSemana = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+                        dias.forEach(d => { porDiaSemana[new Date(`${d}T12:00:00`).getDay()].push(consPorDia[d] || 0); });
+                        const testados = [1, 2, 3, 4, 5, 6, 0].filter(k => porDiaSemana[k].length >= MIN_DIAS_SEMANA);
 
-                        // Calcular médias (total consumos / número de ocorrências desse dia)
-                        const avgByDay = {};
-                        Object.keys(byDayOfWeek).forEach(day => {
-                            const consumptions = byDayOfWeek[day];
-                            if (consumptions.length === 0) {
-                                avgByDay[day] = 0;
-                                return;
-                            }
-                            // Contar quantos dias únicos
-                            const uniqueDates = new Set(consumptions.map(c => c.date));
-                            avgByDay[day] = consumptions.length / uniqueDates.size;
-                        });
+                        if (testados.length < 2) {
+                            return (
+                                <p>
+                                    📅 <strong className={('text-white')}>{t('coach.weeklyPatternLabel')}</strong>{' '}
+                                    <span className="text-gray-400">{t('coach.weeklyFew', { min: MIN_DIAS_SEMANA, n: dias.length, defaultValue: 'Para comparar dias da semana são precisos pelo menos {{min}} dias de cada (há {{n}} dias no período).' })}</span>
+                                </p>
+                            );
+                        }
 
-                        const sortedDays = Object.entries(avgByDay).sort((a, b) => b[1] - a[1]);
-                        const worstDay = sortedDays[0];
-                        const bestDay = sortedDays[sortedDays.length - 1];
-
-                        // Só mostrar se diferença significativa
-                        if (worstDay[1] - bestDay[1] < 2) return null;
+                        const r = rangePermutation(testados.map(k => porDiaSemana[k]));
+                        const medias = testados.map(k => ({ k, m: media(porDiaSemana[k]) }));
+                        const hi = medias.reduce((a, b) => (b.m > a.m ? b : a));
+                        const lo = medias.reduce((a, b) => (b.m < a.m ? b : a));
 
                         return (
                             <p>
                                 📅 <strong className={('text-white')}>{t('coach.weeklyPatternLabel')}</strong>{' '}
-                                {t('coach.weeklyHardDays', { day: dayNames[worstDay[0]], avg: worstDay[1].toFixed(1), bestDay: dayNames[bestDay[0]], bestAvg: bestDay[1].toFixed(1) })}
-                                {parseInt(worstDay[0]) >= 1 && parseInt(worstDay[0]) <= 5 ? (
-                                    <> <span className={('text-yellow-400')}>{t('coach.weeklyWeekdayTip', { day: dayNames[worstDay[0]] })}</span></>
-                                ) : (
-                                    <> <span className={('text-cyan-400')}>{t('coach.weeklyWeekendTip')}</span></>
-                                )}
+                                {t('coach.weeklyRange', { day: dayNames[hi.k], avg: hi.m.toFixed(1), bestDay: dayNames[lo.k], bestAvg: lo.m.toFixed(1), k: testados.length, n: dias.length, defaultValue: 'Com mais consumos em média: {{day}} ({{avg}}); com menos: {{bestDay}} ({{bestAvg}}), em {{n}} dias.' })}
+                                {' '}<span className="text-gray-400">{t('coach.weeklyVerdict', { verdict: verdict(r.p, r.m, r.b), defaultValue: 'Uma diferença destas entre dias da semana {{verdict}}.' })}</span>
                             </p>
                         );
                     })()}
@@ -619,6 +717,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         let maxStreak = 0, currentStreak = 0, maxStreakEnd = null, isCurrentStreakActive = false;
 
                         sortedDates.forEach((date, idx) => {
+                            // "Seguidos" = dias de calendário seguidos, não registos
+                            // seguidos (um buraco de uma semana não é sequência).
+                            if (idx > 0 && diaSeguinte(sortedDates[idx - 1]) !== date) currentStreak = 0;
                             if (consumptionsByDate[date] <= target) {
                                 currentStreak++;
                                 if (currentStreak > maxStreak) {
@@ -636,7 +737,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🔥 <strong className={('text-orange-400')}>{t('coach.momentumLabel')}</strong>{' '}
+                                🔥 <strong className={('text-white')}>{t('coach.momentumLabel')}</strong>{' '}
                                 {t('coach.momentumRecord', { n: maxStreak, label: t(maxStreak === 1 ? 'coach.day_singular' : 'coach.day_plural'), target })}
                                 {isCurrentStreakActive && maxStreak === currentStreak ? (
                                     <> <span className={'font-medium ' + ('text-green-400')}>{t('coach.momentumActiveStreak')}</span></>
@@ -680,7 +781,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                📍 <strong className={('text-orange-400')}>{t('coach.outliersLabel')}</strong>{' '}
+                                📍 <strong className={('text-white')}>{t('coach.outliersLabel')}</strong>{' '}
                                 {topDays.length === 1
                                     ? t('coach.outliersTopDay', { date: new Date(top1.date + 'T12:00:00').toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1) })
                                     : t('coach.outliersTopDayN', { date: new Date(top1.date + 'T12:00:00').toLocaleDateString(i18n.language, { day: 'numeric', month: 'long' }), n: top1.count, diff: diffFromAvg, avg: avgDaily.toFixed(1), k: topDays.length })}
@@ -695,7 +796,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                         </span>
                                     ))}.</>
                                 )}
-                                <> <span className={('text-cyan-400')}>{top1Emotions.length > 0 ? t('coach.outliersNoteEmotion', { emotion: top1Emotions[0] }) : t('coach.outliersNoteQuestion')}</span></>
+                                {/* Antes: "Outliers não são falhas… Que gap de necessidades foi
+                                    preenchido?" / "Repara no padrão emocional" — interpretação
+                                    a partir de UM dia. Ficam só os factos desse dia. */}
                             </p>
                         );
                     })()}
@@ -745,20 +848,19 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         return (
                             <p>
-                                🔄 <strong className={('text-teal-400')}>{t('coach.recoveryLabel')}</strong>
+                                🔄 <strong className={('text-white')}>{t('coach.recoveryLabel')}</strong>
+                                {/* Antes: "Isso é rapidamente" / "Pequenos hábitos de 'reset'
+                                    podem ajudar" e cores amarelo/laranja — juízo e conselho.
+                                    E voltar à média depois de um dia alto acontece muitas
+                                    vezes só por acaso: diz-se isso em vez de o ler como
+                                    "recuperação". */}
                                 {avgRecovery ? (
-                                    <> {t(parseFloat(avgRecovery) === 1 ? 'coach.recoveryAvgSingular' : 'coach.recoveryAvgPlural', { n: avgRecovery })}
-                                    {parseFloat(avgRecovery) <= 1.5 ? (
-                                        <> <span className={('text-gray-300')}>{t('coach.recoveryFast')}</span></>
-                                    ) : parseFloat(avgRecovery) <= 3 ? (
-                                        <> <span className={('text-yellow-400')}>{t('coach.recoveryModerate')}</span></>
-                                    ) : (
-                                        <> <span className={('text-orange-400')}>{t('coach.recoverySlow')}</span></>
-                                    )}</>
+                                    <> {t(parseFloat(avgRecovery) === 1 ? 'coach.recoveryAvgSingular' : 'coach.recoveryAvgPlural', { n: avgRecovery })}</>
                                 ) : null}
                                 {stillRecoveringDays > 0 && (
-                                    <> <span className={('text-yellow-400')}>{t(stillRecoveringDays === 1 ? 'coach.recoveryStillSingular' : 'coach.recoveryStillPlural', { n: stillRecoveringDays })}</span></>
+                                    <> {t(stillRecoveringDays === 1 ? 'coach.recoveryStillSingular' : 'coach.recoveryStillPlural', { n: stillRecoveringDays })}</>
                                 )}
+                                {' '}<span className="text-gray-400">{t('coach.recoveryChanceNote', 'Depois de um dia muito acima da média, é comum os seguintes estarem mais perto dela, mesmo só por acaso — isto descreve, não mede uma "recuperação".')}</span>
                             </p>
                         );
                     })()}
@@ -814,19 +916,35 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             }
                         });
 
-                        // Quantas sequências de 2+ o ACASO daria, com a mesma taxa.
-                        const taxaDificil = sortedDates.length > 0 ? diasDificeis / sortedDates.length : 0;
-                        const esperadoAoAcaso = Math.round((sortedDates.length - 1) * taxaDificil * taxaDificil);
-                        const acimaDoAcaso = cascadeEvents > esperadoAoAcaso;
-
                         if (cascadeEvents === 0 && longestCascade < 2) return null;
+
+                        // ⚠️ O "esperado ao acaso" de antes comparava coisas
+                        // diferentes: contava EPISÓDIOS observados (uma sequência de
+                        // 18 dias = 1) contra PARES esperados. Agora testa-se a
+                        // pergunta certa, com pares de dias de calendário seguidos:
+                        // depois de um dia acima, o seguinte é mais vezes acima do
+                        // que depois dos outros dias? (diffPermutation em 0/1)
+                        const depoisDificil = [], depoisOutro = [];
+                        sortedDates.forEach((date, idx) => {
+                            if (idx === 0 || !saoSeguidos(sortedDates[idx - 1], date)) return;
+                            const hoje1 = consumptionsByDate[date] >= difficultThreshold ? 1 : 0;
+                            if (consumptionsByDate[sortedDates[idx - 1]] >= difficultThreshold) depoisDificil.push(hoje1);
+                            else depoisOutro.push(hoje1);
+                        });
+                        const poucos = depoisDificil.length < MIN_PER_WINDOW || depoisOutro.length < MIN_PER_WINDOW;
+                        const test = poucos ? null : diffPermutation(depoisOutro, depoisDificil);
+                        const pctOf = (arr) => arr.length ? Math.round(media(arr) * 100) : 0;
 
                         return (
                             <p>
                                 🌊 <strong className={('text-white')}>{t('coach.cascadeLabel')}</strong>
                                 {longestCascade >= 2 ? (
-                                    <> {t('coach.cascadeDetected', { n: cascadeEvents, label: t(cascadeEvents === 1 ? 'coach.episode_singular' : 'coach.episode_plural'), longest: longestCascade, esperado: esperadoAoAcaso })}
-                                    <> <span className={('text-gray-400')}>{t(acimaDoAcaso ? 'coach.cascadeAboveChance' : 'coach.cascadeWithinChance')}</span></>
+                                    <> {t('coach.cascadeDetected', { n: cascadeEvents, label: t(cascadeEvents === 1 ? 'coach.episode_singular' : 'coach.episode_plural'), longest: longestCascade, threshold: difficultThreshold })}
+                                    {' '}<span className={('text-gray-400')}>
+                                        {poucos
+                                            ? t('coach.cascadeFew', { nA: depoisDificil.length, nB: depoisOutro.length, min: MIN_PER_WINDOW, defaultValue: 'Para ver se um dia acima puxa o seguinte são precisos {{min}} pares de dias seguidos de cada tipo (há {{nA}} e {{nB}}).' })
+                                            : t('coach.cascadeTest', { a: pctOf(depoisDificil), nA: depoisDificil.length, b: pctOf(depoisOutro), nB: depoisOutro.length, verdict: verdict(test.p), defaultValue: 'Depois de um dia acima, o seguinte também foi acima em {{a}}% das vezes (de {{nA}}); depois dos outros dias, em {{b}}% (de {{nB}}). A diferença {{verdict}}.' })}
+                                    </span>
                                     </>
                                 ) : (
                                     <> {t('coach.cascadeNone')}</>
@@ -838,7 +956,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
             )}
 
             {/* ── SECÇÃO 3: HORÁRIOS E RISCOS ── */}
-            {sectionBtn('horarios', '⏰', i18n.language === 'en' ? 'Timing & Risks' : 'Horários e Riscos')}
+            {sectionBtn('horarios', '⏰', i18n.language === 'en' ? 'Timing' : 'Horários')}
             {openSections.horarios && (
                 <div className={'!border-t-0 px-4 pb-5 pt-1 space-y-4 leading-relaxed text-gray-200'}>
                     {(() => {
@@ -888,20 +1006,21 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // sempre uma). Se houver pico forte (≥50%), enquadra-se como janela
                         // de risco; se o consumo estiver espalhado, é uma observação neutra
                         // (tom observacional, sem alarmismo).
+                        // Antes: com ≥50% chamava-lhe "Janela de Vulnerabilidade" e
+                        // com ≥70% dava um aviso a amarelo. É só onde os consumos
+                        // caem: descreve-se, sem rótulo de risco nem cor de alarme.
                         const concentrated = concentrationPercent >= 50;
                         return (
                             <p>
-                                ⏰ <strong className={'text-cyan-400'}>
-                                    {t(concentrated ? 'coach.vulnerabilityLabel' : 'coach.peakWindowLabel')}
+                                ⏰ <strong className={'text-white'}>
+                                    {t('coach.peakWindowLabel')}
                                 </strong>{' '}
                                 {t('coach.vulnerabilityText', { pct: concentrationPercent, window: formatWindow(maxWindowStart), type: t(windowTypeKey) })}
-                                {concentrationPercent >= 70 ? (
-                                    <> <span className={('text-yellow-400')}>{t('coach.vulnerabilityHighWarning')}</span></>
-                                ) : concentrated ? (
-                                    <> <span className={('text-cyan-400')}>{t('coach.vulnerabilityTip')}</span></>
-                                ) : (
-                                    <> <span className={('text-gray-400')}>{t('coach.peakWindowSpread')}</span></>
-                                )}
+                                {' '}<span className={('text-gray-400')}>
+                                    {concentrated
+                                        ? t('coach.peakWindowConcentrated', 'Mais de metade dos teus consumos cai nestas 4 horas.')
+                                        : t('coach.peakWindowSpread')}
+                                </span>
                             </p>
                         );
                     })(),
@@ -939,27 +1058,31 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         const earlyStarts = dataPoints.filter(d => d.firstHour < 10);
                         const lateStarts = dataPoints.filter(d => d.firstHour >= 10);
 
-                        if (earlyStarts.length < 3 || lateStarts.length < 3) return null;
+                        // Antes: 3 dias de cada lado, sem teste, título "Escalada" e
+                        // "começar mais cedo não piora o dia — pode até ajudar"
+                        // (causa e juízo). Agora: 5 dias de cada lado e teste; com
+                        // menos, diz-se que não dá.
+                        if (earlyStarts.length < MIN_PER_WINDOW || lateStarts.length < MIN_PER_WINDOW) {
+                            return (
+                                <p>
+                                    🌅 <strong className="text-white">{t('coach.escalationLabel')}</strong>{' '}
+                                    <span className="text-gray-400">{t('coach.escalationFew', { nE: earlyStarts.length, nL: lateStarts.length, min: MIN_PER_WINDOW, defaultValue: 'Para comparar os dias que começam antes das 10h com os outros são precisos {{min}} dias de cada (há {{nE}} e {{nL}}).' })}</span>
+                                </p>
+                            );
+                        }
 
-                        const avgEarlyTotal = earlyStarts.reduce((sum, d) => sum + d.total, 0) / earlyStarts.length;
-                        const avgLateTotal = lateStarts.reduce((sum, d) => sum + d.total, 0) / lateStarts.length;
-
-                        const percentDiff = ((avgEarlyTotal - avgLateTotal) / avgLateTotal * 100).toFixed(0);
-
-                        // Só mostrar se diferença significativa (>20%)
-                        if (Math.abs(percentDiff) < 20) return null;
+                        const avgEarlyTotal = media(earlyStarts.map(d => d.total));
+                        const avgLateTotal = media(lateStarts.map(d => d.total));
+                        const test = diffPermutation(lateStarts.map(d => d.total), earlyStarts.map(d => d.total));
 
                         return (
                             <p>
-                                🌅 <strong className={('text-amber-400')}>{t('coach.escalationLabel')}</strong>{' '}
-                                {percentDiff > 0
-                                    ? t('coach.escalationHigher', { pct: Math.abs(percentDiff), early: avgEarlyTotal.toFixed(1), late: avgLateTotal.toFixed(1) })
-                                    : t('coach.escalationLower', { pct: Math.abs(percentDiff), early: avgEarlyTotal.toFixed(1), late: avgLateTotal.toFixed(1) })}
-                                {percentDiff > 0 ? (
-                                    <> <span className={('text-yellow-400')}>{t('coach.escalationWarning')}</span></>
-                                ) : (
-                                    <> <span className={('text-cyan-400')}>{t('coach.escalationPositive')}</span></>
-                                )}
+                                🌅 <strong className="text-white">{t('coach.escalationLabel')}</strong>{' '}
+                                {t('coach.escalationCompare', { early: avgEarlyTotal.toFixed(1), nE: earlyStarts.length, late: avgLateTotal.toFixed(1), nL: lateStarts.length, defaultValue: 'Nos dias em que o primeiro consumo foi antes das 10h houve em média {{early}} consumos ({{nE}} dias); nos dias em que começou mais tarde, {{late}} ({{nL}} dias).' })}
+                                {' '}<span className="text-gray-400">
+                                    {t('coach.diffSentence', { verdict: verdict(test.p) })}
+                                    {' '}{t('coach.escalationHoursNote', 'Começar mais cedo também deixa mais horas no dia.')}
+                                </span>
                             </p>
                         );
                     })(),
@@ -968,89 +1091,46 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     (() => {
                         if (analysisConsumptions.length < 10 || analysisCycles.length < 5) return null;
 
-                        // 1. Consumos tardios (00h-06h) vs sono
-                        const lateConsumptions = analysisConsumptions.filter(c => {
-                            const hour = new Date(c.timestamp).getHours();
-                            return hour >= 0 && hour < 6;
+                        // ⚠️ ANTES: "X% dos consumos tardios aconteceram em dias com <6h
+                        // sono. Padrão forte… Melhorar o sono pode ser uma alavanca" —
+                        // sem comparar com os OUTROS dias (se quase todas as noites
+                        // têm <6h, 60% não diz nada), e com linguagem de causa. E uma
+                        // 2.ª parte escolhia a emoção mais comum nos dias de muitos
+                        // consumos e chamava-lhe "trigger primário validado — não é
+                        // especulação". Essa saiu: as emoções são comparadas, com
+                        // teste e todas pela mesma ordem, em "Emoções e consumo".
+                        // Agora: dias com consumos entre as 00h e as 06h vs os outros
+                        // dias com consumo, na parte com menos de 6h de sono.
+                        const sonoPorDia = new Map();
+                        analysisCycles.forEach(c => {
+                            const d = c.date || safeToISODate(c.timestamp);
+                            if (d && temSono(c)) sonoPorDia.set(d, parseFloat(c.sleep));
                         });
-
-                        if (lateConsumptions.length >= 5) {
-                            // Verificar sono nesses dias
-                            const lateDates = new Set(lateConsumptions.map(c => c.date));
-                            const cyclesWithLate = analysisCycles.filter(cycle => {
-                                const cDate = cycle.date || safeToISODate(cycle.timestamp);
-                                return lateDates.has(cDate) && temSono(cycle);
-                            });
-
-                            const lowSleepCount = cyclesWithLate.filter(c => parseFloat(c.sleep) < 6).length;
-                            const percentLowSleep = cyclesWithLate.length > 0 ? (lowSleepCount / cyclesWithLate.length * 100).toFixed(0) : 0;
-
-                            if (percentLowSleep >= 60) {
-                                return (
-                                    <p>
-                                        🔗 <strong className={('text-cyan-400')}>{t('coach.triggerMappingLabel')}</strong>{' '}
-                                        {t('coach.triggerMappingLate', { pct: percentLowSleep })}
-                                    </p>
-                                );
-                            }
-                        }
-
-                        // 2. Dias com alta frequência (≥threshold) vs triggers específicos
-                        // Sem meta não há limiar: este bloco não se mostra em vez de
-                        // usar um número inventado pela app.
-                        if (difficultThreshold == null) return null;
-                        const consumptionsByDate = {};
-                        analysisConsumptions.forEach(c => {
-                            if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
-                            consumptionsByDate[c.date]++;
+                        const diasTardios = new Set(analysisConsumptions
+                            .filter(c => { const h = new Date(c.timestamp).getHours(); return h >= 0 && h < 6; })
+                            .map(c => c.date || safeToISODate(c.timestamp)));
+                        const comTardio = [], semTardio = [];
+                        Object.keys(consPorDia).forEach(d => {
+                            if (!sonoPorDia.has(d)) return;
+                            (diasTardios.has(d) ? comTardio : semTardio).push(sonoPorDia.get(d) < 6 ? 1 : 0);
                         });
-
-                        const highFreqDates = Object.entries(consumptionsByDate)
-                            .filter(([_, count]) => count >= difficultThreshold)
-                            .map(([date, _]) => date);
-
-                        if (highFreqDates.length >= 3 && analysisWellbeing.length >= 5) {
-                            // Verificar emoções comuns nesses dias (contar DIAS únicos, não ocorrências)
-                            const emotionDaysCount = {};
-
-                            analysisWellbeing.forEach(w => {
-                                const wDate = w.date || safeToISODate(w.timestamp);
-                                if (!wDate || !highFreqDates.includes(wDate) || !w.emotions) return;
-
-                                // Usar Set para contar cada emoção apenas uma vez por dia
-                                const uniqueEmotions = new Set(w.emotions);
-                                uniqueEmotions.forEach(emotion => {
-                                    if (!emotionDaysCount[emotion]) emotionDaysCount[emotion] = new Set();
-                                    emotionDaysCount[emotion].add(wDate);
-                                });
-                            });
-
-                            // Converter Sets para contagens
-                            const emotionCounts = {};
-                            Object.entries(emotionDaysCount).forEach(([emotion, datesSet]) => {
-                                emotionCounts[emotion] = datesSet.size;
-                            });
-
-                            const sortedEmotions = Object.entries(emotionCounts)
-                                .sort((a, b) => b[1] - a[1]);
-
-                            if (sortedEmotions.length > 0 && sortedEmotions[0][1] >= 2) {
-                                const topEmotion = sortedEmotions[0];
-                                const daysWithEmotion = topEmotion[1];
-                                const percent = (daysWithEmotion / highFreqDates.length * 100).toFixed(0);
-
-                                if (percent >= 50) {
-                                    return (
-                                        <p>
-                                            🔗 <strong className={('text-cyan-400')}>{t('coach.triggerMappingLabel')}</strong>{' '}
-                                            {t('coach.triggerMappingHighFreq', { pct: percent, threshold: difficultThreshold, emotion: topEmotion[0] })}
-                                        </p>
-                                    );
-                                }
-                            }
+                        if (comTardio.length === 0) return null;
+                        if (comTardio.length < MIN_PER_WINDOW || semTardio.length < MIN_PER_WINDOW) {
+                            return (
+                                <p>
+                                    🔗 <strong className="text-white">{t('coach.triggerMappingLabel')}</strong>{' '}
+                                    <span className="text-gray-400">{t('coach.lateSleepFew', { nA: comTardio.length, nB: semTardio.length, min: MIN_PER_WINDOW, defaultValue: 'Para comparar o sono dos dias com consumos entre as 00h e as 06h com o dos outros dias são precisos {{min}} dias de cada, com sono registado (há {{nA}} e {{nB}}).' })}</span>
+                                </p>
+                            );
                         }
-
-                        return null;
+                        const test = diffPermutation(semTardio, comTardio);
+                        return (
+                            <p>
+                                🔗 <strong className="text-white">{t('coach.triggerMappingLabel')}</strong>{' '}
+                                {t('coach.lateSleepCompare', { a: Math.round(media(comTardio) * 100), nA: comTardio.length, b: Math.round(media(semTardio) * 100), nB: semTardio.length, defaultValue: 'Nos dias com consumos entre as 00h e as 06h, {{a}}% tinham menos de 6h de sono registado ({{nA}} dias); nos outros dias com consumo, {{b}}% ({{nB}} dias).' })}
+                                {' '}<span className="text-gray-400">{t('coach.diffSentence', { verdict: verdict(test.p) })}</span>
+                            </p>
+                        );
                     })(),
 
                     /* Risk Profile */
@@ -1091,36 +1171,35 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             }
                         }
 
-                        // Identificar "dias de alto risco" (top 33% de consumo)
-                        const daysWithData = Object.values(dailyProfile).filter(d => d.consumptions > 0);
-                        if (daysWithData.length < 1) return null;
-
-                        daysWithData.sort((a, b) => b.consumptions - a.consumptions);
-                        const highRiskDays = daysWithData.slice(0, Math.ceil(daysWithData.length / 3));
-
-                        // Calcular médias de bem-estar do dia anterior para dias de alto vs baixo risco
-                        const highRiskPrevMood = highRiskDays.filter(d => d.prevMood !== null).map(d => d.prevMood);
-                        const lowRiskDays = daysWithData.slice(Math.ceil(daysWithData.length / 3));
-                        const lowRiskPrevMood = lowRiskDays.filter(d => d.prevMood !== null).map(d => d.prevMood);
-
-                        if (highRiskPrevMood.length < 2 || lowRiskPrevMood.length < 2) return null;
-
-                        const avgHighRiskPrevMood = highRiskPrevMood.reduce((a, b) => a + b, 0) / highRiskPrevMood.length;
-                        const avgLowRiskPrevMood = lowRiskPrevMood.reduce((a, b) => a + b, 0) / lowRiskPrevMood.length;
-                        const moodDiff = avgLowRiskPrevMood - avgHighRiskPrevMood;
-
-                        // Só mostrar se diferença significativa (>1.5 pontos)
-                        if (Math.abs(moodDiff) < 1.5) return null;
-
+                        // ⚠️ ANTES: "dias de alto risco" (o terço com mais consumo) vs o
+                        // resto, com 2 dias de cada lado, sem teste — aparecia até
+                        // numa semana — e com "Humor baixo pode ser gatilho… usa
+                        // estratégias de prevenção". Agora: as duas séries diárias
+                        // (humor da véspera, consumos do dia) por ordem de data,
+                        // spearmanPermutation, pelo menos MIN_SPEARMAN dias.
+                        const pares = sortedDates
+                            .filter(d => dailyProfile[d].prevMood !== null)
+                            .map(d => ({ mood: dailyProfile[d].prevMood, cons: dailyProfile[d].consumptions }));
+                        if (pares.length === 0) return null;
+                        if (pares.length < MIN_SPEARMAN) {
+                            return (
+                                <p>
+                                    🎯 <strong className="text-white">{t('coach.riskProfileLabel')}</strong>{' '}
+                                    <span className="text-gray-400">{t('coach.prevMoodFew', { n: pares.length, min: MIN_SPEARMAN, defaultValue: 'Para ver se o humor da véspera anda junto com o número de consumos são precisos {{min}} dias com humor registado na véspera (há {{n}}).' })}</span>
+                                </p>
+                            );
+                        }
+                        const test = spearmanPermutation(pares.map(x => x.mood), pares.map(x => x.cons));
+                        if (test.rho == null) return null;
+                        const chance = isChance(test.p);
                         return (
                             <p>
-                                🎯 <strong className={('text-yellow-400')}>{t('coach.riskProfileLabel')}</strong>{' '}
-                                {t('coach.riskProfileText')}
-                                {moodDiff > 0 ? (
-                                    <> {t('coach.riskProfileLowMood', { diff: moodDiff.toFixed(1) })}</>
-                                ) : (
-                                    <> {t('coach.riskProfileHighMood', { diff: Math.abs(moodDiff).toFixed(1) })}</>
-                                )}
+                                🎯 <strong className="text-white">{t('coach.riskProfileLabel')}</strong>{' '}
+                                {chance
+                                    ? t('coach.prevMoodChance', { n: test.n, rho: rhoTxt(test.rho), p: fmtP(test.p, test.m, test.b), defaultValue: 'Em {{n}} dias, o humor da véspera não anda junto com o número de consumos de forma que se distinga do acaso (ρ = {{rho}}, {{p}}).' })
+                                    : t(test.rho < 0 ? 'coach.prevMoodLow' : 'coach.prevMoodHigh', { n: test.n, rho: rhoTxt(test.rho), p: fmtP(test.p, test.m, test.b), defaultValue: test.rho < 0
+                                        ? 'Em {{n}} dias, os dias a seguir a um humor mais baixo tenderam a ter mais consumos (ρ = {{rho}}, {{p}}). Andam juntos — não quer dizer que um cause o outro.'
+                                        : 'Em {{n}} dias, os dias a seguir a um humor mais alto tenderam a ter mais consumos (ρ = {{rho}}, {{p}}). Andam juntos — não quer dizer que um cause o outro.' })}
                             </p>
                         );
                     })(),
@@ -1240,48 +1319,52 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // 3. SCORE FINAL (0-10)
                         const finalScore = hoursScore + regularityScore;
 
-                        // 4. TENDÊNCIA (comparar primeira metade vs segunda metade)
-                        let trend = 'stable';
-                        if (allSleepData.length >= 6) {
+                        // 4. TENDÊNCIA (primeira metade vs segunda metade das noites).
+                        // Antes: bastava uma diferença de 0,5h para dizer "a subir"
+                        // ou "a piorar" (a verde/vermelho), sem teste. Agora só se diz
+                        // que mudou se a diferença não se confundir com o acaso.
+                        let trend = null;
+                        if (allSleepData.length >= 2 * MIN_PER_WINDOW) {
                             const midpoint = Math.floor(allSleepData.length / 2);
-                            const firstHalf = allSleepData.slice(0, midpoint);
-                            const secondHalf = allSleepData.slice(midpoint);
-
-                            const avgFirst = firstHalf.reduce((sum, s) => sum + s.sleep, 0) / firstHalf.length;
-                            const avgSecond = secondHalf.reduce((sum, s) => sum + s.sleep, 0) / secondHalf.length;
-
-                            const diff = avgSecond - avgFirst;
-
-                            if (diff > 0.5) trend = 'improving'; // A melhorar
-                            else if (diff < -0.5) trend = 'worsening'; // A piorar
+                            const firstHalf = allSleepData.slice(0, midpoint).map(s => s.sleep);
+                            const secondHalf = allSleepData.slice(midpoint).map(s => s.sleep);
+                            const r = diffPermutation(firstHalf, secondHalf);
+                            trend = { dir: isChance(r.p) ? 'stable' : (r.diff > 0 ? 'up' : 'down'), p: r.p, a: media(firstHalf), b: media(secondHalf) };
                         }
 
-                        // Determinar cor do score
-                        const scoreColor = finalScore >= 8 ? ('text-green-400') :
-                                          finalScore >= 6 ? ('text-yellow-400') :
-                                          ('text-red-400');
-
+                        // Sono é bem-estar (a regra do elogio é mais solta), mas a
+                        // cor de semáforo (verde/amarelo/vermelho) saiu: o número e a
+                        // frase chegam.
                         return (
                             <p>
                                 💤 <strong>{t('coach.sleepScoreLabel')}</strong>{' '}
-                                <span className={'text-xl font-bold ' + scoreColor}>
+                                <span className={'text-xl font-bold font-mono-theme text-white'}>
                                     {finalScore.toFixed(1)}/10
                                 </span>
-                                {trend === 'improving' && <> <span className={('text-green-400')}>{t('coach.sleepScoreImproving')}</span></>}
-                                {trend === 'worsening' && <> <span className={('text-red-400')}>{t('coach.sleepScoreWorsening')}</span></>}
-                                {trend === 'stable' && <> <span className={('text-gray-400')}>{t('coach.sleepScoreStable')}</span></>}
                                 {' '}
                                 <span className={('text-gray-300')}>
                                     {t('coach.sleepScoreDetails', { hours: hoursScore.toFixed(1), reg: regularityScore.toFixed(1) })}
                                 </span>
                                 .
                                 {finalScore >= 8 ? (
-                                    <> <span className={('text-green-400')}>{t('coach.sleepScoreExcellent', { avg: avgSleep.toFixed(1) })}</span></>
+                                    <> {t('coach.sleepScoreExcellent', { avg: avgSleep.toFixed(1) })}</>
                                 ) : finalScore >= 6 ? (
-                                    <> <span className={('text-yellow-400')}>{t(regularityScore < 3 ? 'coach.sleepScoreReasonableIrregular' : 'coach.sleepScoreReasonable', { avg: avgSleep.toFixed(1) })}</span></>
+                                    <> {t(regularityScore < 3 ? 'coach.sleepScoreReasonableIrregular' : 'coach.sleepScoreReasonable', { avg: avgSleep.toFixed(1) })}</>
                                 ) : (
-                                    <> <span className={('text-red-400')}>{t(regularityScore < 3 ? 'coach.sleepScorePoorIrregular' : 'coach.sleepScorePoor', { avg: avgSleep.toFixed(1) })}</span></>
+                                    <> {t(regularityScore < 3 ? 'coach.sleepScorePoorIrregular' : 'coach.sleepScorePoor', { avg: avgSleep.toFixed(1) })}</>
                                 )}
+                                {' '}<span className="text-gray-400">
+                                    {trend
+                                        ? t(trend.dir === 'up' ? 'coach.sleepTrendUp' : trend.dir === 'down' ? 'coach.sleepTrendDown' : 'coach.sleepTrendChance', {
+                                            a: trend.a.toFixed(1), b: trend.b.toFixed(1), p: fmtP(trend.p),
+                                            defaultValue: trend.dir === 'up'
+                                                ? 'Primeira metade das noites: {{a}}h em média; segunda: {{b}}h — a subir ({{p}}).'
+                                                : trend.dir === 'down'
+                                                    ? 'Primeira metade das noites: {{a}}h em média; segunda: {{b}}h — a descer ({{p}}).'
+                                                    : 'Primeira metade das noites: {{a}}h em média; segunda: {{b}}h — a diferença não se distingue do acaso ({{p}}).',
+                                        })
+                                        : t('coach.sleepTrendFew', { n: allSleepData.length, min: 2 * MIN_PER_WINDOW, defaultValue: 'Para ver se o sono está a mudar são precisas {{min}} noites registadas (há {{n}}).' })}
+                                </span>
                             </p>
                         );
                     })()}
@@ -1332,51 +1415,50 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             else withSleepDates.add(date);
                         });
 
-                        if (noSleepDates.size < 3 || withSleepDates.size < 3) return null;
+                        if (noSleepDates.size === 0) return null;
+                        // Antes bastavam 3 noites de cada lado e "Consumiste mais nesses
+                        // dias" saía de uma diferença de 15%, sem teste. Agora: 5 de
+                        // cada lado e teste; com menos, diz-se quantas há.
+                        if (noSleepDates.size < MIN_PER_WINDOW || withSleepDates.size < MIN_PER_WINDOW) {
+                            return (
+                                <p>
+                                    😴 <strong className={('text-cyan-400')}>{t('coach.noSleepAnalysisLabel')}</strong>{' '}
+                                    <span className="text-gray-400">{t('coach.noSleepFew', { n: noSleepDates.size, m: withSleepDates.size, min: MIN_PER_WINDOW, defaultValue: 'Há {{n}} noites com 3h ou menos registadas e {{m}} com mais — para comparar são precisas {{min}} de cada.' })}</span>
+                                    {semRegistoDeSono.size > 0 && (
+                                        <> <span className={('text-gray-500')}>{t('coach.noSleepUnlogged', { n: semRegistoDeSono.size })}</span></>
+                                    )}
+                                </p>
+                            );
+                        }
 
-                        // Consumos médios por dia: sem sono vs com sono
-                        const consPerDayNoSleep = {};
-                        const consPerDayWithSleep = {};
-                        analysisConsumptions.forEach(c => {
-                            if (!c.date) return;
-                            if (noSleepDates.has(c.date)) consPerDayNoSleep[c.date] = (consPerDayNoSleep[c.date] || 0) + 1;
-                            else if (withSleepDates.has(c.date)) consPerDayWithSleep[c.date] = (consPerDayWithSleep[c.date] || 0) + 1;
-                        });
+                        // Consumos por dia: pouco sono vs o resto (um valor por dia)
+                        const consNoSleep = [...noSleepDates].map(d => consPorDia[d] || 0);
+                        const consWithSleep = [...withSleepDates].map(d => consPorDia[d] || 0);
+                        const avgConsNoSleep = media(consNoSleep);
+                        const avgConsWithSleep = media(consWithSleep);
+                        const testCons = diffPermutation(consWithSleep, consNoSleep);
 
-                        const avgArr = (obj) => {
-                            const vals = Object.values(obj);
-                            return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : 0;
+                        // Humor e energia: média por dia, nos dois grupos
+                        const porDiaMedia = (campo, dias) => {
+                            const m = {};
+                            analysisWellbeing.forEach(w => {
+                                const d = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
+                                if (!d || !dias.has(d) || w[campo] == null || isNaN(parseFloat(w[campo]))) return;
+                                (m[d] = m[d] || []).push(parseFloat(w[campo]));
+                            });
+                            return Object.values(m).map(media);
                         };
-                        const avgConsNoSleep = avgArr(consPerDayNoSleep);
-                        const avgConsWithSleep = avgArr(consPerDayWithSleep);
-
-                        // Humor e energia: sem sono vs com sono
-                        const moodNoSleep = [], energyNoSleep = [];
-                        const moodWithSleep = [], energyWithSleep = [];
-
-                        analysisWellbeing.forEach(w => {
-                            const d = w.date || (w.timestamp ? safeToISODate(w.timestamp) : null);
-                            if (!d) return;
-                            if (noSleepDates.has(d)) {
-                                if (w.mood != null) moodNoSleep.push(parseFloat(w.mood));
-                                if (w.energy != null) energyNoSleep.push(parseFloat(w.energy));
-                            } else if (withSleepDates.has(d)) {
-                                if (w.mood != null) moodWithSleep.push(parseFloat(w.mood));
-                                if (w.energy != null) energyWithSleep.push(parseFloat(w.energy));
+                        const moodNoSleep = porDiaMedia('mood', noSleepDates), moodWithSleep = porDiaMedia('mood', withSleepDates);
+                        const energyNoSleep = porDiaMedia('energy', noSleepDates), energyWithSleep = porDiaMedia('energy', withSleepDates);
+                        const hasMoodData = moodNoSleep.length > 0 && moodWithSleep.length > 0;
+                        const hasEnergyData = energyNoSleep.length > 0 && energyWithSleep.length > 0;
+                        const linhaTeste = (a, b, what) => {
+                            if (a.length === 0 || b.length === 0) return null;
+                            if (a.length < MIN_PER_WINDOW || b.length < MIN_PER_WINDOW) {
+                                return t('coach.groupFew', { what, nA: a.length, nB: b.length, min: MIN_PER_WINDOW });
                             }
-                        });
-
-                        const avg = arr => arr.length > 0 ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
-                        const avgMoodNS = avg(moodNoSleep);
-                        const avgMoodWS = avg(moodWithSleep);
-                        const avgEnergyNS = avg(energyNoSleep);
-                        const avgEnergyWS = avg(energyWithSleep);
-
-                        const hasMoodData = avgMoodNS !== null && avgMoodWS !== null;
-                        const hasEnergyData = avgEnergyNS !== null && avgEnergyWS !== null;
-                        const consHigher = avgConsNoSleep > avgConsWithSleep * 1.15;
-                        const moodLower = hasMoodData && avgMoodNS < avgMoodWS - 0.4;
-                        const energyLower = hasEnergyData && avgEnergyNS < avgEnergyWS - 0.4;
+                            return t('coach.groupTest', { what, verdict: verdict(diffPermutation(b, a).p) });
+                        };
 
                         return (
                             <p>
@@ -1386,18 +1468,17 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                     avgCons: avgConsNoSleep.toFixed(1),
                                     avgConsS: avgConsWithSleep.toFixed(1)
                                 })}
+                                {' '}<span className="text-gray-400">{t('coach.diffSentence', { verdict: verdict(testCons.p) })}</span>
                                 {hasMoodData && (
                                     <> {t('coach.noSleepMoodEnergy', {
-                                        mood: avgMoodNS.toFixed(1),
-                                        energy: hasEnergyData ? avgEnergyNS.toFixed(1) : '–',
-                                        moodS: avgMoodWS.toFixed(1),
-                                        energyS: hasEnergyData ? avgEnergyWS.toFixed(1) : '–'
-                                    })}</>
+                                        mood: media(moodNoSleep).toFixed(1),
+                                        energy: hasEnergyData ? media(energyNoSleep).toFixed(1) : '–',
+                                        moodS: media(moodWithSleep).toFixed(1),
+                                        energyS: hasEnergyData ? media(energyWithSleep).toFixed(1) : '–'
+                                    })}
+                                    {' '}<span className="text-gray-400">{[linhaTeste(moodNoSleep, moodWithSleep, t('coach.whatMood', 'Humor')), linhaTeste(energyNoSleep, energyWithSleep, t('coach.whatEnergy', 'Energia'))].filter(Boolean).join(' ')}</span></>
                                 )}
                                 {!hasMoodData && <> {t('coach.noSleepNoWellbeing')}</>}
-                                {consHigher && <> <span className={('text-gray-300')}>{t('coach.noSleepMoreCons')}</span></>}
-                                {!consHigher && <> <span className={('text-gray-400')}>{t('coach.noSleepSameCons')}</span></>}
-                                {(moodLower || energyLower) && <> <span className={('text-gray-300')}>{t('coach.noSleepWorseMoodEnergy')}</span></>}
                                 {semRegistoDeSono.size > 0 && (
                                     <> <span className={('text-gray-500')}>{t('coach.noSleepUnlogged', { n: semRegistoDeSono.size })}</span></>
                                 )}
@@ -1588,31 +1669,38 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // PRÓPRIO dia D. Antes juntava-se o sono de D ao humor do
                         // registo seguinte (até 2 dias depois) — ou seja, à noite
                         // errada, e às vezes com um dia inteiro pelo meio.
-                        const nextDaySleepMood = [];
-                        Object.values(dailyData).forEach(d => {
-                            if (d.sleep !== null && d.mood !== null) {
-                                nextDaySleepMood.push({ sleep: d.sleep, mood: d.mood });
-                            }
-                        });
-
-                        if (nextDaySleepMood.length < 2) return null;
-
-                        const correlation = analyticsService.calculatePearsonCorrelation(nextDaySleepMood, 'sleep', 'mood');
-                        if (correlation === null || isNaN(correlation)) return null;
-
+                        // ⚠️ ANTES: Pearson com 3 dias bastava, e o texto dizia "Dormir
+                        // bem melhora claramente o teu humor… é o teu melhor
+                        // investimento emocional" (causa + conselho) ou "Considera
+                        // consultar profissional de saúde". Agora: as duas séries por
+                        // ordem de data, spearmanPermutation, pelo menos MIN_SPEARMAN
+                        // dias; e só se diz "andam juntos".
+                        const pares = Object.keys(dailyData).sort()
+                            .filter(d => dailyData[d].sleep !== null && dailyData[d].mood !== null)
+                            .map(d => dailyData[d]);
+                        if (pares.length === 0) return null;
+                        const label = (
+                            <>💤 <strong className={('text-white')}>{t('coach.sleepMoodLabel')}</strong>{' '}</>
+                        );
+                        if (pares.length < MIN_SPEARMAN) {
+                            return (
+                                <p>
+                                    {label}
+                                    <span className="text-gray-400">{t('coach.sleepMoodFew', { n: pares.length, min: MIN_SPEARMAN, defaultValue: 'Para ver se as horas de sono andam junto com o humor desse dia são precisos {{min}} dias com os dois registados (há {{n}}).' })}</span>
+                                </p>
+                            );
+                        }
+                        const test = spearmanPermutation(pares.map(x => x.sleep), pares.map(x => x.mood));
+                        if (test.rho == null) return null;
+                        const args = { n: test.n, rho: rhoTxt(test.rho), p: fmtP(test.p, test.m, test.b) };
                         return (
                             <p>
-                                💤➡️😊 <strong className={('text-white')}>{t('coach.sleepMoodLabel')}</strong>{' '}
-                                {t('coach.sleepMoodText')}
-                                {correlation > 0.4 ? (
-                                    <> {t('coach.sleepMoodStrongPos', { r: correlation.toFixed(2) })}</>
-                                ) : correlation > 0.2 ? (
-                                    <> {t('coach.sleepMoodModPos', { r: correlation.toFixed(2) })}</>
-                                ) : correlation < -0.3 ? (
-                                    <> {t('coach.sleepMoodNeg', { r: correlation.toFixed(2) })}</>
-                                ) : (
-                                    <> {t('coach.sleepMoodWeak', { r: correlation.toFixed(2) })}</>
-                                )}
+                                {label}
+                                {isChance(test.p)
+                                    ? t('coach.sleepMoodChance', { ...args, defaultValue: 'Em {{n}} dias, as horas de sono e o humor desse dia não andam juntos de forma que se distinga do acaso (ρ = {{rho}}, {{p}}).' })
+                                    : t(test.rho > 0 ? 'coach.sleepMoodPos' : 'coach.sleepMoodNegative', { ...args, defaultValue: test.rho > 0
+                                        ? 'Em {{n}} dias, depois de noites mais longas o humor tendeu a ser mais alto (ρ = {{rho}}, {{p}}). Andam juntos — não quer dizer que um cause o outro.'
+                                        : 'Em {{n}} dias, depois de noites mais longas o humor tendeu a ser mais baixo (ρ = {{rho}}, {{p}}). Andam juntos — não quer dizer que um cause o outro.' })}
                             </p>
                         );
                     })()}
@@ -1647,18 +1735,17 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             .map(([emotion]) => emotion);
 
                         // Determinar se é maioritariamente positivo ou negativo
-                        const isPositive = positivePercent >= 50;
-                        const balanceLabelKey = positivePercent >= 70 ? 'coach.balanceVeryPositive' : positivePercent >= 50 ? 'coach.balancePositive' : positivePercent >= 30 ? 'coach.balanceMixed' : 'coach.balanceChallenging';
+                                                const balanceLabelKey = positivePercent >= 70 ? 'coach.balanceVeryPositive' : positivePercent >= 50 ? 'coach.balancePositive' : positivePercent >= 30 ? 'coach.balanceMixed' : 'coach.balanceChallenging';
 
                         return (
                             <p>
-                                🌈 <strong className={('text-cyan-400')}>{t('coach.emotionalStateLabel')}</strong>{' '}{t('coach.emotionalBalance')} <strong className={(isPositive ? 'text-green-400' : 'text-orange-400')}>{t(balanceLabelKey)}</strong> {t('coach.pctPositiveEmotions', { pct: positivePercent })}
+                                🌈 <strong className={('text-cyan-400')}>{t('coach.emotionalStateLabel')}</strong>{' '}{t('coach.emotionalBalance')} <strong className="text-white">{t(balanceLabelKey)}</strong> {t('coach.pctPositiveEmotions', { pct: positivePercent })}
                                 {topEmotions.length > 0 && <> {t('coach.mostFrequentEmotions')} <strong>{topEmotions.map(e => i18n.language === 'en' ? (EMOTION_EN[e] || e) : e).join(', ')}</strong>.</>}
-                                {positivePercent >= 60 ? (
-                                    <> <span className={('text-green-400')}>{t('coach.emotionalPositiveTip')}</span></>
-                                ) : positivePercent < 40 ? (
-                                    <> <span className={('text-white')}>{t('coach.emotionalDifficultTip')}</span></>
-                                ) : null}
+                                {/* Antes, com ≥60%: "✨ Ótimo! Mantém estas práticas que te fazem
+                                    sentir bem" — elogio e uma causa que a app não conhece. */}
+                                {positivePercent < 40 && (
+                                    <> <span className={('text-gray-300')}>{t('coach.emotionalDifficultTip')}</span></>
+                                )}
                             </p>
                         );
                     })()}
@@ -1667,56 +1754,60 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {(() => {
                         if (analysisWellbeing.length < 5) return null;
 
-                        // Análise por emoção específica
-                        const emotionImpact = {};
-                        const consumptionsByDate = {};
-
-                        analysisConsumptions.forEach(c => {
-                            if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
-                            consumptionsByDate[c.date]++;
-                        });
-
+                        // ⚠️ ANTES: "Gatilhos Emocionais Validados: Emoção X correlaciona
+                        // com +2 consumos… É gatilho validado, não especulação" e "Fator
+                        // protetor — cultivar": a emoção com a MAIOR diferença (escolhida
+                        // pela força), com 2 dias, sem teste. Agora: cada emoção com
+                        // dias suficientes é testada (dias com ela vs dias sem ela, no
+                        // nº de consumos), e diz-se quantas foram testadas — com
+                        // muitas, uma ou outra parece diferente só por acaso.
+                        const diasPorEmocao = new Map();
+                        const diasComEmocoes = new Set();
                         analysisWellbeing.forEach(w => {
-                            const wDate = w.date || safeToISODate(w.timestamp);
-                            if (!wDate || !w.emotions || w.emotions.length === 0) return;
-
-                            const dayConsumptions = consumptionsByDate[wDate] || 0;
-
-                            w.emotions.forEach(emotion => {
-                                if (!emotionImpact[emotion]) emotionImpact[emotion] = { days: 0, totalCons: 0 };
-                                emotionImpact[emotion].days++;
-                                emotionImpact[emotion].totalCons += dayConsumptions;
+                            const d = w.date || safeToISODate(w.timestamp);
+                            if (!d || !w.emotions || w.emotions.length === 0) return;
+                            diasComEmocoes.add(d);
+                            w.emotions.forEach(e => {
+                                if (!diasPorEmocao.has(e)) diasPorEmocao.set(e, new Set());
+                                diasPorEmocao.get(e).add(d);
                             });
                         });
-
-                        const avgDaily = Object.values(consumptionsByDate).reduce((a, b) => a + b, 0) / Object.keys(consumptionsByDate).length;
-
-                        // Encontrar emoções com impacto claro
-                        const emotionsWithAvg = Object.entries(emotionImpact)
-                            .filter(([_, data]) => data.days >= 2)
-                            .map(([emotion, data]) => ({
-                                emotion,
-                                avg: data.totalCons / data.days,
-                                days: data.days,
-                                diff: (data.totalCons / data.days) - avgDaily
-                            }))
-                            .filter(e => Math.abs(e.diff) >= 2);
-
-                        if (emotionsWithAvg.length === 0) return null;
-
-                        // Top risco e top protetor
-                        const topRisk = emotionsWithAvg.sort((a, b) => b.diff - a.diff)[0];
-                        const topProtector = emotionsWithAvg.sort((a, b) => a.diff - b.diff)[0];
-
+                        const testadas = [];
+                        diasPorEmocao.forEach((dias, emotion) => {
+                            const com = [...dias].map(d => consPorDia[d] || 0);
+                            const sem = [...diasComEmocoes].filter(d => !dias.has(d)).map(d => consPorDia[d] || 0);
+                            if (com.length < MIN_PER_WINDOW || sem.length < MIN_PER_WINDOW) return;
+                            const r = diffPermutation(sem, com);
+                            testadas.push({ emotion, n: com.length, a: media(com), b: media(sem), p: r.p });
+                        });
+                        const nomeEmocao = (e) => (i18n.language === 'en' ? (EMOTION_EN[e] || e) : e);
+                        const label = (<>🎭 <strong className={('text-white')}>{t('coach.emotionalTriggersLabel')}</strong>{' '}</>);
+                        if (testadas.length === 0) {
+                            return (
+                                <p>
+                                    {label}
+                                    <span className="text-gray-400">{t('coach.emotionsFew', { min: MIN_PER_WINDOW, defaultValue: 'Ainda nenhuma emoção tem dias suficientes para comparar (são precisos {{min}} dias com ela e {{min}} sem).' })}</span>
+                                </p>
+                            );
+                        }
+                        // Ordem fixa (alfabética), nunca pela diferença.
+                        const sinal = testadas.filter(x => !isChance(x.p)).sort((x, y) => String(x.emotion).localeCompare(String(y.emotion)));
                         return (
                             <p>
-                                🎭 <strong className={('text-pink-400')}>{t('coach.emotionalTriggersLabel')}</strong>
-                                {topRisk && topRisk.diff > 0 && (
-                                    <> {t('coach.emotionalTriggersRisk', { emotion: topRisk.emotion, diff: topRisk.diff.toFixed(1), n: topRisk.days })}</>
-                                )}
-                                {topProtector && topProtector.diff < 0 && (
-                                    <> {t('coach.emotionalTriggersProtector', { emotion: topProtector.emotion, diff: Math.abs(topProtector.diff).toFixed(1) })}</>
-                                )}
+                                {label}
+                                {sinal.length === 0
+                                    ? t('coach.emotionsNone', { k: testadas.length, defaultValue: 'Testámos {{k}} emoções (as que têm dias suficientes): em nenhuma o número de consumos nos dias com ela se distingue do acaso.' })
+                                    : <>
+                                        {t('coach.emotionsSome', { k: testadas.length, defaultValue: 'Testámos {{k}} emoções (as que têm dias suficientes). Nos dias com estas, o número de consumos foi diferente de forma que dificilmente é só acaso:' })}{' '}
+                                        {sinal.map((x, i) => (
+                                            <span key={x.emotion}>
+                                                {i > 0 && '; '}
+                                                <strong>{nomeEmocao(x.emotion)}</strong>{' '}
+                                                {t('coach.emotionRow', { a: x.a.toFixed(1), b: x.b.toFixed(1), n: x.n, p: fmtP(x.p), defaultValue: '{{a}} consumos/dia contra {{b}} sem ela ({{n}} dias, {{p}})' })}
+                                            </span>
+                                        ))}.
+                                        {' '}<span className="text-gray-400">{t('coach.emotionsMultiple', { k: testadas.length, e: (testadas.length * 0.05).toLocaleString(i18n.language, { maximumFractionDigits: 1 }), defaultValue: 'Com {{k}} comparações, cerca de {{e}} dariam este resultado só por acaso. Andarem juntos não quer dizer que um cause o outro.' })}</span>
+                                    </>}
                             </p>
                         );
                     })()}
@@ -1789,60 +1880,44 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                     {(() => {
                         if (analysisWellbeing.length < 5) return null;
 
-                        const consumptionsByDate = {};
-                        analysisConsumptions.forEach(c => {
-                            if (!consumptionsByDate[c.date]) consumptionsByDate[c.date] = 0;
-                            consumptionsByDate[c.date]++;
-                        });
-
-                        const avgDaily = Object.values(consumptionsByDate).reduce((a, b) => a + b, 0) / Object.keys(consumptionsByDate).length;
-
-                        // Analisar impacto de cada área
-                        const areas = { water: [], food: [], social: [] };
-
+                        // ⚠️ ANTES: comparava a média dos dias com cada área com a média
+                        // de TODOS os dias com consumo, sem teste, ordenava as áreas
+                        // pela diferença e dizia "Forte associação" / "Correlação
+                        // inesperada — explorar". Agora: por dia, dias com a área vs
+                        // dias com registo de bem-estar sem ela, pela ordem fixa
+                        // (água, comida, socialização), cada uma com o seu teste.
+                        const areas = { water: new Set(), food: new Set(), social: new Set() };
+                        const diasBemEstar = new Set();
                         analysisWellbeing.forEach(w => {
                             const wDate = w.date || safeToISODate(w.timestamp);
                             if (!wDate) return;
-
-                            const dayCons = consumptionsByDate[wDate] || 0;
-
-                            if (w.water === true || (w.waterGlasses > 0)) areas.water.push(dayCons);
-                            if (w.food === true) areas.food.push(dayCons);
-                            if (w.social === true) areas.social.push(dayCons);
+                            diasBemEstar.add(wDate);
+                            if (w.water === true || (w.waterGlasses > 0)) areas.water.add(wDate);
+                            if (w.food === true) areas.food.add(wDate);
+                            if (w.social === true) areas.social.add(wDate);
                         });
-
-                        const impacts = [];
                         const areaNames = { water: t('coach.selfCareContextWater'), food: t('coach.selfCareContextFood'), social: t('coach.selfCareContextSocial') };
-
-                        Object.entries(areas).forEach(([area, values]) => {
-                            if (values.length < 3) return;
-
-                            const avgWith = values.reduce((a, b) => a + b, 0) / values.length;
-                            const percentDiff = ((avgWith - avgDaily) / avgDaily * 100).toFixed(0);
-
-                            if (Math.abs(percentDiff) >= 10) {
-                                impacts.push({ area, percentDiff: parseFloat(percentDiff), days: values.length });
+                        const linhas = [];
+                        let algumTestado = false;
+                        ['water', 'food', 'social'].forEach(area => {
+                            const com = [...areas[area]].map(d => consPorDia[d] || 0);
+                            const sem = [...diasBemEstar].filter(d => !areas[area].has(d)).map(d => consPorDia[d] || 0);
+                            if (com.length === 0) return;
+                            if (com.length < MIN_PER_WINDOW || sem.length < MIN_PER_WINDOW) {
+                                linhas.push(t('coach.selfCareFew', { area: areaNames[area], nA: com.length, nB: sem.length, min: MIN_PER_WINDOW, defaultValue: 'Dias com {{area}}: poucos para comparar ({{nA}} com e {{nB}} sem; são precisos {{min}} de cada).' }));
+                                return;
                             }
+                            const r = diffPermutation(sem, com);
+                            algumTestado = true;
+                            linhas.push(t('coach.selfCareCompare', { area: areaNames[area], a: media(com).toFixed(1), nA: com.length, b: media(sem).toFixed(1), nB: sem.length, verdict: verdict(r.p), defaultValue: 'Dias com {{area}}: {{a}} consumos/dia ({{nA}} dias); sem: {{b}} ({{nB}} dias) — {{verdict}}.' }));
                         });
-
-                        if (impacts.length === 0) return null;
-
-                        // Ordenar por impacto
-                        impacts.sort((a, b) => a.percentDiff - b.percentDiff);
-                        const topImpact = impacts[0];
+                        if (linhas.length === 0) return null;
 
                         return (
                             <p>
-                                💧 <strong className={('text-teal-400')}>{t('coach.selfCareContextLabel')}</strong>
-                                {topImpact.percentDiff < 0 ? (
-                                    <> {t('coach.selfCareContextPositive', { area: areaNames[topImpact.area], pct: Math.abs(topImpact.percentDiff), n: topImpact.days })}</>
-                                ) : (
-                                    <> {t('coach.selfCareContextNegative', { area: areaNames[topImpact.area], pct: topImpact.percentDiff })}</>
-                                )}
-                                {impacts.length > 1 && impacts[1].percentDiff < 0 && (
-                                    <> {t('coach.selfCareContextAlso', { area: areaNames[impacts[1].area], pct: Math.abs(impacts[1].percentDiff) })}</>
-                                )}
-                                <> <span className={('text-gray-400')}>{t('coach.selfCareContextNote')}</span></>
+                                💧 <strong className={('text-white')}>{t('coach.selfCareContextLabel')}</strong>{' '}
+                                {linhas.join(' ')}
+                                {algumTestado && <> <span className={('text-gray-400')}>{t('coach.selfCareContextNote')}</span></>}
                             </p>
                         );
                     })()}
@@ -1912,10 +1987,10 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                             ) : (
                                                 <> {t('coach.notesBalancedTone', { positivePct: positivePercent, negativePct: negativePercent, neutralPct: neutralPercent })}</>
                                             )}
-                                            {sentimentAnalysis.trend === 'improving' && <span className={'font-medium ' + ('text-green-400')}>{t('coach.notesTrendImproving')}</span>}
-                                            {sentimentAnalysis.trend === 'worsening' && <span className={('text-yellow-400')}>{t('coach.notesTrendWorsening')}</span>}
+                                            {sentimentAnalysis.trend === 'improving' && <> <span className="text-gray-300">{t('coach.notesTrendImproving')}</span></>}
+                                            {sentimentAnalysis.trend === 'worsening' && <> <span className="text-gray-300">{t('coach.notesTrendWorsening')}</span></>}
                                             {highNegDays > 0 && highNegHighCons / highNegDays > 0.6 && (
-                                                <> <strong className={('text-orange-300')}>{t('coach.notesHighNegPattern', { n: highNegHighCons, total: highNegDays })}</strong></>
+                                                <> <span className="text-gray-300">{t('coach.notesHighNegPattern', { n: highNegHighCons, total: highNegDays })}</span></>
                                             )}
                                         </>
                                     );
@@ -1941,11 +2016,11 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                             <>
                                                 {topThemes.map(([theme, data], idx) => {
                                                     const avgSent = data.avgSentiment || 0;
-                                                    const sentColor = avgSent > 0.3 ? ('text-green-400') : avgSent < -0.3 ? ('text-red-400') : ('text-gray-400');
+                                                    // Sem verde/vermelho nem ✓/⚠: o tom das notas descreve-se, não se julga.
                                                     return (
                                                         <span key={theme}>
                                                             {idx > 0 && ', '}
-                                                            <strong className={sentColor}>{themeNames[theme]}</strong> ({data.count}x{avgSent > 0.3 ? '✓' : avgSent < -0.3 ? '⚠' : ''})
+                                                            <strong className="text-white">{themeNames[theme]}</strong> ({data.count}x)
                                                         </span>
                                                     );
                                                 })}
@@ -2023,22 +2098,27 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         return (
                             <p>
                                 🔬 <strong className={('text-white')}>{t('coach.clustersLabel')}</strong>
+                                {/* Antes: "Estás a 'pedalar no limiar' — funcionas, mas à custa
+                                    de estimulação" e "possível depressão mascarada" — leituras
+                                    clínicas a partir de uma contagem de dias. Ficam só as
+                                    contagens, e o aviso de que são só isso. */}
                                 {clusters.altaPressao.length > 0 && (
-                                    <> <strong className={('text-amber-300')}>{t('coach.clustersHighPressure', { n: clusters.altaPressao.length })}</strong></>
+                                    <> {t('coach.clustersHighPressure', { n: clusters.altaPressao.length })}</>
                                 )}
                                 {clusters.paradoxo.length > 0 && (
-                                    <> <strong className={('text-yellow-400')}>{t('coach.clustersParadox', { n: clusters.paradoxo.length })}</strong></>
+                                    <> {t('coach.clustersParadox', { n: clusters.paradoxo.length })}</>
                                 )}
                                 {clusters.equilibrio.length > 0 && (
-                                    <> <strong className={('text-white')}>{t('coach.clustersBalance', { n: clusters.equilibrio.length })}</strong></>
+                                    <> {t('coach.clustersBalance', { n: clusters.equilibrio.length })}</>
                                 )}
+                                {' '}<span className="text-gray-400">{t('coach.clustersNote', { n: Object.keys(dailyData).length, defaultValue: 'São só contagens (de {{n}} dias com consumo): não dizem se estas combinações aparecem mais do que o acaso daria.' })}</span>
                             </p>
                         );
                     })()}
 
                     {/* Consumption Impact */}
                     {(() => {
-                        // Análise: consumo hoje afeta bem-estar amanhã?
+                        // Os consumos de um dia andam junto com o bem-estar do dia seguinte?
                         const dailyConsumptionData = {};
 
                         // Agrupar consumos por dia
@@ -2067,7 +2147,9 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             const today = dailyConsumptionData[sortedDates[i]];
                             const tomorrow = dailyConsumptionData[diaSeguinte(sortedDates[i])];
                             if (!tomorrow) continue;
-                            if (today.consumptions > 0 && (tomorrow.mood !== null || tomorrow.energy !== null)) {
+                            // Dias sem consumo (mas com registo) contam como 0 — são
+                            // reais: os "não registei" já vêm tirados.
+                            if (tomorrow.mood !== null || tomorrow.energy !== null) {
                                 nextDayData.push({
                                     consumptions: today.consumptions,
                                     mood: tomorrow.mood,
@@ -2076,43 +2158,38 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             }
                         }
 
-                        if (nextDayData.length < 2) return null;
-
-                        const validMoodData = nextDayData.filter(d => d.mood !== null);
-                        const validEnergyData = nextDayData.filter(d => d.energy !== null);
-
-                        const moodCorr = validMoodData.length >= 2 ? analyticsService.calculatePearsonCorrelation(validMoodData, 'consumptions', 'mood') : null;
-                        const energyCorr = validEnergyData.length >= 2 ? analyticsService.calculatePearsonCorrelation(validEnergyData, 'consumptions', 'energy') : null;
-
-                        // Só mostrar se pelo menos uma correlação existe e é significativa
-                        if ((moodCorr === null || Math.abs(moodCorr) < 0.3) && (energyCorr === null || Math.abs(energyCorr) < 0.3)) return null;
+                        // ⚠️ ANTES: Pearson com 2 dias, e frases como "O ciclo é evidente
+                        // — consumir hoje = sentir-te pior amanhã", "mais consumo resulta
+                        // em fadiga clara… O teu corpo está a pedir descanso" (causa,
+                        // juízo e diagnóstico). Agora: duas séries diárias por ordem de
+                        // data (consumos de um dia, humor/energia do dia seguinte),
+                        // spearmanPermutation, pelo menos MIN_SPEARMAN dias, e só
+                        // "andam juntos".
+                        if (nextDayData.length === 0) return null;
+                        let algumTestado = false;
+                        const linha = (campo, what) => {
+                            const v = nextDayData.filter(d => d[campo] !== null);
+                            if (v.length === 0) return null;
+                            if (v.length < MIN_SPEARMAN) {
+                                return t('coach.nextDayFew', { what, n: v.length, min: MIN_SPEARMAN, defaultValue: '{{what}}: são precisos {{min}} pares de dias seguidos com os dois registados (há {{n}}).' });
+                            }
+                            const r = spearmanPermutation(v.map(d => d.consumptions), v.map(d => d[campo]));
+                            if (r.rho == null) return null;
+                            algumTestado = true;
+                            const args = { what, n: r.n, rho: rhoTxt(r.rho), p: fmtP(r.p, r.m, r.b) };
+                            if (isChance(r.p)) return t('coach.nextDayChance', { ...args, defaultValue: '{{what}}: em {{n}} pares de dias, não anda junto com os consumos da véspera de forma que se distinga do acaso (ρ = {{rho}}, {{p}}).' });
+                            return t(r.rho < 0 ? 'coach.nextDayLower' : 'coach.nextDayHigher', { ...args, defaultValue: r.rho < 0
+                                ? '{{what}}: em {{n}} pares de dias, depois de dias com mais consumos tendeu a ser mais baixo (ρ = {{rho}}, {{p}}).'
+                                : '{{what}}: em {{n}} pares de dias, depois de dias com mais consumos tendeu a ser mais alto (ρ = {{rho}}, {{p}}).' });
+                        };
+                        const linhas = [linha('mood', t('coach.whatMood', 'Humor')), linha('energy', t('coach.whatEnergy', 'Energia'))].filter(Boolean);
+                        if (linhas.length === 0) return null;
 
                         return (
                             <p>
                                 🔍 <strong className={('text-white')}>{t('coach.consumptionImpactLabel')}</strong>{' '}
-                                {t('coach.consumptionImpactText')}
-                                {moodCorr !== null && Math.abs(moodCorr) >= 0.3 && (
-                                    <>
-                                        {moodCorr < -0.5 ? (
-                                            <> {t('coach.consumptionImpactMoodStrong', { r: moodCorr.toFixed(2) })}</>
-                                        ) : moodCorr < -0.3 ? (
-                                            <> {t('coach.consumptionImpactMoodMod', { r: moodCorr.toFixed(2) })}</>
-                                        ) : moodCorr > 0.3 ? (
-                                            <> {t('coach.consumptionImpactMoodPos', { r: moodCorr.toFixed(2) })}</>
-                                        ) : null}
-                                    </>
-                                )}
-                                {energyCorr !== null && Math.abs(energyCorr) >= 0.3 && (
-                                    <>
-                                        {energyCorr < -0.5 ? (
-                                            <> {t('coach.consumptionImpactEnergyStrong', { r: energyCorr.toFixed(2) })}</>
-                                        ) : energyCorr < -0.3 ? (
-                                            <> {t('coach.consumptionImpactEnergyMod', { r: energyCorr.toFixed(2) })}</>
-                                        ) : energyCorr > 0.3 ? (
-                                            <> {t('coach.consumptionImpactEnergyPos', { r: energyCorr.toFixed(2) })}</>
-                                        ) : null}
-                                    </>
-                                )}
+                                {linhas.join(' ')}
+                                {algumTestado && <>{' '}<span className="text-gray-400">{t('coach.togetherNote', 'Andarem juntos não quer dizer que um cause o outro.')}</span></>}
                             </p>
                         );
                     })()}
@@ -2130,6 +2207,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Para cada consumo, encontrar o check-in de bem-estar mais próximo no mesmo dia
                         let countWithLowEnergy = 0;
                         let countWithData = 0;
+                        const usados = new Set(); // check-ins que vieram antes destes consumos
 
                         last10Consumptions.forEach(cons => {
                             const consDate = cons.date;
@@ -2149,6 +2227,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             );
 
                             countWithData++;
+                            usados.add(latestPrior);
                             if (parseInt(latestPrior.energy) < 4) {
                                 countWithLowEnergy++;
                             }
@@ -2157,20 +2236,34 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         // Só mostrar se houver pelo menos 5 consumos com dados de energia
                         if (countWithData < 5) return null;
 
-                        const percentage = Math.round((countWithLowEnergy / countWithData) * 100);
-
-                        // Só mostrar se pelo menos 50% dos consumos tinham energia baixa
-                        if (percentage < 50) return null;
-
+                        // ⚠️ ANTES: "Isto sugere uma forte correlação entre cansaço e
+                        // consumo" / "o cansaço pode ser um gatilho" — sem olhar para
+                        // quantas vezes a energia está baixa nos OUTROS check-ins (se
+                        // está quase sempre baixa, 7 em 10 não diz nada). Agora
+                        // compara-se com os outros check-ins, com teste (0/1 por
+                        // check-in; repetidos contam uma vez).
+                        const unicos = [...usados];
+                        const antes = unicos.map(w => (parseInt(w.energy) < 4 ? 1 : 0));
+                        const outros = analysisWellbeing
+                            .filter(w => w.energy != null && !isNaN(parseInt(w.energy)) && !usados.has(w))
+                            .map(w => (parseInt(w.energy) < 4 ? 1 : 0));
+                        const label = (<>⚡ <strong className={('text-white')}>{t('coach.energyLabel')}</strong>{' '}</>);
+                        if (antes.length < MIN_PER_WINDOW || outros.length < MIN_PER_WINDOW) {
+                            return (
+                                <p>
+                                    {label}
+                                    {t('coach.energyText', { total: countWithData, low: countWithLowEnergy })}{' '}
+                                    <span className="text-gray-400">{t('coach.energyFew', { nA: antes.length, nB: outros.length, min: MIN_PER_WINDOW, defaultValue: 'Para comparar com os outros check-ins são precisos {{min}} de cada lado (há {{nA}} e {{nB}}).' })}</span>
+                                </p>
+                            );
+                        }
+                        const test = diffPermutation(outros, antes);
                         return (
                             <p>
-                                ⚡ <strong className={('text-yellow-400')}>{t('coach.energyLabel')}</strong>{' '}
-                                {t('coach.energyText', { total: countWithData, low: countWithLowEnergy })}
-                                {percentage >= 70 ? (
-                                    <> {t('coach.energyStrongCorrelation')}</>
-                                ) : (
-                                    <> {t('coach.energyTrigger')}</>
-                                )}
+                                {label}
+                                {t('coach.energyText', { total: countWithData, low: countWithLowEnergy })}{' '}
+                                {t('coach.energyCompare', { a: Math.round(media(antes) * 100), b: Math.round(media(outros) * 100), nB: outros.length, defaultValue: 'Nos check-ins logo antes de consumir, a energia estava baixa em {{a}}%; nos outros {{nB}} check-ins, em {{b}}%.' })}
+                                {' '}<span className="text-gray-400">{t('coach.diffSentence', { verdict: verdict(test.p) })}</span>
                             </p>
                         );
                     })()}
@@ -2194,90 +2287,24 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         const dailyCounts = Object.values(consumptionsByDate);
 
-                        // Usar threshold global já definido (baseado em meta)
-                        // Era `: 7` — outro alvo inventado. Sem meta não há "dia bom".
-                        if (!frequencyGoal || difficultThreshold == null) return null;
-                        const goodThreshold = Math.max(1, frequencyGoal.target - 1);
-                        // difficultThreshold já definido globalmente no início (linha ~161)
-
-                        const goodDays = dailyCounts.filter(c => c <= goodThreshold).length;
-                        const difficultDays = dailyCounts.filter(c => c >= difficultThreshold).length;
-
-                        // Verificar se há melhoria ou esforço
-                        let hasEffort = false;
-                        if (goodDays > 0 || avgPerDay < 12) hasEffort = true;
-
-                        // Verificar limites
-                        let hasLimits = false;
-                        if (difficultDays >= dailyCounts.length * 0.3 || avgPerDay > 10) hasLimits = true;
-
-                        // Áreas para optimizar
-                        const optimizationAreas = [];
-
-                        if (difficultDays > 0) optimizationAreas.push(t('coach.optFrequency', { n: difficultThreshold }));
-
-                        const ciclosComSono = analysisCycles.filter(temSono);
-                        if (ciclosComSono.length > 0) {
-                            const avgSleep = ciclosComSono.reduce((sum, c) => sum + parseFloat(c.sleep), 0) / ciclosComSono.length;
-                            if (avgSleep < 7) optimizationAreas.push(t('coach.optSleep'));
-                        }
-
-                        if (analysisWellbeing.length > 0) {
-                            const avgMood = analysisWellbeing
-                                .filter(w => w.mood)
-                                .reduce((sum, w) => sum + parseInt(w.mood), 0) / analysisWellbeing.filter(w => w.mood).length;
-                            if (avgMood < 6) optimizationAreas.push(t('coach.optEmotion'));
-                        }
-
-                        const lateConsumptions = analysisConsumptions.filter(c => {
-                            const hour = new Date(c.timestamp).getHours();
-                            return hour >= 0 && hour < 6;
-                        });
-                        if (lateConsumptions.length / analysisConsumptions.length > 0.2) {
-                            optimizationAreas.push(t('coach.optTiming'));
-                        }
-
-                        // Calcular intervalos
-                        const intervals = [];
-                        Object.values(consumptionsByDate).forEach((_, date) => {
-                            const dayConsumptions = analysisConsumptions
-                                .filter(c => c.date === Object.keys(consumptionsByDate)[date])
-                                .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-                            for (let i = 1; i < dayConsumptions.length; i++) {
-                                const diff = (new Date(dayConsumptions[i].timestamp) - new Date(dayConsumptions[i-1].timestamp)) / (1000 * 60 * 60);
-                                intervals.push(diff);
-                            }
-                        });
-
-                        if (intervals.length > 0) {
-                            const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-                            if (avgInterval < 2.5) optimizationAreas.push(t('coach.optSpacing'));
-                        }
+                        // ⚠️ ANTES: "dias mais leves/mais pesados" com outro limiar
+                        // (alvo − 1) diferente do resto do separador; "esforço" e
+                        // "limites" decididos por números inventados (média < 12,
+                        // > 10); "Muitas vezes sinal de mais pressão à tua volta"; e
+                        // uma lista do que "optimizar" escolhida pela app (sono 7-8h,
+                        // evitar consumo nocturno, espaçar) sem a pessoa ter metas
+                        // dessas. Agora: só a meta dela, com o mesmo corte da secção
+                        // "Dias" (≤ alvo = dentro), e só as metas que ela definiu.
+                        if (!frequencyGoal) return null;
+                        const alvo = Math.max(1, Number(frequencyGoal.target));
+                        if (!Number.isFinite(alvo)) return null;
+                        const dentro = dailyCounts.filter(c => c <= alvo).length;
+                        const acima = dailyCounts.length - dentro;
 
                         return (
                             <p className={('bg-gray-800/50 border-gray-700') + ' p-4 rounded-lg border'}>
-                                💭 <strong className={('text-cyan-400')}>{t('coach.synthesisLabel')}</strong>
-                                {hasEffort && hasLimits ? (
-                                    <> {t('coach.synthesisEffortAndLimits', { goodDays, difficultDays })}</>
-                                ) : hasEffort ? (
-                                    <> {t('coach.synthesisEffort', { avg: avgPerDay })}</>
-                                ) : hasLimits ? (
-                                    <> {t('coach.synthesisLimits', { avg: avgPerDay, difficultDays, threshold: difficultThreshold })}</>
-                                ) : (
-                                    <> {t('coach.synthesisBuilding')}</>
-                                )}
-                                {optimizationAreas.length > 0 && (
-                                    <> <strong className={('text-orange-300')}>{t('coach.synthesisOptimiseQuestion')}</strong>{' '}
-                                    {optimizationAreas.length === 1 ? (
-                                        t('coach.synthesisFocusOne', { area: optimizationAreas[0] })
-                                    ) : optimizationAreas.length === 2 ? (
-                                        t('coach.synthesisFocusTwo', { area1: optimizationAreas[0], area2: optimizationAreas[1] })
-                                    ) : (
-                                        t('coach.synthesisFocusMany', { areas: optimizationAreas.slice(0, 3).join(', ') })
-                                    )}</>
-                                )}
-                                {!hasEffort && !hasLimits && <> {t('coach.synthesisKeepRecording')}</>}
+                                💭 <strong className={('text-white')}>{t('coach.synthesisLabel')}</strong>{' '}
+                                {t('coach.synthesisGoal', { target: alvo, dentro, acima, n: dailyCounts.length, defaultValue: 'Com a tua meta de até {{target}} consumos por dia: {{dentro}} dias dentro e {{acima}} acima, em {{n}} dias com consumo.' })}
                             </p>
                         );
                     })()}

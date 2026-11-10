@@ -565,16 +565,16 @@
     "itemWellbeing": "bem-estar",
     "itemReflection": "reflexão",
     "itemMgYesterday": "mg de ontem",
-    "morningTitle": "Bom dia – NEP",
+    "morningTitle": "Bom dia",
     "morningToast": "🌅 Bom dia! Falta registar: {{items}}",
     "morningBody": "Falta registar: {{items}}",
-    "reminderTitle": "Lembrete – NEP",
+    "reminderTitle": "Lembrete",
     "eveningToast": "💭 Lembrete: Falta registar: {{items}}",
     "eveningBody": "Falta registar: {{items}}",
     "doseToast": "📊 Lembrete: Regista a tua dose diária!",
-    "doseBody": "Regista a tua dose diária!",
+    "doseBody": "Tens um registo pendente para hoje.",
     "wellbeingToast": "💚 Lembrete: Já tens {{n}} consumos! Regista o teu bem-estar",
-    "wellbeingBody": "Já tens {{n}} consumos! Regista o teu bem-estar"
+    "wellbeingBody": "Um momento para ti — como te sentes?"
   },
   "dbtQuestions": [
     "O que funcionou bem para ti hoje em termos de autocuidado?",
@@ -830,7 +830,11 @@
       "summaryInterval": " Intervalo médio: {{avg}}h.",
       "metricTotal": "Total",
       "metricAvgDay": "Média/dia",
-      "metricAvgInterval": "Intervalo médio"
+      "metricAvgInterval": "Intervalo médio",
+      "avgDaysNoToday": "{{n}} dia(s), sem hoje",
+      "avgDays": "{{n}} dia(s)",
+      "avgNoDays": "hoje ainda vai a meio",
+      "avgNoKnownDays": "sem dias com registos"
     },
     "trend": {
       "title": "📈 Tendência (30 dias)",
@@ -839,7 +843,14 @@
       "decreasing": "A descer:",
       "decreasingDetail": "📊 Nos últimos 30 dias a frequência desceu {{slope}} consumos por dia, em média. Ao mesmo ritmo, daqui a 10 dias seriam ~{{projection}} por dia.",
       "stable": "Padrão estável:",
-      "stableDetail": "📊 A tua frequência está consistente, sem grandes mudanças nos últimos 30 dias."
+      "stableDetail": "📊 A tua frequência está consistente, sem grandes mudanças nos últimos 30 dias.",
+      "few": "Ainda há poucos dias para isto — há {{n}} dias completos com registos nos últimos 30; são precisos {{min}}.",
+      "flat": "O mesmo número de consumos todos os dias (~{{avg}}/dia) — não há subida nem descida.",
+      "basis": "Em {{n}} dias completos (hoje fica de fora: ainda vai a meio).",
+      "up": "A subir: a reta passa de ~{{from}} para ~{{to}} consumos/dia.",
+      "down": "A descer: a reta passa de ~{{from}} para ~{{to}} consumos/dia.",
+      "chance": "Sem subida nem descida que se distinga do acaso (~{{from}} → ~{{to}} consumos/dia na reta).",
+      "testNote": "Em {{n}} dias completos (hoje fica de fora: ainda vai a meio). ρ = {{rho}}, {{p}}."
     },
     "riskLevel": {
       "unknown": "ainda não dá para saber",
@@ -892,7 +903,8 @@
       "title": "📈 Evolução da Frequência",
       "desc": "Número de consumos por dia ao longo do tempo. Cores indicam intensidade.",
       "today": "Hoje",
-      "intensityLegend": "💡 Intensidade de cor = frequência de consumos"
+      "intensityLegend": "💡 Intensidade de cor = frequência de consumos",
+      "todaySoFar": "hoje (até agora)"
     },
     "goals": {
       "title": "🎯 Metas",
@@ -941,7 +953,9 @@
       "qtyAvgCycles": "📊 Em média: ≈{{mg}} mg por dia (24 h), nos mesmos {{n}} ciclos",
       "qtyAvgDays": "📊 Em média: ≈{{mg}} mg por dia (nos mesmos {{n}} dias)",
       "qtyAvgAllExplain": "Soma dos mg dos ciclos que a meta conta — do \"Registar mg\" ou da balança — a dividir pelo tempo que esses ciclos duram. Um ciclo de 2 dias (noite sem dormir) conta como 2 dias. Esconde os picos.",
-      "qtyAvgDaysExplain": "Soma dos mg de todos os dias que a meta conta — do \"Registar mg\" ou da balança — a dividir pelo número de dias. Esconde os picos: um dia muito alto fica diluído na média."
+      "qtyAvgDaysExplain": "Soma dos mg de todos os dias que a meta conta — do \"Registar mg\" ou da balança — a dividir pelo número de dias. Esconde os picos: um dia muito alto fica diluído na média.",
+      "metSomeDay": "{{achieved}} de {{total}} metas cumpridas em pelo menos um dia",
+      "avgPerDayCounted": "em {{days}} dia(s) que as metas contam"
     },
     "progress": {
       "title": "📈 Análise de Progresso Temporal",
@@ -995,7 +1009,8 @@
         "variation": "variação: ±{{val}}h",
         "msgVeryConsistent": "🎯 Deitas-te sempre a horas muito semelhantes (variação <30min). Isto é excelente! O teu corpo aprende a preparar-se para dormir à mesma hora, melhorando a qualidade do sono e facilitando adormecer.",
         "msgConsistent": "⚖️ Variação moderada (±{{val}}h nas horas de deitar). Há alguma consistência, mas podes melhorar. Tenta definir uma janela de 30min (ex: 23h-23h30) para deitar, mesmo aos fins-de-semana.",
-        "msgVariable": "🌪️ Horas muito variáveis (±{{val}}h de diferença). Isto confunde o ritmo circadiano - o corpo não sabe quando preparar-se para dormir. Resultado: mais dificuldade em adormecer, sono menos profundo. Começar por reduzir para ±1h já ajuda."
+        "msgVariable": "🌪️ Horas muito variáveis (±{{val}}h de diferença). Isto confunde o ritmo circadiano - o corpo não sabe quando preparar-se para dormir. Resultado: mais dificuldade em adormecer, sono menos profundo. Começar por reduzir para ±1h já ajuda.",
+        "msgNeutral": "As horas de deitar ficaram, em média, a ±{{val}}h umas das outras ({{n}} noites agora, {{prev}} antes)."
       },
       "avgBedtime": {
         "later": "Mais tarde",
@@ -1003,8 +1018,24 @@
         "wasBefore": "era: {{time}}",
         "lateNight": "Atenção: deitar muito tarde (madrugada) pode afetar a qualidade do sono.",
         "goodWindow": "Boa janela para deitar! (22h-00h)",
-        "morning": "Dormir de manhã pode indicar inversão do ciclo."
-      }
+        "morning": "Dormir de manhã pode indicar inversão do ciclo.",
+        "inGoal": "A hora média fica dentro da tua meta (até às {{target}}).",
+        "outGoal": "A hora média fica depois da tua meta (até às {{target}})."
+      },
+      "selfCareLow": "Em menos de metade dos dias ({{n}} com registo): {{areas}}.",
+      "selfCareAllHalf": "Todas as áreas aparecem em pelo menos metade dos dias ({{n}} com registo).",
+      "todayHalf": "hoje ainda vai a meio",
+      "towardGoal": "✓ Na direção da tua meta.",
+      "awayGoal": "No sentido contrário ao da tua meta.",
+      "titleCompare": "📈 Este período e o anterior",
+      "todayNote": "Hoje ainda vai a meio: fica fora das médias de consumos, mg e autocuidado (conta no sono, humor, energia e emoções).",
+      "noGoalsNote": "Nenhuma destas medidas tem uma meta tua: as setas só dizem para que lado mudou, não se é melhor ou pior.",
+      "goalsNote": "Com meta tua: {{toward}} de {{total}} mudaram na direção da meta, com uma diferença que se distingue do acaso. As outras setas são só descrição.",
+      "variationShort": "variação",
+      "summaryTitleNeutral": "💡 Resumo",
+      "towardList": "Na direção das tuas metas:",
+      "awayList": "No sentido contrário ao das tuas metas:",
+      "changedList": "Mudaram mais de 5% (só descrição — sem meta, ou a diferença não se distingue do acaso):"
     },
     "temporal": {
       "byHour": "🕐 Consumo por Horário",
@@ -1014,7 +1045,16 @@
       "tarde": "Tarde",
       "noite": "Noite",
       "madrugada": "Madrugada",
-      "byWeekday": "📅 Por Dia da Semana"
+      "byWeekday": "📅 Por Dia da Semana",
+      "basisToday": "{{k}} consumo(s) em {{n}} dia(s) com consumo (hoje entra com o que já registaste).",
+      "basis": "{{k}} consumo(s) em {{n}} dia(s) com consumo.",
+      "fewPct": "Percentagens só a partir de {{min}} dias com consumo (há {{n}}).",
+      "weekdayDesc": "Média de consumos por dia, em {{n}} dias completos (hoje fica de fora: ainda vai a meio).",
+      "nDaysShort": "{{n}}d",
+      "weekdayHigh": "média mais alta ({{v}}/dia em {{n}} dias)",
+      "weekdayLow": "média mais baixa ({{v}}/dia em {{n}} dias)",
+      "weekdayCaveat": "Com 7 dias para comparar, há sempre um mais alto e um mais baixo, mesmo só por acaso.",
+      "weekdayFew": "Para dizer qual o dia da semana com mais ou menos consumos são precisos pelo menos {{min}} dias completos de cada dia da semana — o que tem menos tem {{n}}."
     },
     "areas": {
       "water": "Hidratação",
@@ -1093,7 +1133,35 @@
       "stableTrend": "Estável",
       "increasingTrend": "A Aumentar",
       "decreasingTrend": "A Reduzir",
-      "basedOnGoal": "(baseado na tua meta de {{mg}}mg)"
+      "basedOnGoal": "(baseado na tua meta de {{mg}}mg)",
+      "monthlyFew": "Ainda há poucos dias para isto — há {{n}} dias completos; são precisos {{min}} (cerca de 2 meses).",
+      "monthlyDesc": "Média de consumos por dia, para cada dia do mês, em {{n}} dias completos. \"×2\" = esse dia do mês apareceu 2 vezes.",
+      "peakFew": "Dias 20–25 vs o resto do mês: são precisos pelo menos {{min}} dias de cada lado (há {{a}} e {{b}}).",
+      "peakFlat": "Dias 20–25 vs o resto do mês: os valores não variam, não há nada a comparar.",
+      "peakChance": "Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — a diferença não se distingue do acaso ({{n}} dias, {{p}}).",
+      "mgNoToday": "Hoje fica de fora: ainda vai a meio.",
+      "dosageRoseN": "A média por dia medido passou de {{first}} mg (1.ª semana completa, {{a}} dias medidos) para {{last}} mg (última, {{b}} dias) — mais {{pct}}%.",
+      "dosageDroppedN": "A média por dia medido passou de {{first}} mg (1.ª semana completa, {{a}} dias medidos) para {{last}} mg (última, {{b}} dias) — menos {{pct}}%.",
+      "twoWeeksNote": "São duas semanas soltas: diz o que aconteceu, não se é uma tendência.",
+      "mgOnlyToday": "Só há mg de hoje, que ainda vai a meio — as contas começam amanhã.",
+      "halvesChangeOnly": "{{sign}}{{pct}}% (sem tendência que se distinga do acaso)",
+      "peakSigHigh": "Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais alto, e a diferença distingue-se do acaso ({{n}} dias, {{p}}).",
+      "peakSigLow": "Dias 20–25: {{a}}/dia vs {{b}}/dia no resto do mês — mais baixo, e a diferença distingue-se do acaso ({{n}} dias, {{p}})."
+    },
+    "cmp": {
+      "few": "Dias: {{a}} antes, {{b}} agora — poucos para saber se a diferença é mais do que acaso (são precisos {{side}} de cada lado e {{min}} no total).",
+      "flat": "Dias: {{a}} antes, {{b}} agora — os valores não variam, não há nada a comparar.",
+      "sig": "Dias: {{a}} antes, {{b}} agora — a diferença distingue-se do acaso ({{p}}).",
+      "chance": "Dias: {{a}} antes, {{b}} agora — a diferença não se distingue do acaso ({{p}})."
+    },
+    "insight": {
+      "few": "Ainda há poucos dias para procurar padrões — há {{n}} dias completos com registos; são precisos {{min}}.",
+      "minDay": "Em {{n}} dias completos, o dia com menos consumos foi {{date}}, com {{count}}.",
+      "minDayTie": "Em {{n}} dias completos, o mínimo foi {{count}} consumos por dia, em {{k}} dias (o mais recente: {{date}}).",
+      "partOfDay": "Em {{n}} dias completos, {{percent}}% dos consumos ({{k}} de {{total}}) foram de {{part}}."
+    },
+    "week": {
+      "soFar": "até agora"
     }
   },
   "urge": {
@@ -1138,11 +1206,13 @@
     "subtitleAll": "desde sempre",
     "surfed": "impulsos surfados",
     "delayed": "consumos adiados",
-    "avgHeld": "tempo aguentado",
+    "avgHeld": "até ao consumo seguinte",
     "openedNoUse": "abriste sem usar",
-    "reinforceNone": "Ainda não usaste as estratégias. Da próxima que o impulso aparecer, experimenta uma — respirar, o timer, ancorar. 💜",
-    "reinforceMany": "Das {{surfed}} vezes que usaste as estratégias, adiaste o consumo em {{delayed}}. Isso conta. 💜",
-    "openedNoUseNote": "Abriste o surfar sem usar nada {{count}}x. Para registos retroativos usa o \"＋ Registar consumo passado\" na Home — não abre o surfar nem conta como impulso."
+    "reinforceNone": "Abriste o surfar, mas ainda sem usar nenhuma estratégia.",
+    "reinforceMany": "Das {{surfed}} vezes que usaste as estratégias, em {{delayed}} não carregaste em \"consumir na mesma\".",
+    "openedNoUseNote": "Abriste o surfar sem usar nada {{count}}x. Para registos retroativos usa o \"＋ Registar consumo passado\" na Home — não abre o surfar nem conta como impulso.",
+    "avgHeldNote_one": "O tempo é de {{count}} vez: a que teve um consumo nas 24 h seguintes.",
+    "avgHeldNote_other": "O tempo é a média de {{count}} vezes: as que tiveram um consumo nas 24 h seguintes."
   },
   "wellbeing": {
     "exercisePlaceholder": "O quê? ex: caminhar",
@@ -1207,7 +1277,7 @@
     "perCycle": "por ciclo",
     "topTriggersPatterns": "📊 Gatilhos Mais Frequentes & Padrões Semanais",
     "topTriggers": "🎯 Top 10 Gatilhos",
-    "mostTriggersDay": "💡 Dia com mais gatilhos: {{day}}s ({{count}}).",
+    "mostTriggersDay": "💡 Dia da semana com mais gatilhos registados: {{day}} ({{count}}).",
     "triggersVsConsumption": "🔍 Gatilhos vs Consumo",
     "awarenessSection": "🧠 Consciencialização",
     "awarenessText": "Conhecer os teus gatilhos é o primeiro passo para os gerir. Quando identificas um gatilho, tens mais tempo para escolher a tua resposta.",
@@ -1261,14 +1331,14 @@
     "exerciseOfLoggedDays": "dos dias registados",
     "avgDuration": "duração média",
     "exerciseTypesLabel": "Tipos de exercício",
-    "exerciseImpact": "Impacto do exercício",
+    "exerciseImpact": "Dias com e sem exercício",
     "exerciseConsImpact": "🔢 Dias com exercício: média de {{withEx}} consumos vs {{withoutEx}} sem exercício ({{diff}}%).",
     "exerciseMoodImpact": "😊 Humor com exercício: {{withEx}}/10 vs {{withoutEx}}/10 sem exercício.",
     "exerciseEnergyImpact": "⚡ Energia com exercício: {{withEx}}/10 vs {{withoutEx}}/10 sem exercício.",
     "symptomRecords": "registos de sintomas",
     "symptomDaysLabel": "dias c/ sintomas",
     "mostFrequentSymptoms": "Sintomas mais frequentes",
-    "symptomsVsPattern": "Sintomas vs padrão de consumo",
+    "symptomsVsPattern": "Dias com e sem sintomas",
     "symptomConsImpact": "🔢 Dias com sintomas: média de {{withS}} consumos vs {{withoutS}} sem sintomas ({{diff}}%).",
     "symptomMoodImpact": "😊 Humor em dias com sintomas: {{withS}}/10 vs {{withoutS}}/10 sem sintomas.",
     "corrTemporalImpactTitle": "🔄 Impacto Temporal (entre dias)",
@@ -1442,7 +1512,240 @@
     "nameCompositeLowMoodSleep": "Humor Baixo + Sono Mau",
     "nameCompositeLowMoodEnergy": "Humor Baixo + Energia Baixa",
     "nameAntecedentMoodFalling": "Humor estava a descer antes de consumir",
-    "nameAntecedentSleepPoor": "Sono mau em dias consecutivos"
+    "nameAntecedentSleepPoor": "Sono mau em dias consecutivos",
+    "q": {
+      "sleepToCons": {
+        "label": "Horas de sono → consumos no dia a seguir",
+        "pos": "Depois de noites com mais horas de sono, houve mais consumos nesse dia.",
+        "neg": "Depois de noites com mais horas de sono, houve menos consumos nesse dia."
+      },
+      "consToSleep": {
+        "label": "Consumos de um dia → horas de sono nessa noite",
+        "pos": "Nos dias com mais consumos, a noite a seguir teve mais horas de sono.",
+        "neg": "Nos dias com mais consumos, a noite a seguir teve menos horas de sono."
+      },
+      "bedtimeToCons": {
+        "label": "Hora de deitar → consumos no dia a seguir",
+        "pos": "Depois de noites em que te deitaste mais tarde, houve mais consumos nesse dia.",
+        "neg": "Depois de noites em que te deitaste mais tarde, houve menos consumos nesse dia."
+      },
+      "consToBedtime": {
+        "label": "Consumos de um dia → hora de deitar nessa noite",
+        "pos": "Nos dias com mais consumos, deitaste-te mais tarde nessa noite.",
+        "neg": "Nos dias com mais consumos, deitaste-te mais cedo nessa noite."
+      },
+      "consMood": {
+        "label": "Consumos → humor no mesmo dia",
+        "pos": "Nos dias com mais consumos, o humor registado foi mais alto.",
+        "neg": "Nos dias com mais consumos, o humor registado foi mais baixo."
+      },
+      "consEnergy": {
+        "label": "Consumos → energia no mesmo dia",
+        "pos": "Nos dias com mais consumos, a energia registada foi mais alta.",
+        "neg": "Nos dias com mais consumos, a energia registada foi mais baixa."
+      },
+      "moodToNextCons": {
+        "label": "Humor de um dia → consumos no dia seguinte",
+        "pos": "Depois de dias com humor mais alto, houve mais consumos no dia seguinte.",
+        "neg": "Depois de dias com humor mais alto, houve menos consumos no dia seguinte."
+      },
+      "energyToNextCons": {
+        "label": "Energia de um dia → consumos no dia seguinte",
+        "pos": "Depois de dias com energia mais alta, houve mais consumos no dia seguinte.",
+        "neg": "Depois de dias com energia mais alta, houve menos consumos no dia seguinte."
+      },
+      "consToNextMood": {
+        "label": "Consumos de um dia → humor no dia seguinte",
+        "pos": "Nos dias com mais consumos, o humor do dia seguinte foi mais alto.",
+        "neg": "Nos dias com mais consumos, o humor do dia seguinte foi mais baixo."
+      },
+      "consToNextEnergy": {
+        "label": "Consumos de um dia → energia no dia seguinte",
+        "pos": "Nos dias com mais consumos, a energia do dia seguinte foi mais alta.",
+        "neg": "Nos dias com mais consumos, a energia do dia seguinte foi mais baixa."
+      },
+      "sleepMood": {
+        "label": "Horas de sono → humor nesse dia",
+        "pos": "Depois de noites com mais horas de sono, o humor desse dia foi mais alto.",
+        "neg": "Depois de noites com mais horas de sono, o humor desse dia foi mais baixo."
+      },
+      "bedtimeMood": {
+        "label": "Hora de deitar → humor no dia a seguir",
+        "pos": "Depois de noites em que te deitaste mais tarde, o humor desse dia foi mais alto.",
+        "neg": "Depois de noites em que te deitaste mais tarde, o humor desse dia foi mais baixo."
+      },
+      "bedtimeEnergy": {
+        "label": "Hora de deitar → energia no dia a seguir",
+        "pos": "Depois de noites em que te deitaste mais tarde, a energia desse dia foi mais alta.",
+        "neg": "Depois de noites em que te deitaste mais tarde, a energia desse dia foi mais baixa."
+      },
+      "consNegEmotions": {
+        "label": "Consumos → emoções negativas no mesmo dia",
+        "pos": "Nos dias com mais consumos, uma parte maior das emoções registadas foi negativa.",
+        "neg": "Nos dias com mais consumos, uma parte menor das emoções registadas foi negativa."
+      },
+      "consSelfCare": {
+        "label": "Consumos → autocuidado no mesmo dia",
+        "pos": "Nos dias com mais consumos, registaste mais áreas de autocuidado.",
+        "neg": "Nos dias com mais consumos, registaste menos áreas de autocuidado."
+      },
+      "mgSleep": {
+        "label": "mg de um dia → horas de sono nessa noite",
+        "pos": "Nos dias com mais mg, a noite a seguir teve mais horas de sono.",
+        "neg": "Nos dias com mais mg, a noite a seguir teve menos horas de sono."
+      },
+      "mgMood": {
+        "label": "mg → humor no mesmo dia",
+        "pos": "Nos dias com mais mg, o humor registado foi mais alto.",
+        "neg": "Nos dias com mais mg, o humor registado foi mais baixo."
+      },
+      "mgEnergy": {
+        "label": "mg → energia no mesmo dia",
+        "pos": "Nos dias com mais mg, a energia registada foi mais alta.",
+        "neg": "Nos dias com mais mg, a energia registada foi mais baixa."
+      },
+      "mgNegEmotions": {
+        "label": "mg → emoções negativas no mesmo dia",
+        "pos": "Nos dias com mais mg, uma parte maior das emoções registadas foi negativa.",
+        "neg": "Nos dias com mais mg, uma parte menor das emoções registadas foi negativa."
+      },
+      "mgSelfCare": {
+        "label": "mg → autocuidado no mesmo dia",
+        "pos": "Nos dias com mais mg, registaste mais áreas de autocuidado.",
+        "neg": "Nos dias com mais mg, registaste menos áreas de autocuidado."
+      },
+      "triggersMg": {
+        "label": "Gatilhos registados → mg nesse dia",
+        "pos": "Nos dias com mais gatilhos registados, houve mais mg.",
+        "neg": "Nos dias com mais gatilhos registados, houve menos mg."
+      },
+      "intervalMg": {
+        "label": "Tempo entre consumos → mg nesse dia",
+        "pos": "Nos dias com mais tempo entre consumos, houve mais mg.",
+        "neg": "Nos dias com mais tempo entre consumos, houve menos mg."
+      },
+      "consAutocorr": {
+        "label": "Consumos de um dia → consumos no dia seguinte",
+        "pos": "Depois de dias com mais consumos, o dia seguinte também teve mais.",
+        "neg": "Depois de dias com mais consumos, o dia seguinte teve menos."
+      },
+      "firstConsTotal": {
+        "label": "Hora do primeiro consumo → total do dia",
+        "pos": "Nos dias em que o primeiro consumo foi mais tarde, houve mais consumos no total.",
+        "neg": "Nos dias em que o primeiro consumo foi mais tarde, houve menos consumos no total."
+      },
+      "intervalTotal": {
+        "label": "Tempo entre consumos → total do dia",
+        "pos": "Nos dias com mais tempo entre consumos, houve mais consumos no total.",
+        "neg": "Nos dias com mais tempo entre consumos, houve menos consumos no total.",
+        "nota": "Em parte isto é aritmética: com mais consumos no mesmo dia, sobra menos tempo entre eles."
+      },
+      "morningMood": {
+        "label": "Consumos de manhã (6h–12h) → humor desse dia",
+        "pos": "Nos dias com mais consumos de manhã, o humor registado foi mais alto.",
+        "neg": "Nos dias com mais consumos de manhã, o humor registado foi mais baixo."
+      },
+      "afternoonMood": {
+        "label": "Consumos à tarde (12h–18h) → humor desse dia",
+        "pos": "Nos dias com mais consumos à tarde, o humor registado foi mais alto.",
+        "neg": "Nos dias com mais consumos à tarde, o humor registado foi mais baixo."
+      },
+      "eveningMood": {
+        "label": "Consumos à noite (18h–24h) → humor desse dia",
+        "pos": "Nos dias com mais consumos à noite, o humor registado foi mais alto.",
+        "neg": "Nos dias com mais consumos à noite, o humor registado foi mais baixo."
+      },
+      "dispersion": {
+        "label": "Quão espalhados estão os consumos ao longo do dia"
+      }
+    },
+    "g": {
+      "sono": "Sono e consumos",
+      "humor": "Humor e energia",
+      "bem": "Sono e bem-estar",
+      "emocoes": "Emoções e autocuidado",
+      "mg": "Quantidade (mg)",
+      "dia": "Ritmo dos consumos"
+    },
+    "v": {
+      "sleep": {
+        "label": "sono",
+        "unit": " h"
+      },
+      "cons": {
+        "label": "consumos",
+        "unit": "/dia"
+      },
+      "mood": {
+        "label": "humor",
+        "unit": "/10"
+      },
+      "energy": {
+        "label": "energia",
+        "unit": "/10"
+      },
+      "bedtime": {
+        "label": "hora de deitar"
+      },
+      "mg": {
+        "label": "mg",
+        "unit": "/dia"
+      },
+      "negPct": {
+        "label": "emoções negativas",
+        "unit": "%"
+      },
+      "selfCare": {
+        "label": "autocuidado",
+        "unit": "/4"
+      },
+      "triggers": {
+        "label": "gatilhos",
+        "unit": "/dia"
+      },
+      "interval": {
+        "label": "tempo entre consumos",
+        "unit": " h"
+      },
+      "firstHour": {
+        "label": "1.º consumo"
+      },
+      "consManha": {
+        "label": "consumos de manhã",
+        "unit": "/dia"
+      },
+      "consTarde": {
+        "label": "consumos à tarde",
+        "unit": "/dia"
+      },
+      "consNoite": {
+        "label": "consumos à noite",
+        "unit": "/dia"
+      }
+    },
+    "introOne": "Escolhe uma pergunta de cada vez. A app olha para os teus dias e diz se as duas coisas andaram juntas — ou se isso não se distingue do acaso.",
+    "whyOne": "☝️ Uma de cada vez:",
+    "whyOneText": "com muitas perguntas abertas ao mesmo tempo, algumas pareceriam fortes só por acaso. E mesmo uma a uma: se fores ver muitas, espera que mais ou menos 1 em cada 20 pareça real só por acaso.",
+    "minDaysText": "cada pergunta precisa de {{min}} dias com os dois valores. Antes disso, a app diz quantos faltam.",
+    "pickQuestion": "Pergunta",
+    "prevQuestion": "Pergunta anterior",
+    "nextQuestion": "Pergunta seguinte",
+    "fewDaysShort": "faltam dias",
+    "fewDays": "Ainda não há dias suficientes — há {{n}}, faltam {{falta}}.",
+    "fewDaysHelp": "Contam os dias com os dois valores registados. A partir de {{min}}, a app vê se andam juntos.",
+    "fewUses": "Ainda não há consumos suficientes — há {{n}}, faltam {{falta}}.",
+    "flat": "Um dos dois valores foi sempre igual nestes dias — assim não dá para ver se andam juntos.",
+    "chance": "Não se distingue do acaso.",
+    "chanceHelp": "Nestes dias, as duas coisas não andaram juntas mais do que o acaso costuma dar. Pode não haver ligação, ou ainda não haver dias para a ver.",
+    "pLessThan": "p: menos de 1 em {{m}}",
+    "shiftExplain": "Deslizámos os teus dias uns contra os outros {{m}} vezes. Em {{b}} delas, o acaso deu uma ligação tão forte como esta.",
+    "shiftExplainNone": "Deslizámos os teus dias uns contra os outros {{m}} vezes. Em nenhuma delas o acaso deu uma ligação tão forte como esta.",
+    "notCause": "Andarem juntas não quer dizer que uma cause a outra — e não diz qual dos lados é melhor.",
+    "avgInOneDay": "Valores desse dia:",
+    "avgInDays": "Médias nestes {{n}} dias:",
+    "dispersionText": "Em média, cada consumo ficou a {{h}} h da hora média dos teus consumos.",
+    "dispersionHelp": "Número pequeno: os consumos juntam-se a horas parecidas. Número grande: espalham-se pelo dia. É só uma descrição — não compara nada com nada.",
+    "usesAnalysed": "consumos"
   },
   "sentiment": {
     "very_positive": "muito positivo",
@@ -1459,7 +1762,7 @@
     "subtitle": "Resumo personalizado do período selecionado",
     "noData": "Sem dados para este período",
     "overviewLabel": "Visão Geral:",
-    "overviewText": "{{total}} {{uses}} em {{days}} {{daysLabel}} (média {{avg}}/dia). Vamos explorar os padrões:",
+    "overviewText": "{{total}} {{uses}} em {{days}} {{daysLabel}} com consumo (média {{avg}} por dia, sem contar hoje).",
     "noConsumptions": "Nenhum consumo registado neste período. Só tu sabes o que isto representa para ti.",
     "use_singular": "consumo",
     "use_plural": "consumos",
@@ -1491,11 +1794,11 @@
     "balancePositive": "positivo",
     "balanceMixed": "misto",
     "balanceChallenging": "desafiante",
-    "weeklyPatternLabel": "Padrão Semanal:",
+    "weeklyPatternLabel": "Dias da semana:",
     "weeklyHardDays": "{{day}}s são os teus dias mais difíceis (média de {{avg}} consumos), enquanto {{bestDay}}s são melhores (média {{bestAvg}}).",
     "weeklyWeekdayTip": "💡 Às {{day}}s costumas registar mais consumos. Pode estar ligado à rotina dessa altura da semana — saber isso é teu, o que fazes com isso também.",
     "weeklyWeekendTip": "💡 Fins de semana tendem a ser mais desafiantes - talvez por mudança de rotina ou tédio. Estrutura atividades para esse dia.",
-    "escalationLabel": "Primeiro Consumo → Escalada:",
+    "escalationLabel": "Hora do primeiro consumo:",
     "escalationHigher": "Quando o primeiro consumo é antes das 10h, o total do dia é {{pct}}% maior (média {{early}} vs {{late}} quando começas mais tarde).",
     "escalationLower": "Quando o primeiro consumo é antes das 10h, o total do dia é {{pct}}% menor (média {{early}} vs {{late}} quando começas mais tarde).",
     "escalationWarning": "Nos teus registos, começar mais cedo anda a par de mais consumos nesse dia. O que fazes com isso é teu.",
@@ -1512,34 +1815,34 @@
     "windowMorning": "manhã",
     "windowAfternoon": "tarde",
     "windowEveningNight": "fim de tarde/noite",
-    "cascadeLabel": "Dias difíceis seguidos:",
-    "cascadeDetected": "Tiveste {{n}} {{label}} de dias difíceis seguidos (o mais longo foi de {{longest}} dias). Só por acaso, com a tua taxa de dias difíceis, seriam de esperar cerca de {{esperado}}.",
-    "cascadeNone": "Não houve dias difíceis seguidos no período.",
-    "recoveryLabel": "Padrão de Retoma:",
+    "cascadeLabel": "Dias acima da meta, seguidos:",
+    "cascadeDetected": "Houve {{n}} {{label}} de dias seguidos com {{threshold}} ou mais consumos (o mais longo: {{longest}} dias).",
+    "cascadeNone": "Não houve dias seguidos acima da meta no período.",
+    "recoveryLabel": "Regresso à média:",
     "recoveryAvgSingular": "Depois de um dia acima da tua meta, levas em média {{n}} dia até voltares à tua média.",
     "recoveryAvgPlural": "Depois de um dia acima da tua meta, levas em média {{n}} dias até voltares à tua média.",
     "recoveryFast": "Isso é rapidamente — os dias acima da meta não costumam arrastar-se.",
     "recoveryModerate": "Se te interessar, repara no que costuma acontecer nesses dias.",
     "recoverySlow": "💡 Os dias difíceis tendem a prolongar-se um pouco. Pequenos hábitos de 'reset' no dia seguinte podem ajudar (rotina, sono, atividade física).",
-    "recoveryStillSingular": "{{n}} dia acima da meta ainda sem ter voltado à tua média.",
-    "recoveryStillPlural": "⏳ {{n}} dias difíceis ainda a assentar (não voltaram à tua média nos últimos dias).",
-    "outliersLabel": "Outliers:",
+    "recoveryStillSingular": "{{n}} dia acima da meta sem voltar à tua média nos 7 dias seguintes (ou até ao fim do período).",
+    "recoveryStillPlural": "{{n}} dias acima da meta sem voltar à tua média nos 7 dias seguintes (ou até ao fim do período).",
+    "outliersLabel": "Dias com mais consumos:",
     "outliersTopDay": "{{date}} teve {{n}} consumos — {{diff}} acima da tua média de {{avg}}. É o teu dia mais alto.",
     "outliersTopDayN": "{{date}} teve {{n}} consumos — {{diff}} acima da tua média de {{avg}}. Um dos teus {{k}} dias mais altos.",
     "outliersOtherPeaks": "Outros picos:",
     "outliersNoteEmotion": "Outliers não são falhas — são dados. Repara no padrão emocional: {{emotion}}.",
     "outliersNoteQuestion": "Outliers não são falhas — são dados. Que gap de necessidades foi preenchido nesses dias?",
-    "clustersLabel": "Padrões de Comportamento:",
-    "clustersHighPressure": "Dias \"Alta Pressão\" ({{n}}): Muito consumo + pouco sono + humor estável. Estás a \"pedalar no limiar\" — funcionas, mas à custa de estimulação.",
-    "clustersParadox": "Dias \"Paradoxo\" ({{n}}): Pouco consumo + muito sono + humor baixo. Sono não compensa humor baixo — possível depressão mascarada ou outro fator.",
-    "clustersBalance": "Dias \"Equilíbrio\" ({{n}}): consumo a meio da tua distribuição e humor mais alto.",
+    "clustersLabel": "Combinações de dias:",
+    "clustersHighPressure": "Dias com muitos consumos (o quarto mais alto), menos de 6h de sono e humor 5 ou mais: {{n}}.",
+    "clustersParadox": "Dias com poucos consumos (o quarto mais baixo), 7h ou mais de sono e humor abaixo de 5: {{n}}.",
+    "clustersBalance": "Dias com consumos perto da tua mediana e humor 6 ou mais: {{n}}.",
     "microTrendLabel": "Micro-tendência:",
     "microTrendText": "Últimos 7 dias: média de {{last7}} consumos/dia vs {{prev21}} nas 3 semanas anteriores ({{pct}}%).",
     "microTrendIncrease": "Aumento significativo. Vale a pena perceber a causa antes que se torne padrão.",
     "microTrendDecrease": "Redução clara. O que mudou? Se quiseres, repara no que ajudou.",
     "microTrendSlightIncrease": "Ligeira subida — monitorizar.",
     "microTrendSlightDecrease": "Ligeira descida.",
-    "emotionalTriggersLabel": "Gatilhos Emocionais Validados:",
+    "emotionalTriggersLabel": "Emoções e consumos:",
     "emotionalTriggersRisk": "Emoção {{emotion}} correlaciona com +{{diff}} consumos acima da média ({{n}} dias). É gatilho validado, não especulação.",
     "emotionalTriggersProtector": "Emoção {{emotion}} correlaciona com {{diff}} consumos ABAIXO da média. Factor protetor — cultivar.",
     "emotionalProfileLabel": "Perfil Emocional:",
@@ -1554,24 +1857,24 @@
     "emotionalOscillationHigh": "alta",
     "emotionalOscillationModerate": "moderada",
     "emotionalOscillationLow": "baixa",
-    "selfCareContextLabel": "Contexto Autocuidado:",
+    "selfCareContextLabel": "Autocuidado e consumos:",
     "selfCareContextPositive": "Nos dias com {{area}}, consumiste {{pct}}% menos ({{n}} dias). Forte associação com dias de menor consumo.",
     "selfCareContextNegative": "Nos dias com {{area}}, consumiste {{pct}}% mais. Correlação inesperada — explorar.",
     "selfCareContextAlso": "Também: {{area}} associado com redução de {{pct}}%.",
-    "selfCareContextNote": "Nota: dias com menos consumos podem naturalmente ter mais autocuidado, sem que um cause o outro. São duas coisas que andam juntas.",
+    "selfCareContextNote": "Andarem juntos não quer dizer que um cause o outro.",
     "selfCareContextWater": "água suficiente",
     "selfCareContextFood": "refeições nutritivas",
     "selfCareContextSocial": "socialização",
-    "triggerMappingLabel": "Trigger Mapping:",
+    "triggerMappingLabel": "Consumos de madrugada e sono:",
     "triggerMappingLate": "{{pct}}% dos consumos tardios (00h-06h) aconteceram em dias com <6h sono. Padrão forte: privação de sono está consistentemente associada a consumo nocturno. Melhorar o sono pode ser uma alavanca útil.",
     "triggerMappingHighFreq": "Em {{pct}}% dos dias com alta frequência (≥{{threshold}} consumos), registaste emoção {{emotion}}. Este é o teu trigger primário validado — não é especulação. Desenvolver estratégias para esta emoção específica tem ROI alto.",
     "notesLabel": "Análise das tuas Reflexões ({{n}} notas):",
     "notesPatternsLabel": "Padrões emocionais:",
-    "notesPositiveTone": "Tom geral positivo ({{positivePct}}% positivas vs {{negativePct}}% negativas). Há consciência dos desafios, mas também esperança e resiliência.",
-    "notesNegativeTone": "Tom geral negativo ({{negativePct}}% negativas vs {{positivePct}}% positivas). Reconheço que estás a enfrentar dificuldades.",
-    "notesBalancedTone": "Tom equilibrado entre positivo ({{positivePct}}%) e negativo ({{negativePct}}%), com {{neutralPct}}% neutro - estás a navegar os altos e baixos.",
-    "notesTrendImproving": "Tendência: a subir.",
-    "notesTrendWorsening": "📉 Tendência: a piorar nos últimos dias.",
+    "notesPositiveTone": "Tom geral positivo ({{positivePct}}% positivas vs {{negativePct}}% negativas).",
+    "notesNegativeTone": "Tom geral negativo ({{negativePct}}% negativas vs {{positivePct}}% positivas).",
+    "notesBalancedTone": "Tom misto: {{positivePct}}% positivas, {{negativePct}}% negativas e {{neutralPct}}% neutras.",
+    "notesTrendImproving": "Nas notas mais recentes o tom está mais positivo.",
+    "notesTrendWorsening": "Nas notas mais recentes o tom está mais negativo.",
     "notesHighNegPattern": "Dias com reflexões mais negativas coincidem com mais consumos ({{n}} de {{total}} dias). Coincidem — não quer dizer que um cause o outro.",
     "notesThemesLabel": "Temas principais:",
     "notesThemeSleep": "sono",
@@ -1581,7 +1884,7 @@
     "notesThemeFocus": "foco/concentração",
     "notesThemeSocial": "relações sociais",
     "notesThemeHealth": "saúde física",
-    "notesStressNote": "Nota: As tuas reflexões sobre stress/ansiedade tendem a ser negativas - este tema merece atenção.",
+    "notesStressNote": "As notas sobre stress/ansiedade têm um tom mais negativo.",
     "notesSleepNote": "O sono aparece muitas vezes nas tuas notas.",
     "notesNoThemes": "Escreve mais reflexões para identificar temas recorrentes.",
     "notesEncourage": "Encorajo-te a escrever mais nas tuas reflexões - expressar pensamentos e sentimentos ajuda a processar emoções e a identificar padrões.",
@@ -1659,13 +1962,13 @@
     "goalTypeBedtimeBefore": "Deitar Antes de",
     "goalTypeSleepHours": "Horas de Sono",
     "goalTypeFirstNotBefore": "☀️ 1º Consumo Após",
-    "sleepMoodLabel": "Sono e Humor:",
+    "sleepMoodLabel": "Sono e humor:",
     "sleepMoodText": "Analisei como o teu sono afeta o humor no dia seguinte.",
     "sleepMoodStrongPos": "Correlação forte (+{{r}}): Dormir bem melhora claramente o teu humor no dia seguinte! Mais sono = humor melhor. 💡 Ação: Prioriza 7-8h de sono - é o teu melhor investimento emocional.",
     "sleepMoodModPos": "Correlação moderada (+{{r}}): Há uma ligação positiva entre sono e humor, mas outros fatores também influenciam. 💡 Ação: Melhora a qualidade do sono (ambiente escuro, horário regular).",
     "sleepMoodNeg": "Correlação negativa ({{r}}): Curiosamente, mais sono associa-se com pior humor - pode indicar sono em excesso ou má qualidade. 💡 Ação: Foca na QUALIDADE do sono. Considera consultar profissional de saúde.",
     "sleepMoodWeak": "Correlação fraca ({{r}}): não há relação linear clara. Outros factores podem pesar mais.",
-    "consumptionImpactLabel": "Impacto do Consumo:",
+    "consumptionImpactLabel": "Consumos e o dia seguinte:",
     "consumptionImpactText": "Analisei como o consumo de hoje afeta o teu bem-estar amanhã.",
     "consumptionImpactMoodStrong": "Correlação forte ({{r}}): Dias com mais consumo precedem claramente dias com humor mais baixo. 💡 O ciclo é evidente - consumir hoje = sentir-te pior amanhã.",
     "consumptionImpactMoodMod": "Correlação moderada ({{r}}): dias de mais consumo tendem a preceder humor mais baixo. Andam juntos — a direção da causa não se vê daqui.",
@@ -1673,7 +1976,7 @@
     "consumptionImpactEnergyStrong": "Na energia: correlação forte ({{r}}) - mais consumo resulta em fadiga clara no dia seguinte. O teu corpo está a pedir descanso.",
     "consumptionImpactEnergyMod": "Na energia: correlação moderada ({{r}}) - consumo afeta os teus níveis de energia no dia seguinte. O corpo está em recuperação. 💡 Mais descanso e hidratação pode ajudar.",
     "consumptionImpactEnergyPos": "Na energia: correlação positiva ({{r}}) - mais consumo associa-se com mais energia no dia seguinte. Observa se isto é sustentável.",
-    "riskProfileLabel": "Perfil do dia:",
+    "riskProfileLabel": "Humor da véspera e consumos:",
     "riskProfileText": "Identifiquei um padrão importante:",
     "riskProfileLowMood": "Dias com mais consumo tendem a ser precedidos por humor mais baixo no dia anterior (diferença de {{diff}} pontos). Humor baixo pode ser gatilho. Quando te sentires em baixo, usa estratégias de prevenção - contacta alguém, faz exercício, ou usa técnicas de mindfulness.",
     "riskProfileHighMood": "Dias com mais consumo são precedidos por humor mais alto (diferença de {{diff}} pontos) - celebração ou euforia podem ser gatilhos. Estar consciente disto ajuda-te a moderar.",
@@ -1687,14 +1990,14 @@
     "selfKnowledgeText": "Estás a registar de forma consistente",
     "selfKnowledgeWellbeing": "(bem-estar)",
     "selfKnowledgeSleepCycles": "ciclos de sono",
-    "selfKnowledgeTip": "Isto já é um passo enorme! Registar é autoconsciência. Os padrões vão-se tornando mais claros com o tempo, e isso dá-te poder para agir.",
+    "selfKnowledgeTip": "Registar é uma forma de te conheceres: com mais dias, os padrões ficam mais claros — ou fica claro que não há padrão.",
     "controlLabel": "Tu tens o controlo.",
-    "controlText": "Estes dados são teus. Este progresso é teu. Este poder de escolha é teu.",
+    "controlText": "Estes dados são teus, e as escolhas também.",
     "controlTip": "Registar, reflectir, ajustar — cada uma dessas decisões é tua. A app mostra; o que fazes com o que vês é contigo.",
     "closingLabel": "Compromisso:",
-    "closingText": "O simples facto de estares aqui, a registar, a refletir, a analisar - isso já é mudança.",
-    "closingHarmReduction": "Redução de danos não é perfeição, é progresso. E tu estás a progredir, ao teu ritmo.",
-    "closingRemember": "Lembra-te: a mudança não é linear. Haverá dias melhores e piores, e isso é normal. O que importa é continuares a aparecer por ti.",
+    "closingText": "O simples facto de estares aqui, a registar e a olhar para os teus dados, é uma escolha tua.",
+    "closingHarmReduction": "Redução de danos não é perfeição: é decidir, com informação, o que faz sentido para ti — ao teu ritmo.",
+    "closingRemember": "Os dias vão ser diferentes uns dos outros, e isso é normal.",
     "closingProud": "Tens vindo a aparecer e a reparar nos teus próprios padrões — isso exige consciência a sério. 💜",
     "peakWindowLabel": "Janela de maior consumo:",
     "peakWindowSpread": "O teu consumo está bastante espalhado pelo dia, sem um pico marcado — o que também é informação útil sobre ti.",
@@ -1710,7 +2013,62 @@
     "gapMore": "+ {{n}} dias mais antigos com a mesma situação.",
     "gapNoRuleGroups": "Ainda há poucas noites de cada tipo para comparar: {{longN}} com intervalo acima das {{longH}}h e {{shortN}} abaixo das {{shortH}}h (são precisas {{min}} de cada lado). Ficam as horas; a leitura é tua.",
     "quantityGoalWithin": "A tua meta é {{target}}mg por dia — esta média está dentro dela.",
-    "quantityGoalAbove": "A tua meta é {{target}}mg por dia — esta média está acima."
+    "quantityGoalAbove": "A tua meta é {{target}}mg por dia — esta média está acima.",
+    "pValue": "p = {{p}}",
+    "pLessThan": "p: menos de 1 em {{m}}",
+    "verdictChance": "não se distingue do acaso ({{p}})",
+    "verdictNotChance": "dificilmente é só acaso ({{p}})",
+    "diffSentence": "A diferença {{verdict}}.",
+    "towardGoal": "Vai no sentido da tua meta de reduzir.",
+    "awayFromGoal": "Vai no sentido contrário ao da tua meta de reduzir.",
+    "trendLabel": "Comparado com o período anterior:",
+    "trendCompare": "média de {{curr}} consumos por dia neste ({{nCurr}} dias) e {{prev}} no anterior ({{nPrev}} dias), {{pct}}%.",
+    "groupFew": "{{what}}: poucos dias para comparar os dois grupos ({{nA}} e {{nB}}; são precisos {{min}} de cada lado).",
+    "groupTest": "{{what}}: a diferença entre os dois grupos {{verdict}}.",
+    "whatSleep": "Sono",
+    "whatMood": "Humor",
+    "whatEnergy": "Energia",
+    "weeklyFew": "Para comparar dias da semana são precisos pelo menos {{min}} dias de cada (há {{n}} dias no período).",
+    "weeklyRange": "Com mais consumos em média: {{day}} ({{avg}}); com menos: {{bestDay}} ({{bestAvg}}), em {{n}} dias.",
+    "weeklyVerdict": "Uma diferença destas entre dias da semana {{verdict}}.",
+    "recoveryChanceNote": "Depois de um dia muito acima da média, é comum os seguintes estarem mais perto dela, mesmo só por acaso — isto descreve, não mede uma \"recuperação\".",
+    "cascadeFew": "Para ver se um dia acima anda junto com o seguinte também acima são precisos {{min}} pares de dias seguidos de cada tipo (há {{nA}} e {{nB}}).",
+    "cascadeTest": "Depois de um dia acima, o seguinte também foi acima em {{a}}% das vezes (de {{nA}}); depois dos outros dias, em {{b}}% (de {{nB}}). A diferença {{verdict}}.",
+    "peakWindowConcentrated": "Mais de metade dos teus consumos cai nestas 4 horas.",
+    "escalationFew": "Para comparar os dias que começam antes das 10h com os outros são precisos {{min}} dias de cada (há {{nE}} e {{nL}}).",
+    "escalationCompare": "Nos dias em que o primeiro consumo foi antes das 10h houve em média {{early}} consumos ({{nE}} dias); nos dias em que começou mais tarde, {{late}} ({{nL}} dias).",
+    "escalationHoursNote": "Começar mais cedo também deixa mais horas no dia.",
+    "lateSleepFew": "Para comparar o sono dos dias com consumos entre as 00h e as 06h com o dos outros dias são precisos {{min}} dias de cada, com sono registado (há {{nA}} e {{nB}}).",
+    "lateSleepCompare": "Nos dias com consumos entre as 00h e as 06h, {{a}}% tinham menos de 6h de sono registado ({{nA}} dias); nos outros dias com consumo, {{b}}% ({{nB}} dias).",
+    "prevMoodFew": "Para ver se o humor da véspera anda junto com o número de consumos são precisos {{min}} dias com humor registado na véspera (há {{n}}).",
+    "prevMoodChance": "Em {{n}} dias, o humor da véspera não anda junto com o número de consumos de forma que se distinga do acaso (ρ = {{rho}}, {{p}}).",
+    "prevMoodLow": "Em {{n}} dias, os dias a seguir a um humor mais baixo tenderam a ter mais consumos (ρ = {{rho}}, {{p}}). Andam juntos — não quer dizer que um cause o outro.",
+    "prevMoodHigh": "Em {{n}} dias, os dias a seguir a um humor mais alto tenderam a ter mais consumos (ρ = {{rho}}, {{p}}). Andam juntos — não quer dizer que um cause o outro.",
+    "sleepTrendUp": "Primeira metade das noites: {{a}}h em média; segunda: {{b}}h — a subir ({{p}}).",
+    "sleepTrendDown": "Primeira metade das noites: {{a}}h em média; segunda: {{b}}h — a descer ({{p}}).",
+    "sleepTrendChance": "Primeira metade das noites: {{a}}h em média; segunda: {{b}}h — a diferença não se distingue do acaso ({{p}}).",
+    "sleepTrendFew": "Para ver se o sono está a mudar são precisas {{min}} noites registadas (há {{n}}).",
+    "noSleepFew": "Há {{n}} noites com 3h ou menos registadas e {{m}} com mais — para comparar são precisas {{min}} de cada.",
+    "sleepMoodFew": "Para ver se as horas de sono andam junto com o humor desse dia são precisos {{min}} dias com os dois registados (há {{n}}).",
+    "sleepMoodChance": "Em {{n}} dias, as horas de sono e o humor desse dia não andam juntos de forma que se distinga do acaso (ρ = {{rho}}, {{p}}).",
+    "sleepMoodPos": "Em {{n}} dias, depois de noites mais longas o humor tendeu a ser mais alto (ρ = {{rho}}, {{p}}). Andam juntos — não quer dizer que um cause o outro.",
+    "sleepMoodNegative": "Em {{n}} dias, depois de noites mais longas o humor tendeu a ser mais baixo (ρ = {{rho}}, {{p}}). Andam juntos — não quer dizer que um cause o outro.",
+    "emotionsFew": "Ainda nenhuma emoção tem dias suficientes para comparar (são precisos {{min}} dias com ela e {{min}} sem).",
+    "emotionsNone": "Testámos {{k}} emoções (as que têm dias suficientes): em nenhuma o número de consumos nos dias com ela se distingue do acaso.",
+    "emotionsSome": "Testámos {{k}} emoções (as que têm dias suficientes). Nos dias com estas, o número de consumos foi diferente de forma que dificilmente é só acaso:",
+    "emotionRow": "{{a}} consumos/dia contra {{b}} sem ela ({{n}} dias, {{p}})",
+    "emotionsMultiple": "Com {{k}} comparações, cerca de {{e}} dariam este resultado só por acaso. Andarem juntos não quer dizer que um cause o outro.",
+    "selfCareFew": "Dias com {{area}}: poucos para comparar ({{nA}} com e {{nB}} sem; são precisos {{min}} de cada).",
+    "selfCareCompare": "Dias com {{area}}: {{a}} consumos/dia ({{nA}} dias); sem: {{b}} ({{nB}} dias) — {{verdict}}.",
+    "clustersNote": "São só contagens (de {{n}} dias com consumo): não dizem se estas combinações aparecem mais do que o acaso daria.",
+    "nextDayFew": "{{what}}: são precisos {{min}} pares de dias seguidos com os dois registados (há {{n}}).",
+    "nextDayChance": "{{what}}: em {{n}} pares de dias, não anda junto com os consumos da véspera de forma que se distinga do acaso (ρ = {{rho}}, {{p}}).",
+    "nextDayLower": "{{what}}: em {{n}} pares de dias, depois de dias com mais consumos tendeu a ser mais baixo (ρ = {{rho}}, {{p}}).",
+    "nextDayHigher": "{{what}}: em {{n}} pares de dias, depois de dias com mais consumos tendeu a ser mais alto (ρ = {{rho}}, {{p}}).",
+    "togetherNote": "Andarem juntos não quer dizer que um cause o outro.",
+    "energyFew": "Para comparar com os outros check-ins são precisos {{min}} de cada lado (há {{nA}} e {{nB}}).",
+    "energyCompare": "Nos check-ins logo antes de consumir, a energia estava baixa em {{a}}%; nos outros {{nB}} check-ins, em {{b}}%.",
+    "synthesisGoal": "Com a tua meta de até {{target}} consumos por dia: {{dentro}} dias dentro e {{acima}} acima, em {{n}} dias com consumo."
   },
   "demoHome": {
     "sinceLast": "desde o último",
@@ -1826,5 +2184,30 @@
     "cycleNudgeOpen": "Registar ciclo",
     "cycleNudgeLater": "Agora não",
     "unknownGap": "? (há dias sem consumos registados pelo meio)"
+  },
+  "estadoTab": {
+    "pValue": "p = {{p}}",
+    "pLessThan": "p: menos de 1 em {{m}}",
+    "notChance": "dificilmente é só acaso ({{p}})",
+    "chance": "não se distingue do acaso ({{p}})",
+    "fewDays": "{{what}}: poucos dias para comparar ({{nA}} com e {{nB}} sem; são precisos {{min}} de cada lado).",
+    "weekdayRange": "Entre os {{k}} dias da semana com registos suficientes, as emoções positivas vão de {{bestPct}}% ({{best}}) a {{worstPct}}% ({{worst}}). Uma diferença destas entre dias da semana {{verdict}}.",
+    "weekdayFew": "Para comparar dias da semana são precisos pelo menos {{min}} registos com emoções em cada dia (por agora só {{k}} dias da semana chegam lá).",
+    "compareNone": "Ainda não dá para comparar: cada uma precisa de pelo menos {{min}} dias com ela e {{min}} sem ela (há {{n}} dias com registo).",
+    "compareIntro": "Consumos por dia, em média, nos dias em que registaste cada uma e nos outros dias com registo.",
+    "compareRow": "{{nA}} dias com, {{nB}} sem — a diferença {{verdict}}.",
+    "compareMultiple": "São {{k}} comparações ao mesmo tempo: é normal uma ou outra parecer diferente só por acaso.",
+    "compareFew": "Mais {{n}} com poucos dias para comparar (são precisos {{min}} dias com e {{min}} sem).",
+    "exCons": "🔢 Consumos: {{a}} por dia nos dias com exercício ({{nA}} dias) e {{b}} nos outros ({{nB}} dias) — {{verdict}}.",
+    "exMood": "😊 Humor: {{a}}/10 nos dias com exercício ({{nA}} dias) e {{b}}/10 nos outros ({{nB}} dias) — {{verdict}}.",
+    "exEnergy": "⚡ Energia: {{a}}/10 nos dias com exercício ({{nA}} dias) e {{b}}/10 nos outros ({{nB}} dias) — {{verdict}}.",
+    "symCons": "🔢 Consumos: {{a}} por dia nos dias com sintomas ({{nA}} dias) e {{b}} nos outros ({{nB}} dias) — {{verdict}}.",
+    "symMood": "😊 Humor: {{a}}/10 nos dias com sintomas ({{nA}} dias) e {{b}}/10 nos outros ({{nB}} dias) — {{verdict}}.",
+    "whatCons": "Consumos",
+    "whatMood": "Humor",
+    "whatEnergy": "Energia",
+    "togetherNote": "Andarem juntos não quer dizer que um cause o outro.",
+    "withLabel": "com",
+    "withoutLabel": "sem"
   }
 }

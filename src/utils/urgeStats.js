@@ -19,7 +19,9 @@ const FOLLOW_WINDOW_MS = 24 * 60 * 60 * 1000;
  * @param {Array} events        eventos do registo do impulso
  * @param {Array} consumptions  consumos (para medir o tempo aguentado)
  * @param {{start:string,end:string}|null} dateRange  intervalo 'YYYY-MM-DD' ou null = desde sempre
- * @returns {{ total, surfed, delayed, openedNoUse, avgHeldMin, hasData }}
+ * @returns {{ total, surfed, delayed, openedNoUse, avgHeldMin, heldCount, hasData }}
+ *   heldCount = em quantas vezes se baseia a média do tempo (as que tiveram
+ *   consumo nas 24 h seguintes) — para o ecrã dizer de quantas vezes fala.
  */
 export function computeUrgeStats(events = [], consumptions = [], dateRange = null) {
   const tsOf = (e) => (e && (e.ts || e.timestamp)) || null;
@@ -69,6 +71,7 @@ export function computeUrgeStats(events = [], consumptions = [], dateRange = nul
     delayed,
     openedNoUse,
     avgHeldMin,
+    heldCount: heldMinutes.length,
     hasData: evts.length > 0,
   };
 }
