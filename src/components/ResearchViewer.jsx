@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { collectionGroup, getDocs } from 'firebase/firestore';
 import { useData } from '../contexts/DataContext';
+import { circularMeanHour } from '../services/researchService';
 
 // ===== ECRÃ "INVESTIGAÇÃO" (só para a conta da investigadora) =====
 // Lê as fichas semanais do modo investigação (research/{anonId}/weeks/{semana}),
@@ -73,10 +74,9 @@ export function ResearchViewer() {
                 daysUsed: enough ? mean(list.map(r => r.consumption?.daysUsed)) : null,
                 totalMg: enough ? mean(list.map(r => r.consumption?.totalMg)) : null,
                 sleep: enough ? mean(list.map(r => r.sleep?.avgHours)) : null,
-                // Hora de deitar: 01:00 conta como 25:00, para 23:00 e 01:00 darem
-                // meia-noite e não meio-dia. (A média de cada pessoa por semana já
-                // vem feita do telemóvel sem este cuidado — ver nota no relatório.)
-                bedtime: enough ? mean(list.map(r => { const h = r.sleep?.avgBedtimeHour; return typeof h === 'number' ? (h < 12 ? h + 24 : h) : null; })) : null,
+                // Hora de deitar: média de relógio (23:00 e 01:00 → 00:00), a mesma
+                // conta que o telemóvel faz para cada semana (researchService).
+                bedtime: enough ? circularMeanHour(list.map(r => r.sleep?.avgBedtimeHour)) : null,
                 mood: enough ? mean(list.map(r => r.wellbeing?.avgMood)) : null,
                 energy: enough ? mean(list.map(r => r.wellbeing?.avgEnergy)) : null,
                 topEmo: Object.entries(emo).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k]) => k),

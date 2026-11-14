@@ -54,6 +54,27 @@ const getPeriod = (ts) => {
 
 const avg = (arr) => arr.length ? Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10 : null;
 
+// Média de HORAS DO RELÓGIO (ex.: hora de deitar). O relógio é um círculo:
+// 23:00 e 01:00 estão lado a lado e a média é 00:00 — a média normal dava
+// (23+1)/2 = 12:00. Faz-se como com ponteiros: cada hora é uma seta à volta do
+// mostrador, somam-se as setas e vê-se para onde aponta a soma.
+// Devolve uma hora de 0 a 24 (1 casa decimal), ou null se não houver horas ou
+// se as setas se anularem (ex.: só 00:00 e 12:00 — não há "média" que faça sentido).
+// Corrigido a 14-11-2026: antes usava avg() e dava meio-dia a quem se deita
+// à volta da meia-noite. Como cada sincronização volta a calcular as últimas
+// 52 semanas, as fichas desse período ficam corrigidas na sincronização seguinte.
+export const circularMeanHour = (hours) => {
+    const v = (hours || []).filter(h => typeof h === 'number' && Number.isFinite(h));
+    if (!v.length) return null;
+    let sx = 0, sy = 0;
+    for (const h of v) { const a = (h / 24) * 2 * Math.PI; sx += Math.cos(a); sy += Math.sin(a); }
+    if (Math.hypot(sx, sy) / v.length < 1e-6) return null;
+    let a = Math.atan2(sy, sx);
+    if (a < 0) a += 2 * Math.PI;
+    const h = Math.round(((a / (2 * Math.PI)) * 24) * 10) / 10;
+    return h >= 24 ? 0 : h;
+};
+
 const classifySentiment = (text) => {
     if (!text) return 'neutral';
     const result = analyzeNote(text);
@@ -119,7 +140,7 @@ const aggregateWeek = (weekKey, consumptions, cycles, wellbeingLogs, reflections
         sleep: hasSleep ? {
             count: wCycles.length,
             avgHours: avg(sleepHours),
-            avgBedtimeHour: avg(bedtimeHours),
+            avgBedtimeHour: circularMeanHour(bedtimeHours),
             triggerCounts: Object.keys(triggerCounts).length > 0 ? triggerCounts : null,
         } : null,
         wellbeing: hasWellbeing ? {
