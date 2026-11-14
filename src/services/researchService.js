@@ -35,7 +35,7 @@ export const getOrCreateResearchId = () => {
 };
 
 // ISO week key e.g. "2026-W25"
-const getWeekKey = (ts) => {
+export const getWeekKey = (ts) => {
     const d = new Date(ts);
     d.setHours(0, 0, 0, 0);
     d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);

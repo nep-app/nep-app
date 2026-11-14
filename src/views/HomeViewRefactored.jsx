@@ -21,6 +21,7 @@ import { cleanEntries } from '../utils/substances';
 import { SubstancePicker } from '../components/SubstancePicker';
 import { SubstancesModal } from '../components/modals/SubstancesModal';
 import { HomeRelogio } from '../demo/HomeRelogio';
+import { RegisteredBar, IntentionSheet, OutcomeCard, customIntentionsFrom } from '../components/Intention';
 
 const UrgeSurfingModal = lazy(() => import('../components/modals/UrgeSurfingModal').then(m => ({ default: m.UrgeSurfingModal })));
 
@@ -39,7 +40,7 @@ export function HomeViewRefactored({
   showToast
 }) {
   const { t, i18n } = useTranslation();
-  const { consumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing, addUrgeEvent, addConsumption, updateItem } = useData();
+  const { consumptions, allConsumptions, goals, cycles, dailyLogs, weighings, manualSync, isSyncing, addUrgeEvent, addConsumption, updateItem } = useData();
   const metrics = useMetrics();
   // Só no modo demo pode valer 'relogio' (experiência do novo Início).
   const { layout: demoLayout } = useDemoPrefs();
@@ -52,6 +53,38 @@ export function HomeViewRefactored({
   const [showUrgeSurfing, setShowUrgeSurfing] = useState(false);
   const [pendingConsumption, setPendingConsumption] = useState(false);
   const [urgeWarnings, setUrgeWarnings] = useState([]);
+
+  // Intenção: DEPOIS do registo (que continua a ser um toque), uma barra
+  // pequena "Registado · ＋ intenção" que some sozinha. Só se a pessoa tocar
+  // é que abre a folha com as duas filas. Ignorar = nunca mais se pergunta.
+  const [justLoggedId, setJustLoggedId] = useState(null);
+  const [intentionFor, setIntentionFor] = useState(null);
+  const closeBar = React.useCallback(() => setJustLoggedId(null), []);
+  const closeSheet = React.useCallback(() => setIntentionFor(null), []);
+  const customIntentions = useMemo(() => customIntentionsFrom(allConsumptions || consumptions), [allConsumptions, consumptions]);
+  const registerNow = async () => {
+    const id = await markConsumption({ quiet: true });
+    if (id) setJustLoggedId(id);
+  };
+  const saveIntention = async ({ intentions, how }) => {
+    const id = intentionFor;
+    setIntentionFor(null);
+    if (!id) return;
+    const updates = {};
+    if (intentions.length) updates.intentions = intentions;
+    if (how.length) updates.how = how;
+    if (!Object.keys(updates).length) return;
+    try {
+      await updateItem('consumptions', id, updates);
+      showToast(t('intention.saved', 'Intenção guardada'), 'success');
+    } catch {
+      showToast(t('messages.consumptionEditError'), 'error');
+    }
+  };
+  const saveEvaluation = async (id, evaluation) => {
+    try { await updateItem('consumptions', id, { evaluation }); }
+    catch { showToast(t('messages.consumptionEditError'), 'error'); }
+  };
 
   // Acolhimento de 1.ª vez: só para quem ainda não tem registos e nunca o viu.
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
@@ -86,7 +119,7 @@ export function HomeViewRefactored({
       const chosen = cleanEntries(pastSubstances);
       if (chosen.length) item.substances = chosen;
       await addConsumption(item);
-      showToast(t('messages.consumptionSaved'), 'success');
+      setJustLoggedId(item.id);
     } catch {
       showToast(t('messages.consumptionSaveError'), 'error');
     }
@@ -214,7 +247,7 @@ export function HomeViewRefactored({
       setPendingConsumption(true);
       setShowUrgeSurfing(true);
     } else {
-      markConsumption();
+      registerNow();
     }
   };
 
@@ -276,6 +309,9 @@ export function HomeViewRefactored({
 
   return (
     <>
+    {/* "Correu como querias?" — só com o interruptor das Definições ligado
+        (desligado por defeito). Um cartão, discreto, no topo. */}
+    <div className="mb-4 empty:hidden"><OutcomeCard consumptions={allConsumptions || consumptions} onSave={saveEvaluation} /></div>
     {demoLayout === 'relogio' ? (
       <HomeRelogio
         onMarkConsumption={handleMarkConsumption}
@@ -559,7 +595,7 @@ export function HomeViewRefactored({
           onClose={() => { setShowUrgeSurfing(false); setPendingConsumption(false); }}
           onOpenThoughts={() => setShowThoughtsModal(true)}
           onOpenReflection={() => setShowReflectionModal(true)}
-          onProceed={pendingConsumption ? () => markConsumption() : null}
+          onProceed={pendingConsumption ? () => registerNow() : null}
           onLog={(payload) => {
             // Guardar o momento na base cifrada. Devolve o id (para o modal
             // poder atualizar o mesmo registo depois). Se falhar (ou não houver
@@ -582,6 +618,14 @@ export function HomeViewRefactored({
         />
       </Suspense>
     )}
+
+    {justLoggedId && !intentionFor && (
+      <RegisteredBar
+        onAdd={() => { setIntentionFor(justLoggedId); setJustLoggedId(null); }}
+        onDone={closeBar}
+      />
+    )}
+    <IntentionSheet open={!!intentionFor} onClose={closeSheet} onSave={saveIntention} customOptions={customIntentions} />
 
     {showOnboarding && <OnboardingWelcome onDone={dismissOnboarding} />}
 

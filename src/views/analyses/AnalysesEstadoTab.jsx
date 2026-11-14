@@ -4,6 +4,7 @@ import i18n from '../../i18n';
 import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
 import { diffPermutation, MIN_PER_WINDOW, rangePermutation } from '../../utils/stats';
+import { IntentionStats } from '../../components/IntentionStats';
 
 // ===== "A APP TEM DE PODER DIZER NÃO SEI" (CLAUDE.md) =====
 // Cada comparação deste separador (dias com X vs dias sem X, dias da semana)
@@ -907,6 +908,9 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
                     </div>
                 </div>
             )}
+
+            {/* Intenção e "correu como querias?" — só aparece se houver dados. */}
+            <div className="mt-4 empty:hidden"><IntentionStats consumptions={analysisConsumptions} /></div>
         </>
     );
 });

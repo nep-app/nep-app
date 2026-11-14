@@ -376,7 +376,9 @@
     "layoutSubtitle": "Only changes how Home looks, and only on this device.",
     "layoutClock": "Day clock",
     "layoutCurrent": "The usual one",
-    "screenTitle": "Home, colours & notifications"
+    "screenTitle": "Home, colours & notifications",
+    "askOutcome": "Ask later if it went the way you wanted",
+    "askOutcomeDesc": "Between 3 and 36 hours after a use, a quiet card shows up on Home: \"did it go the way you wanted?\". Answer or dismiss it. No notifications, nothing left pending."
   },
   "modals": {
     "dailyLog": {
@@ -1133,6 +1135,42 @@
       "zonesLine": "Within the range: {{in}} · below: {{below}} · above: {{above}}. Below does not count as missing.",
       "cmpIn": "The recent average is within your goal range ({{range}}).",
       "cmpOut": "The recent average is outside your goal range ({{range}})."
+    },
+    "signals": {
+      "noInputs": "Not enough data. Log wellbeing, sleep cycles or daily dose in the last 3 days to see today's signs.",
+      "yes": "yes",
+      "no": "no",
+      "sleep": "Sleep (3-day average): {{v}} h",
+      "mood": "Mood (3-day average): {{v}}/10",
+      "energy": "Energy (3-day average): {{v}}/10",
+      "selfCare2": "Self-care (average of yesterday and the day before): {{v}} of 4 areas",
+      "selfCare1": "Self-care (yesterday): {{v}} of 4 areas",
+      "moodTrend": "Mood over the last week: {{a}} → {{b}}",
+      "energyTrend": "Energy over the last week: {{a}} → {{b}}",
+      "mg": "Yesterday's dose: {{y}} mg (average of the 30 days before: {{avg}} mg)",
+      "dow": "{{day}}: on average {{a}} uses on this weekday (all days: {{b}})",
+      "useTrend": "Uses per day: {{b}} in the last 3 days, {{a}} in the 3 before",
+      "craving": "Craving logged yesterday: {{v}}",
+      "neg": "Negative emotions in the last 3 days: {{k}} of {{n}}",
+      "unstable": "Emotions changing a lot yesterday: {{v}}",
+      "fewHead": "still too few days to learn from",
+      "few": "There are {{n}} days that count; {{need}} are needed ({{train}} for the app to learn from your days and {{test}} to test what it learned). Days count when they have uses logged and some record in the 3 days before.",
+      "flatNoWeights": "These signs have almost no records, or were always the same — there is nothing for the app to learn. So it says nothing about today.",
+      "flatNoVariation": "Over the {{n}} test days, the number of uses or the sum of the signs was always the same — there is nothing to compare. So the app says nothing about today.",
+      "noteChance": "Over the {{n}} test days, the sum the app learned did not go along with your number of uses (ρ = {{rho}}, {{p}}). So the app says nothing about today.",
+      "noteLinked": "Over the {{n}} test days, the sum the app learned went along with your number of uses (ρ = {{rho}}, {{p}}). Going together does not mean one causes the other.",
+      "linkedHead": "in your records, these signs went along with your number of uses",
+      "noGoal": "Without a goal of yours for uses per day, the app sticks to describing: it does not say whether today will be a day of more or fewer uses.",
+      "goalKeep": "{{t}} ± {{tol}} per day",
+      "goalMax": "at most {{t}} per day",
+      "goalFew": "Only {{y}} test days had signs similar to today's — too few to count how many went above your goal ({{min}} are needed).",
+      "goalAboveKeep": "{{k}} of {{y}} days with signs similar to today's went above your range ({{goal}})",
+      "goalAbove": "{{k}} of {{y}} days with signs similar to today's went above your goal ({{goal}})",
+      "goalKeepRest": "Of the others: {{in}} were within and {{below}} below.",
+      "goalBase": "Across all {{n}} test days: {{a}} of {{n}} went above.",
+      "similarDef": "Similar days: test days where the sum of the signs fell in the same third (low, middle or high) as today's.",
+      "learned": "The app learned from your days up to {{date}} and tested on the {{n}} days after, which it had not seen (for each one, it only knew what came before it).",
+      "listTitle": "Today's signs (from the days before today):"
     }
   },
   "firebase": {
@@ -2250,5 +2288,63 @@
     "togetherNote": "Going together doesn't mean one causes the other.",
     "withLabel": "with",
     "withoutLabel": "without"
+  },
+  "intention": {
+    "opt": {
+      "work": "work",
+      "party": "party",
+      "people": "be with people",
+      "getThrough": "get through the day",
+      "notFeel": "not feel",
+      "habit": "habit",
+      "dontKnow": "don't know"
+    },
+    "how": {
+      "ateBefore": "ate before",
+      "water": "drank water",
+      "mixed": "mixed",
+      "tested": "tested",
+      "accompanied": "with someone",
+      "alone": "alone"
+    },
+    "outcome": {
+      "yes": "yes",
+      "partly": "sort of",
+      "no": "no"
+    },
+    "whatTitle": "What did you want?",
+    "optionalMany": "optional · pick as many as you like",
+    "other": "other",
+    "otherPlaceholder": "a few words",
+    "add": "add",
+    "howTitle": "How?",
+    "optional": "optional",
+    "registered": "Use logged",
+    "addIntention": "intention",
+    "sheetTitle": "Intention",
+    "notNow": "Not now",
+    "whenToday": "Your use at {{time}}",
+    "whenYesterday": "Your use yesterday at {{time}}",
+    "whenDate": "Your use on {{date}} at {{time}}",
+    "savedThanks": "Saved.",
+    "askTitle": "Did it go the way you wanted?",
+    "notePlaceholder": "what was different? (optional)",
+    "whatDifferent": "what was different?",
+    "noteHint": "Write it, then pick an answer.",
+    "dismiss": "dismiss",
+    "saved": "Intention saved",
+    "editTitle": "Intention"
+  },
+  "intentionStats": {
+    "title": "Intention · did it go the way you wanted?",
+    "since": "Since {{date}} · {{x}} of {{y}} uses answered",
+    "noneEvaluated": "No uses answered yet. The \"did it go the way you wanted?\" question can be turned on in Settings; you can also answer it when editing a use in History.",
+    "byIntention": "By intention",
+    "byHow": "By \"How?\"",
+    "few": "few records ({{n}})",
+    "aOfB": "went the way you wanted: {{a}} of {{b}}",
+    "breakdown": "yes {{yes}} · sort of {{partly}} · no {{no}}",
+    "compare": "Other uses with \"How?\" answered: {{c}} of {{d}} — the difference {{verdict}}.",
+    "note": "\"yes\" = it went the way you wanted. Grey: fewer than {{min}} answers, nothing is said yet. Uses without an answer are left out — the app doesn't guess. No intention is better than another: this only shows what happened."
   }
 }

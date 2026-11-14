@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v8.1.1**
+**Versão actual: v8.2.0**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
@@ -43,6 +43,12 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
   antigas (de antes da v8.1.0) continuam ligadas como sempre. O interruptor das
   Config é o geral: desligado, nunca aparece. No modo demo aparece sempre. O
   momento fica guardado logo ao abrir o primeiro exercício.
+- **Intenção (opcional):** registar continua a ser um toque; depois aparece
+  durante 5 s "＋ intenção" ("O que querias?" e "Como?": comi antes, bebi água,
+  misturei, testei…). Também se edita no Histórico. Com o interruptor ligado
+  (desligado por defeito), ao abrir a app pergunta uma vez "correu como
+  querias?" sobre um consumo de há 3–36 h. Fica cifrado e **nunca vai para o
+  modo investigação**. Nas Análises → Estado: "X de Y avaliados", por intenção.
 - Registo de consumos passados (não abre o impulso) e marcação de dias
   "não registei" / atípicos (ficam fora das análises).
 
@@ -50,10 +56,13 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
 - **Dashboard:** total, média por dia (só dias com registos), intervalo médio,
   "esta semana", tendência, **Sinais de hoje**, mapa de calor, evolução da
   frequência, metas.
-- **Sinais de hoje:** junta sono, humor, energia, autocuidado, craving e
-  emoções dos últimos dias. A app verifica nos dias passados da própria pessoa
-  se essa soma acompanhou o número de consumos (Spearman + p por deslocamento
-  circular). Se não acompanhou, diz que não se distingue do acaso e não arrisca.
+- **Sinais de hoje:** junta sono, humor, energia, autocuidado, craving,
+  emoções e o ritmo dos últimos dias. Os pesos de cada sinal **aprendem-se com
+  os dias da própria pessoa** e verificam-se só em dias que o modelo ainda não
+  tinha visto (aprende com os mais antigos, testa nos mais recentes; mínimo
+  30 + 20 dias). Com meta de consumos por dia, diz quantos dias com sinais
+  parecidos ficaram acima da meta; sem meta, só descreve. Sem relação, diz que
+  não se distingue do acaso e não arrisca.
 - **Comparar** (este período vs o anterior), **Temporal** e **Estrutural**
   (horas do dia, intervalos, dose).
 
@@ -89,8 +98,9 @@ total de mg por dia.
 Modo de dados, PIN e bloqueio, **disfarce** (abre como calculadora),
 **lembretes push**, temas (Riso por defeito e outros), idioma PT/EN,
 exportação, substâncias. **Modo demo** com dados realistas, sem conta.
-Na conta da investigadora aparece ainda **Investigação**: as fichas semanais do
-modo investigação (médias de grupo só com ≥ 5 pessoas; CSV para descarregar).
+Na conta da investigadora aparece ainda **Investigação**: participação e
+qualidade dos dados das fichas semanais, e o CSV (perguntas possíveis em
+`PLANO-INVESTIGACAO.md`).
 Só essa conta as pode ler (regra em `firestore.rules`, publicada à mão).
 
 ---

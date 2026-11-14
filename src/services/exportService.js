@@ -196,7 +196,7 @@ export function exportToCSV(data) {
 
   // CSV para consumptions
   let csv = 'CONSUMPTIONS\n';
-  csv += 'Date,Time,Substance,Amount,Unit,Notes\n';
+  csv += 'Date,Time,Substance,Amount,Unit,Notes,Intentions,How,Outcome,OutcomeNote\n';
   consumptions.forEach(c => {
     const date = c.date || '';
     const time = c.timestamp ? new Date(c.timestamp).toLocaleTimeString('pt-PT') : '';
@@ -204,7 +204,8 @@ export function exportToCSV(data) {
     const subs = Array.isArray(c.substances) ? c.substances : [];
     const substance = subs.length ? subs.map(x => x.name).join(' + ') : c.substance;
     const amount = subs.length ? subs.map(x => x.amount || '').join(' + ') : c.amount;
-    csv += `${date},${time},${csvCell(substance)},${csvCell(amount)},${csvCell(c.unit)},${csvCell(c.notes)}\n`;
+    const ev = c.evaluation && c.evaluation.outcome !== 'dismissed' ? c.evaluation : null;
+    csv += `${date},${time},${csvCell(substance)},${csvCell(amount)},${csvCell(c.unit)},${csvCell(c.notes)},${csvCell((c.intentions || []).join('; '))},${csvCell((c.how || []).join('; '))},${csvCell(ev?.outcome)},${csvCell(ev?.note)}\n`;
   });
 
   // CSV para cycles (SONO)

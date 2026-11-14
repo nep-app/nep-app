@@ -99,14 +99,19 @@ const buildCSVs = (data, selected) => {
   const files = [];
 
   if (selected.consumptions && data.consumptions.length > 0) {
-    const rows = [csvRow(['Data', 'Hora', 'Quantidade', 'Notas'])];
+    const rows = [csvRow(['Data', 'Hora', 'Quantidade', 'Notas', 'Intenção', 'Como', 'Correu como querias', 'Nota'])];
     data.consumptions.forEach(c => {
       const d = safeDate(c.timestamp);
+      const ev = c.evaluation && c.evaluation.outcome !== 'dismissed' ? c.evaluation : null;
       rows.push(csvRow([
         d ? d.toLocaleDateString('pt-PT') : '',
         d ? d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '',
         c.amount ? `${c.amount} ${c.unit || 'mg'}` : '',
         c.notes || '',
+        (c.intentions || []).join('; '),
+        (c.how || []).join('; '),
+        ev ? ev.outcome : '',
+        ev?.note || '',
       ]));
     });
     files.push({ name: 'consumos.csv', rows });

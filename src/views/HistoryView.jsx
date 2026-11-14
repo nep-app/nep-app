@@ -14,6 +14,7 @@ import { GapsReport } from '../components/ui/GapsReport';
 import { DayMarksPanel } from '../components/ui/DayMarksPanel';
 import { EMOTION_EN } from '../constants/emotions';
 import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
+import { intentionLabel, howLabel, outcomeLabel } from '../components/Intention';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 
@@ -1804,6 +1805,13 @@ export function HistoryView({
                                                                                         </div>
                                                                                         {c.substances?.length > 0 && <div className="text-sm mt-1 text-gray-200">{formatSubstances(c.substances)}</div>}
 {c.notes && <div className="text-sm mt-1 text-gray-300">💭 {c.notes}</div>}
+                                                                                        {/* Intenção / como / correu como querias (opcionais, cifrados como o resto). */}
+                                                                                        {((c.intentions?.length || 0) + (c.how?.length || 0) > 0 || (c.evaluation && c.evaluation.outcome !== 'dismissed')) && (
+                                                                                            <div className="text-xs mt-1 text-gray-400">
+                                                                                                {[...(c.intentions || []).map(k => intentionLabel(t, k)), ...(c.how || []).map(k => howLabel(t, k))].join(' · ')}
+                                                                                                {c.evaluation && c.evaluation.outcome !== 'dismissed' && <> {(c.intentions?.length || c.how?.length) ? ' · ' : ''}{t('intention.historyOutcome', 'correu como querias:')} {outcomeLabel(t, c.evaluation.outcome)}</>}
+                                                                                            </div>
+                                                                                        )}
                                                                                     </div>
                                                                                     <div className="flex gap-2 ml-2">
                                                                                         <button onClick={() => openEditConsumption(c)} className="text-gray-500 hover:text-gray-200"><Icons.Edit className="w-4 h-4" /></button>

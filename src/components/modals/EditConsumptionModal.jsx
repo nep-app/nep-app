@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 import { SubstancePicker } from '../SubstancePicker';
+import { IntentionPicker, OutcomeEditor, isOutcomeAskOn, OUTCOME_KEYS } from '../Intention';
 
 // Data LOCAL 'YYYY-MM-DD' (o toISOString dava a data em UTC: um consumo entre
 // a meia-noite e a 1h aparecia no dia anterior e, ao gravar, mudava de dia).
@@ -17,10 +18,23 @@ export const EditConsumptionModal = ({
   onSubmit,
   safeDate,
   substances = [],
-  onAddSubstance
+  onAddSubstance,
+  customIntentions = []
 }) => {
   const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
+  // Intenção (opcional): fechada por defeito; abre sozinha se o consumo já tem.
+  const hasIntent = !!editingConsumption && (
+    (Array.isArray(editingConsumption.intentions) && editingConsumption.intentions.length > 0) ||
+    (Array.isArray(editingConsumption.how) && editingConsumption.how.length > 0) ||
+    OUTCOME_KEYS.includes(editingConsumption.evaluation?.outcome));
+  const [intentOpen, setIntentOpen] = useState(hasIntent);
+  const editingId = editingConsumption?.id;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { setIntentOpen(hasIntent); }, [editingId, isOpen]);
+  // "Correu como querias?" só aparece aqui se já foi respondido ou se a
+  // pergunta está ligada nas Definições (desligada por defeito).
+  const showOutcome = OUTCOME_KEYS.includes(editingConsumption?.evaluation?.outcome) || isOutcomeAskOn();
 
   if (!isOpen || !editingConsumption) return null;
 
@@ -78,6 +92,33 @@ export const EditConsumptionModal = ({
             substances={substances}
             onAddSubstance={onAddSubstance}
           />
+          <div className="border border-gray-700 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setIntentOpen(o => !o)}
+              aria-expanded={intentOpen}
+              className="w-full flex justify-between items-center px-3 py-2.5 text-sm text-gray-300"
+            >
+              <span>{t('intention.editTitle', 'Intenção')} <span className="text-xs text-gray-500">· {t('intention.optional', 'opcional')}</span></span>
+              <span className="text-gray-500" aria-hidden="true">{intentOpen ? '▾' : '▸'}</span>
+            </button>
+            {intentOpen && (
+              <div className="px-3 pb-3 space-y-4">
+                <IntentionPicker
+                  intentions={editingConsumption.intentions || []}
+                  how={editingConsumption.how || []}
+                  customOptions={customIntentions}
+                  onChange={({ intentions, how }) => setEditingConsumption({ ...editingConsumption, intentions, how })}
+                />
+                {showOutcome && (
+                  <OutcomeEditor
+                    evaluation={editingConsumption.evaluation}
+                    onChange={(evaluation) => setEditingConsumption({ ...editingConsumption, evaluation })}
+                  />
+                )}
+              </div>
+            )}
+          </div>
           <div>
             <label className='block text-sm font-medium mb-1 text-gray-300'>{t('modals.editConsumption.notesLabel')}</label>
             <textarea

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { PushRemindersSettings } from '../components/PushRemindersSettings';
+import { isOutcomeAskOn, OUTCOME_SETTING_KEY } from '../components/Intention';
 import { ResearchViewer, RESEARCH_ADMIN_UID } from '../components/ResearchViewer';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
@@ -183,6 +184,14 @@ export const SettingsView = ({
         localStorage.setItem('nep_urge_exercise', on ? 'true' : 'false');
     };
 
+    // "Correu como querias?" — cartão no Início horas depois de um consumo.
+    // DESLIGADO por defeito (só 'true' liga).
+    const [askOutcomeOn, setAskOutcomeOn] = useState(() => isOutcomeAskOn());
+    const handleAskOutcomeToggle = (on) => {
+        setAskOutcomeOn(on);
+        try { localStorage.setItem(OUTCOME_SETTING_KEY, on ? 'true' : 'false'); } catch { /* best-effort */ }
+    };
+
     const { lockMode, setLockMode } = useAuth();
     const isDemo = (() => { try { return localStorage.getItem('nep_demo') === '1'; } catch { return false; } })();
 
@@ -309,6 +318,27 @@ export const SettingsView = ({
                         className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${urgeExerciseOn ? 'bg-purple-500' : 'bg-gray-600'}`}
                     >
                         <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${urgeExerciseOn ? 'translate-x-7' : 'translate-x-1'}`} />
+                    </button>
+                </div>
+
+                {/* "Correu como querias?" — desligado por defeito. Sem notificações,
+                    sem pendentes: só um cartão no Início ao abrir a app. */}
+                <div className="border-t border-gray-700 my-4" />
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <p className="text-sm font-semibold text-white flex items-center gap-2">
+                            💭 {t('settings.askOutcome', 'Perguntar depois se correu como querias')}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">{t('settings.askOutcomeDesc', 'Entre 3 e 36 horas depois de um consumo, aparece um cartão discreto no Início: «correu como querias?». Respondes ou dispensas. Sem notificações e nada fica por responder.')}</p>
+                    </div>
+                    <button
+                        onClick={() => handleAskOutcomeToggle(!askOutcomeOn)}
+                        role="switch"
+                        aria-checked={askOutcomeOn}
+                        aria-label={t('settings.askOutcome', 'Perguntar depois se correu como querias')}
+                        className={`relative w-12 h-6 rounded-full transition-colors flex-shrink-0 ${askOutcomeOn ? 'bg-purple-500' : 'bg-gray-600'}`}
+                    >
+                        <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${askOutcomeOn ? 'translate-x-7' : 'translate-x-1'}`} />
                     </button>
                 </div>
             </Section>

@@ -376,7 +376,9 @@
     "layoutSubtitle": "Muda só a forma do Início, e só neste dispositivo.",
     "layoutClock": "Relógio do dia",
     "layoutCurrent": "A de sempre",
-    "screenTitle": "Início, cores e notificações"
+    "screenTitle": "Início, cores e notificações",
+    "askOutcome": "Perguntar depois se correu como querias",
+    "askOutcomeDesc": "Entre 3 e 36 horas depois de um consumo, aparece um cartão discreto no Início: «correu como querias?». Respondes ou dispensas. Sem notificações e nada fica por responder."
   },
   "modals": {
     "dailyLog": {
@@ -1196,6 +1198,42 @@
       "zonesLine": "Dentro do intervalo: {{in}} · abaixo: {{below}} · acima: {{above}}. Abaixo não conta como falhar.",
       "cmpIn": "A média recente fica dentro do intervalo da tua meta ({{range}}).",
       "cmpOut": "A média recente fica fora do intervalo da tua meta ({{range}})."
+    },
+    "signals": {
+      "noInputs": "Dados insuficientes. Regista bem-estar, ciclos de sono ou dose diária nos últimos 3 dias para ver os sinais de hoje.",
+      "yes": "sim",
+      "no": "não",
+      "sleep": "Sono (média de 3 dias): {{v}} h",
+      "mood": "Humor (média de 3 dias): {{v}}/10",
+      "energy": "Energia (média de 3 dias): {{v}}/10",
+      "selfCare2": "Autocuidado (média de ontem e anteontem): {{v}} de 4 áreas",
+      "selfCare1": "Autocuidado (ontem): {{v}} de 4 áreas",
+      "moodTrend": "Humor na última semana: {{a}} → {{b}}",
+      "energyTrend": "Energia na última semana: {{a}} → {{b}}",
+      "mg": "Dose de ontem: {{y}} mg (média dos 30 dias antes: {{avg}} mg)",
+      "dow": "{{day}}: em média {{a}} consumos neste dia da semana (todos os dias: {{b}})",
+      "useTrend": "Consumos por dia: {{b}} nos últimos 3 dias, {{a}} nos 3 antes",
+      "craving": "Craving registado ontem: {{v}}",
+      "neg": "Emoções negativas nos últimos 3 dias: {{k}} de {{n}}",
+      "unstable": "Emoções a mudar muito ontem: {{v}}",
+      "fewHead": "ainda há poucos dias para aprender",
+      "few": "Há {{n}} dias que contam, são precisos {{need}} ({{train}} para a app aprender com os teus dias e {{test}} para testar o que aprendeu). Contam os dias com consumos registados e algum registo nos 3 dias antes.",
+      "flatNoWeights": "Estes sinais quase não têm registos, ou foram sempre iguais — não há nada para a app aprender. Por isso não diz nada sobre hoje.",
+      "flatNoVariation": "Nos {{n}} dias de teste, o número de consumos ou a soma dos sinais foi sempre igual — não há nada para comparar. Por isso a app não diz nada sobre hoje.",
+      "noteChance": "Nos {{n}} dias de teste, a soma que a app aprendeu não acompanhou o teu número de consumos (ρ = {{rho}}, {{p}}). Por isso a app não diz nada sobre hoje.",
+      "noteLinked": "Nos {{n}} dias de teste, a soma que a app aprendeu andou junto com o teu número de consumos (ρ = {{rho}}, {{p}}). Andarem juntos não quer dizer que um cause o outro.",
+      "linkedHead": "nos teus registos, estes sinais andaram junto com o teu número de consumos",
+      "noGoal": "Sem uma meta tua de consumos por dia, a app fica pela descrição: não diz se hoje vai ser um dia de mais ou de menos.",
+      "goalKeep": "{{t}} ± {{tol}} por dia",
+      "goalMax": "no máximo {{t}} por dia",
+      "goalFew": "Só {{y}} dias de teste tiveram sinais parecidos com os de hoje — poucos para contar quantos ficaram acima da tua meta (são precisos {{min}}).",
+      "goalAboveKeep": "{{k}} de {{y}} dias com sinais parecidos com os de hoje ficaram acima do teu intervalo ({{goal}})",
+      "goalAbove": "{{k}} de {{y}} dias com sinais parecidos com os de hoje ficaram acima da tua meta ({{goal}})",
+      "goalKeepRest": "Dos outros: {{in}} ficaram dentro e {{below}} abaixo.",
+      "goalBase": "Em todos os {{n}} dias de teste: {{a}} de {{n}} ficaram acima.",
+      "similarDef": "Dias parecidos: dias de teste em que a soma dos sinais ficou no mesmo terço (baixo, meio ou alto) que a de hoje.",
+      "learned": "A app aprendeu com os teus dias até {{date}} e testou nos {{n}} dias seguintes, que não tinha visto (em cada um, só sabia o que veio antes dele).",
+      "listTitle": "Os sinais de hoje (vêm dos dias antes de hoje):"
     }
   },
   "urge": {
@@ -2250,5 +2288,63 @@
     "togetherNote": "Andarem juntos não quer dizer que um cause o outro.",
     "withLabel": "com",
     "withoutLabel": "sem"
+  },
+  "intention": {
+    "opt": {
+      "work": "trabalhar",
+      "party": "festa",
+      "people": "estar com pessoas",
+      "getThrough": "aguentar o dia",
+      "notFeel": "não sentir",
+      "habit": "hábito",
+      "dontKnow": "não sei"
+    },
+    "how": {
+      "ateBefore": "comi antes",
+      "water": "bebi água",
+      "mixed": "misturei",
+      "tested": "testei",
+      "accompanied": "acompanhada/o",
+      "alone": "sozinha/o"
+    },
+    "outcome": {
+      "yes": "sim",
+      "partly": "mais ou menos",
+      "no": "não"
+    },
+    "whatTitle": "O que querias?",
+    "optionalMany": "opcional · podes escolher várias",
+    "other": "outra",
+    "otherPlaceholder": "escreve em poucas palavras",
+    "add": "juntar",
+    "howTitle": "Como?",
+    "optional": "opcional",
+    "registered": "Consumo registado",
+    "addIntention": "intenção",
+    "sheetTitle": "Intenção",
+    "notNow": "Agora não",
+    "whenToday": "O consumo das {{time}}",
+    "whenYesterday": "O consumo de ontem às {{time}}",
+    "whenDate": "O consumo de {{date}} às {{time}}",
+    "savedThanks": "Guardado.",
+    "askTitle": "Correu como querias?",
+    "notePlaceholder": "o que foi diferente? (opcional)",
+    "whatDifferent": "o que foi diferente?",
+    "noteHint": "Escreve e depois escolhe a resposta.",
+    "dismiss": "dispensar",
+    "saved": "Intenção guardada",
+    "editTitle": "Intenção"
+  },
+  "intentionStats": {
+    "title": "Intenção · correu como querias?",
+    "since": "Desde {{date}} · {{x}} de {{y}} consumos avaliados",
+    "noneEvaluated": "Ainda não há consumos avaliados. A pergunta «correu como querias?» liga-se nas Definições; também se pode responder ao editar um consumo no Histórico.",
+    "byIntention": "Por intenção",
+    "byHow": "Por «Como?»",
+    "few": "poucos registos ({{n}})",
+    "aOfB": "correu como querias: {{a}} de {{b}}",
+    "breakdown": "sim {{yes}} · mais ou menos {{partly}} · não {{no}}",
+    "compare": "Nos outros consumos com «Como?» respondido: {{c}} de {{d}} — a diferença {{verdict}}.",
+    "note": "«sim» = correu como querias. A cinzento: menos de {{min}} avaliações, ainda não se diz nada. Os consumos sem avaliação não entram — a app não adivinha. Nenhuma intenção é melhor do que outra: isto só mostra o que aconteceu."
   }
 }

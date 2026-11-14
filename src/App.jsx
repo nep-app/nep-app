@@ -10,6 +10,7 @@ import { useMetrics } from './contexts/MetricsContext';
 import { useUI } from './contexts/UIContext';
 import { useAuth } from './contexts/AuthContext';
 import { useToast } from './hooks/useToast';
+import { customIntentionsFrom } from './components/Intention';
 import { useAuth as useFirebaseAuth } from './hooks/useAuth';
 import { useReminders } from './hooks/useReminders';
 import { AuthScreen } from './components/AuthScreen';
@@ -364,18 +365,23 @@ export function AuthenticatedApp() {
 
             // ===== 3. FIREBASE OPERATIONS (CRUD) =====
 
-            const markConsumption = async () => {
+            // Devolve o id do consumo guardado (ou null se falhou). Com
+            // { quiet: true } não mostra o aviso verde: o Início mostra a sua
+            // própria barra "Registado · ＋ intenção" no mesmo sítio.
+            const markConsumption = async ({ quiet = false } = {}) => {
                 try {
                     const now = new Date();
                     const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' };
                     if (defaultSubstanceEntries.length) item.substances = defaultSubstanceEntries;
                     await addConsumption(item);
-                    showToast(t('messages.consumptionSaved'), 'success');
+                    if (!quiet) showToast(t('messages.consumptionSaved'), 'success');
+                    return item.id;
                 } catch (error) {
                     logger.error('❌ ERRO COMPLETO:', error);
                     logger.error('❌ Mensagem:', error.message);
                     logger.error('❌ Stack:', error.stack);
                     showToast(t('messages.consumptionSaveError'), 'error');
+                    return null;
                 }
             };
 
@@ -1555,6 +1561,7 @@ export function AuthenticatedApp() {
                                 safeDate={safeDate}
                                 substances={substanceList}
                                 onAddSubstance={addSubstance}
+                                customIntentions={showEditConsumptionModal ? customIntentionsFrom(allConsumptions || consumptions) : undefined}
                             />
                         </Suspense>
 

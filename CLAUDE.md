@@ -56,7 +56,8 @@
 
 * **Medição de mg Sem Estimativas Inventadas:** NUNCA inventar ou estimar doses em mg para dias sem pesagem. O sistema usa apenas dias com medição real (`measured`).
 * **Segurança do PIN & Disfarce:** O PIN NUNCA é guardado em texto claro. Textos de ajuda ou email de recuperação NUNCA devem aparecer dentro do ecrã do modo disfarce (Calculadora).
-* **Privacidade / Research:** NUNCA enviar texto livre nem análise de sentimento para o modo de investigação/research — apenas dados quantitativos e agregados anónimos.
+* **Privacidade / Research:** NUNCA enviar texto livre nem análise de sentimento para o modo de investigação/research — apenas dados quantitativos e agregados anónimos (na verdade pseudónimos: as semanas da mesma pessoa ficam ligadas). A **intenção / "como" / "correu como querias"** (campos `intentions`, `how`, `evaluation` nos consumos) **nunca** entram no research. Perguntas de investigação em `PLANO-INVESTIGACAO.md`.
+* **Registar é UM toque:** nada (intenção, perguntas) pode ficar à frente do registo de um consumo. O "correu como querias?" está desligado por defeito.
 
 ---
 
