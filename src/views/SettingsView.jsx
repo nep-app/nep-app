@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { PushRemindersSettings } from '../components/PushRemindersSettings';
+import { ResearchViewer, RESEARCH_ADMIN_UID } from '../components/ResearchViewer';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
 import { getDataMode, setDataMode } from '../services/researchService';
@@ -341,6 +342,17 @@ export const SettingsView = ({
 
             {/* As secções que abrem/fecham ficam numa só caixa, separadas por linhas. */}
             <div className="bg-gray-800 border border-gray-700 rounded-xl overflow-hidden divide-y divide-gray-700">
+            {/* ── Investigação: SÓ aparece na conta da investigadora. A porta a
+                 sério é a regra do servidor (firestore.rules); isto é a montra. ── */}
+            {!isDemo && user?.uid === RESEARCH_ADMIN_UID && (
+                <Section flat
+                    icon={<span className="text-lg" aria-hidden="true">🔬</span>}
+                    title={pt ? 'Investigação' : 'Research'}
+                    subtitle={pt ? 'As fichas semanais de quem contribui (só tu vês isto).' : 'Weekly records from contributors (only you see this).'}
+                >
+                    <ResearchViewer />
+                </Section>
+            )}
             {/* ── Os meus dados (abre/fecha): sincronizar + exportar/backup/importar ── */}
             <Section flat
                 icon={<Icons.RefreshCw className="w-5 h-5 text-gray-400" />}

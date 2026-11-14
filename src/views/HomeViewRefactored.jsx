@@ -10,7 +10,7 @@ import { useData } from '../contexts/DataContext';
 import { logUrgeEvent } from '../utils/urgeLog';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
-import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey, genId, meetsGoal } from '../utils/helpers';
+import { formatDateTime, safeToISODate, getDateDaysAgo, getTodayKey, genId, meetsGoal, keepGoalZone, readTolerance, goalOffersUrge } from '../utils/helpers';
 import { themeClasses } from '../utils/classNames';
 import { getUserStats, updateUserStats } from '../utils/userStats';
 
@@ -120,7 +120,7 @@ export function HomeViewRefactored({
       if (lastTime > 0) {
         const hoursSince = (now.getTime() - lastTime) / 3600000;
         if (meetsGoal('increase_interval', hoursSince, intervalGoal.target) === false) {
-          reasons.push({ text: t('alerts.shortInterval', { hours: parseFloat(hoursSince.toFixed(1)) }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true });
+          reasons.push({ text: t('alerts.shortInterval', { hours: parseFloat(hoursSince.toFixed(1)) }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true, goalId: intervalGoal.id, goalType: intervalGoal.type });
         }
       }
     }
@@ -132,9 +132,25 @@ export function HomeViewRefactored({
       const todayCount = cons.filter(c => (c.date || safeToISODate(c.timestamp)) === todayKey).length;
       // Consumir agora passaria a meta? (o próximo consumo já não cabe)
       if (meetsGoal('reduce_frequency', todayCount + 1, freqGoal.target) === false) {
-        reasons.push({ text: t('alerts.highFrequency', { count: todayCount }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true });
+        reasons.push({ text: t('alerts.highFrequency', { count: todayCount }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true, goalId: freqGoal.id, goalType: freqGoal.type });
       }
     }
+
+    // 2b) Manter a frequência (X ± Y): só avisa quando ESTE consumo põe o dia
+    // ACIMA de X+Y. Abaixo ou dentro do intervalo não se diz nada aqui — a
+    // app nunca empurra para consumir mais.
+    const keepFreqGoal = allGoals.find(g => g.type === 'keep_frequency');
+    if (keepFreqGoal) {
+      const todayKey = getTodayKey();
+      const todayCount = cons.filter(c => (c.date || safeToISODate(c.timestamp)) === todayKey).length;
+      if (keepGoalZone(todayCount + 1, keepFreqGoal.target, keepFreqGoal.tolerance) === 'above') {
+        const tg = parseFloat(keepFreqGoal.target), tol = readTolerance(keepFreqGoal.tolerance);
+        reasons.push({ text: t('alerts.keepFreqAbove', { count: todayCount, hi: tg + tol }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true, goalId: keepFreqGoal.id, goalType: keepFreqGoal.type });
+      }
+    }
+    // (Quantidade — reduce_quantity e keep_quantity: não há aviso ao vivo. Os
+    // mg de hoje só se sabem com pesagem; não se inventam mg para o consumo
+    // que se está a registar.)
 
     // 3) Hora-limite: consumir agora é depois da hora que definiste
     const limitGoal = allGoals.find(g => g.type === 'limit_last');
@@ -149,7 +165,7 @@ export function HomeViewRefactored({
       if (nowMin < 360) nowMin += 1440; // madrugada conta como fim do dia
       if (nowMin > targetMin) {
         const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        reasons.push({ text: t('alerts.limitLastFail', { time: nowStr, target: targetStr }), emoji: '⏰', color: 'orange', type: 'negative', urge: true });
+        reasons.push({ text: t('alerts.limitLastFail', { time: nowStr, target: targetStr }), emoji: '⏰', color: 'orange', type: 'negative', urge: true, goalId: limitGoal.id, goalType: limitGoal.type });
       }
     }
 
@@ -177,7 +193,7 @@ export function HomeViewRefactored({
         const nowMinutes = now.getHours() * 60 + now.getMinutes();
         if (!consumedAfterWake && nowMinutes >= wakeupMinutes && nowMinutes < targetMinutes) {
           const nowStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-          reasons.push({ text: t('alerts.firstNotBeforeFail', { time: nowStr, hours: firstGoal.target }), emoji: '⏰', color: 'orange', type: 'negative', urge: true });
+          reasons.push({ text: t('alerts.firstNotBeforeFail', { time: nowStr, hours: firstGoal.target }), emoji: '⏰', color: 'orange', type: 'negative', urge: true, goalId: firstGoal.id, goalType: firstGoal.type });
         }
       }
     }
@@ -185,9 +201,15 @@ export function HomeViewRefactored({
     return reasons;
   };
 
+  // Os exercícios só abrem se PELO MENOS UMA das metas ultrapassadas os pediu
+  // (offerUrge, escolhido em cada meta; metas antigas sem escolha = sim, como
+  // sempre foi). O modal mostra todas as razões. Sem nenhuma meta a pedir, o
+  // registo é um toque só — nada fica à frente.
   const handleMarkConsumption = () => {
     const reasons = computeLiveGoalBreaches();
-    if ((reasons.length > 0 || isDemoMode) && urgeExerciseEnabled) {
+    const byId = new Map((goals || []).map(g => [g.id, g]));
+    const someGoalAsks = reasons.some(r => goalOffersUrge(byId.get(r.goalId), urgeExerciseEnabled));
+    if ((someGoalAsks || isDemoMode) && urgeExerciseEnabled) {
       setUrgeWarnings(reasons);
       setPendingConsumption(true);
       setShowUrgeSurfing(true);
@@ -415,6 +437,12 @@ export function HomeViewRefactored({
       {(() => {
         const freqGoal = goals.find(g => g.type === 'reduce_frequency');
         const target = freqGoal ? parseFloat(freqGoal.target) : null;
+        // Meta de MANTER (X ± Y) — só se não houver a de reduzir (essa manda,
+        // como sempre). Dentro = verde, acima = amarelo, ABAIXO = cinzento
+        // (abaixo não é falhar). Hoje ainda vai a meio: só "acima" tem cor.
+        const keepGoal = !freqGoal ? goals.find(g => g.type === 'keep_frequency') : null;
+        const keepTarget = keepGoal ? parseFloat(keepGoal.target) : NaN;
+        const keepTol = keepGoal ? readTolerance(keepGoal.tolerance) : 0;
 
         const days = Array.from({ length: 7 }, (_, i) => {
           const d = getDateDaysAgo(6 - i);
@@ -433,11 +461,16 @@ export function HomeViewRefactored({
 
         const totalWeek = days.reduce((s, d) => s + d.count, 0);
 
-        const dotClass = (count) => {
+        const dotClass = (count, isToday) => {
           if (count === 0) return 'bg-gray-700/60 text-gray-500';
           if (Number.isFinite(target)) return meetsGoal('reduce_frequency', count, target)
             ? 'bg-green-900/50 text-green-400 ring-1 ring-green-500/40'
             : 'bg-red-900/50 text-red-400 ring-1 ring-red-500/40';
+          if (Number.isFinite(keepTarget)) {
+            const zone = keepGoalZone(count, keepTarget, keepTol);
+            if (zone === 'above') return 'bg-yellow-900/40 text-yellow-300 ring-1 ring-yellow-500/40';
+            if (zone === 'in' && !isToday) return 'bg-green-900/50 text-green-400 ring-1 ring-green-500/40';
+          }
           return 'bg-gray-700/60 text-gray-200 ring-1 ring-gray-600';
         };
 
@@ -453,7 +486,7 @@ export function HomeViewRefactored({
                   {day.unknown ? (
                     <div title={t('home.notLoggedDay')} aria-label={t('home.notLoggedDay')} className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold border border-dashed border-gray-600 text-gray-500 ${day.isToday ? 'ring-2 ring-white/25' : ''}`}>?</div>
                   ) : (
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${dotClass(day.count)} ${day.isToday ? 'ring-2 ring-white/25' : ''}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold ${dotClass(day.count, day.isToday)} ${day.isToday ? 'ring-2 ring-white/25' : ''}`}>
                       {day.count}
                     </div>
                   )}
@@ -467,6 +500,7 @@ export function HomeViewRefactored({
               <span className="text-xs text-gray-500">{t('home.avg7days')}: <span className="text-gray-300">{last7.avgTimes}x</span></span>
               {parseFloat(last7.avgMg) > 0 && <span className="text-xs text-gray-500">{last7.avgMg}{t('home.mgPerDay')}</span>}
               {Number.isFinite(target) && <span className="text-xs text-gray-500 ml-auto">{t('home.goalTarget')}: ≤{target}x</span>}
+              {Number.isFinite(keepTarget) && <span className="text-xs text-gray-500 ml-auto">{t('home.goalTarget')}: {keepTarget} ± {keepTol}x</span>}
             </div>
           </div>
         );

@@ -7,6 +7,13 @@ export const AlertCard = ({ alert }) => {
         bg: 'bg-green-900/40 border-green-700/60',
         text: 'text-green-300'
       };
+    } else if (alert.type === 'observational') {
+      // Observação (ex.: "chegaste ao limite da tua meta", "abaixo do
+      // intervalo"): só descrição, cinzento. Antes caía no vermelho de baixo.
+      return {
+        bg: 'bg-gray-700/40 border-gray-600/60',
+        text: 'text-gray-300'
+      };
     } else if (alert.color === 'orange') {
       return {
         bg: 'bg-orange-900/40 border-orange-700/60',

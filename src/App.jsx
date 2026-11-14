@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, lazy, Suspense, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFirebaseAuth } from './utils/firebase';
-import { getTodayKey, toLocalDatetimeInput, genId, safeToISODate, goalCountsFrom, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo, meetsGoal } from './utils/helpers';
+import { getTodayKey, toLocalDatetimeInput, genId, safeToISODate, goalCountsFrom, safeDate, getTodayPT, getDateKeyFromItem, timestampToPT, formatDateTime, formatDateShort, formatDateWithWeekday, formatDateWithWeekdayFull, formatDateRange, subtractDays, getDateDaysAgo, meetsGoal, isKeepGoal, isConsumptionGoal, readTolerance } from './utils/helpers';
 import * as analyticsService from './services/analyticsService';
 import { exportAndDownloadAll, exportToCSV as exportToCSVNew, downloadCSV, parseImportJSON } from './services/exportService';
 import * as Icons from './components/Icons';
@@ -954,15 +954,25 @@ export function AuthenticatedApp() {
                     // Mudar o valor de uma meta NÃO reescreve o passado: o alvo antigo
                     // fica em targetHistory com as datas em que valeu, e o novo conta a
                     // partir de countsFrom (por defeito hoje; a pessoa pode escolher).
+                    // Metas de MANTER: a margem ±Y vai com o alvo (e para o histórico
+                    // também — mudar só a margem também não reescreve o passado).
+                    const keep = isKeepGoal(goalForm.type);
+                    const tolerance = keep ? readTolerance(goalForm.tolerance) : undefined;
+                    // "Surfar o impulso" meta a meta: só se grava se estiver escolhido
+                    // (undefined numa meta antiga = continua como sempre funcionou).
+                    const extra = {};
+                    if (keep) extra.tolerance = tolerance;
+                    if (isConsumptionGoal(goalForm.type) && goalForm.offerUrge !== undefined) extra.offerUrge = !!goalForm.offerUrge;
                     const withHistory = (old, newTarget, countsFrom) => {
                         const oldFrom = goalCountsFrom(old);
                         const from = countsFrom || todayKey;
                         const history = [...(old.targetHistory || [])];
-                        if (String(old.target) !== String(newTarget) && oldFrom && from > oldFrom) {
+                        const tolChanged = keep && readTolerance(old.tolerance) !== tolerance;
+                        if ((String(old.target) !== String(newTarget) || tolChanged) && oldFrom && from > oldFrom) {
                             const to = safeToISODate(new Date(new Date(`${from}T12:00:00`).getTime() - 86400000));
-                            history.push({ target: old.target, from: oldFrom, to });
+                            history.push(keep ? { target: old.target, tolerance: readTolerance(old.tolerance), from: oldFrom, to } : { target: old.target, from: oldFrom, to });
                         }
-                        return { type: goalForm.type, target: newTarget, countsFrom: from, targetHistory: history.filter(h => h.from < from) };
+                        return { type: goalForm.type, target: newTarget, countsFrom: from, targetHistory: history.filter(h => h.from < from), ...extra };
                     };
 
                     if (editingGoal) {
@@ -979,7 +989,7 @@ export function AuthenticatedApp() {
                             showToast(t('messages.goalReplaced'), 'success');
                         } else {
                             // Create new goal
-                            const item = { id: genId(), type: goalForm.type, target, createdAt: new Date().toISOString(), countsFrom: todayKey, completed: false };
+                            const item = { id: genId(), type: goalForm.type, target, createdAt: new Date().toISOString(), countsFrom: todayKey, completed: false, ...extra };
                             await addGoal(item);
                             showToast(t('messages.goalCreated'), 'success');
                         }
@@ -1530,7 +1540,7 @@ export function AuthenticatedApp() {
                                 onSubmit={submitGoal}
                                 goals={goals}
                                 onDelete={(id) => deleteGoal(id)}
-                                onEdit={(g) => { setEditingGoal(g); setGoalForm({ type: g.type, target: g.target, period: g.period || 'daily', countsFrom: goalCountsFrom(g), originalTarget: g.target, originalFrom: goalCountsFrom(g) }); }}
+                                onEdit={(g) => { setEditingGoal(g); setGoalForm({ type: g.type, target: g.target, period: g.period || 'daily', countsFrom: goalCountsFrom(g), originalTarget: g.target, originalFrom: goalCountsFrom(g), tolerance: g.tolerance ?? '', originalTolerance: g.tolerance ?? '', offerUrge: g.offerUrge }); }}
                                 onClearEdit={() => { setEditingGoal(null); setGoalForm({ type: 'reduce_frequency', target: '', period: 'daily' }); }}
                             />
                         </Suspense>

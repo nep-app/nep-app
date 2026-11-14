@@ -216,7 +216,13 @@
     "limitLastSuccess": "antes das {{target}} ✓",
     "firstNotBeforeFail": "1º consumo {{time}} — meta: {{hours}}h após acordar",
     "firstNotBeforeSuccess": "{{hours}}h após acordar ✓",
-    "atLimitFrequency": "Chegaste ao limite da tua meta: {{count}} consumos hoje"
+    "atLimitFrequency": "Chegaste ao limite da tua meta: {{count}} consumos hoje",
+    "keepFreqAbove": "Este consumo passa o intervalo da tua meta: já {{count}} hoje (até {{hi}})",
+    "keepFreqOver": "Hoje passaste o intervalo da tua meta: {{count}} consumos (até {{hi}})",
+    "keepFreqAtTop": "Chegaste ao limite de cima do intervalo da tua meta: {{count}} consumos hoje",
+    "keepDoseAbove": "Consumo de {{date}}: {{mg}}mg — acima do intervalo da tua meta ({{range}} mg)",
+    "keepDoseIn": "Consumo de {{date}}: {{mg}}mg — dentro do intervalo da tua meta ({{range}} mg)",
+    "keepDoseBelow": "Consumo de {{date}}: {{mg}}mg (a tua meta: {{range}} mg)"
   },
   "nav": {
     "home": "Início",
@@ -288,7 +294,7 @@
     "alarmDoseActive": "✓ Ativo às",
     "alarmNote": "Os lembretes só aparecem ao abrir a app.",
     "urgeExercise": "Exercícios ao registar consumo",
-    "urgeExerciseDesc": "Quando estás fora das metas, propõe um exercício antes de registar.",
+    "urgeExerciseDesc": "Interruptor geral. Ligado, cada meta decide: ao criar ou editar uma meta escolhes se, quando a passares, aparecem exercícios antes de registar. Desligado, nunca aparecem.",
     "guideHeader": "Como usar a app",
     "guideTapToLearn": "Toca em cada secção para saber mais.",
     "guide": [
@@ -477,7 +483,9 @@
         "limit_last": "Definir horário de último consumo",
         "bedtime_before": "Definir hora de ir deitar",
         "sleep_hours": "Definir horas de sono diárias",
-        "first_not_before": "1º consumo após acordar"
+        "first_not_before": "1º consumo após acordar",
+        "keep_frequency": "Manter consumos por dia por volta de…",
+        "keep_quantity": "Manter mg por dia por volta de…"
       },
       "units": {
         "mg": "mg",
@@ -486,7 +494,14 @@
         "hora": "hora"
       },
       "countsFromLabel": "Contar a partir de",
-      "countsFromHint": "Os dias antes desta data não contam com este valor. Se mudaste a meta, põe aqui o dia em que mudaste."
+      "countsFromHint": "Os dias antes desta data não contam com este valor. Se mudaste a meta, põe aqui o dia em que mudaste.",
+      "keepAround": "Por volta de ({{unit}} por dia)",
+      "keepTolerance": "Margem, para cima e para baixo (± {{unit}})",
+      "keepToleranceHint": "Quanto pode variar para cima ou para baixo e ainda contar como dentro. Vazio = exatamente esse valor.",
+      "keepRangeHint": "Um dia conta como dentro da meta entre {{lo}} e {{hi}} {{unit}}.",
+      "offerUrge": "Quando passares esta meta, oferecer exercícios para adiar",
+      "offerUrgeHint": "Ao registar um consumo que passe esta meta, aparece primeiro o \"Surfar o impulso\". Desligado, o registo é um toque só.",
+      "offerUrgeGlobalOff": "Os exercícios estão desligados nas Definições — enquanto estiverem, não aparecem em meta nenhuma."
     }
   },
   "messages": {
@@ -922,7 +937,9 @@
         "increase_interval": "⏳ Aumentar intervalo",
         "sleep_hours": "😴 Horas de sono",
         "bedtime_before": "🛏️ Deitar antes de",
-        "first_not_before": "☀️ Primeiro consumo após"
+        "first_not_before": "☀️ Primeiro consumo após",
+        "keep_frequency": "🎚️ Manter frequência",
+        "keep_quantity": "⚖️ Manter quantidade"
       },
       "explain": {
         "reduce_frequency": "Dias com até {{target}} consumos",
@@ -932,7 +949,9 @@
         "sleep_hours": "Noites com ≥{{target}}h de sono",
         "bedtime_before": "Noites a deitar até às {{target}}",
         "first_not_before": "Ciclos com o 1.º consumo ≥{{target}}h depois de acordar",
-        "reduce_quantity_cycle": "Ciclos (acordar → acordar) medidos com até {{target}}mg"
+        "reduce_quantity_cycle": "Ciclos (acordar → acordar) medidos com até {{target}}mg",
+        "keep_frequency": "Dias com {{lo}} a {{hi}} consumos",
+        "keep_quantity": "Dias medidos com {{lo}} a {{hi}} mg"
       },
       "noData": "Ainda não há dias suficientes neste período para saber.",
       "since": "Conta desde {{date}}",
@@ -1167,6 +1186,16 @@
     },
     "week": {
       "soFar": "até agora"
+    },
+    "keep": {
+      "inRange": "dentro do intervalo",
+      "above": "acima do intervalo",
+      "below": "abaixo do intervalo",
+      "aboveShort": "acima",
+      "belowShort": "abaixo do intervalo",
+      "zonesLine": "Dentro do intervalo: {{in}} · abaixo: {{below}} · acima: {{above}}. Abaixo não conta como falhar.",
+      "cmpIn": "A média recente fica dentro do intervalo da tua meta ({{range}}).",
+      "cmpOut": "A média recente fica fora do intervalo da tua meta ({{range}})."
     }
   },
   "urge": {
@@ -2073,7 +2102,13 @@
     "togetherNote": "Andarem juntos não quer dizer que um cause o outro.",
     "energyFew": "Para comparar com os outros check-ins são precisos {{min}} de cada lado (há {{nA}} e {{nB}}).",
     "energyCompare": "Nos check-ins logo antes de consumir, a energia estava baixa em {{a}}%; nos outros {{nB}} check-ins, em {{b}}%.",
-    "synthesisGoal": "Com a tua meta de até {{target}} consumos por dia: {{dentro}} dias dentro e {{acima}} acima, em {{n}} dias com consumo."
+    "synthesisGoal": "Com a tua meta de até {{target}} consumos por dia: {{dentro}} dias dentro e {{acima}} acima, em {{n}} dias com consumo.",
+    "keepQtyIn": "Fica dentro do intervalo da tua meta ({{range}} mg).",
+    "keepQtyAbove": "Fica acima do intervalo da tua meta ({{range}} mg).",
+    "keepQtyBelow": "Fica abaixo do intervalo da tua meta ({{range}} mg).",
+    "keepFreqIn": "A média fica dentro do intervalo da tua meta ({{range}} por dia).",
+    "keepFreqAbove": "A média fica acima do intervalo da tua meta ({{range}} por dia).",
+    "keepFreqBelow": "A média fica abaixo do intervalo da tua meta ({{range}} por dia)."
   },
   "demoHome": {
     "sinceLast": "desde o último",
@@ -2188,7 +2223,8 @@
     "cycleNudge": "Ainda não registaste um novo ciclo desde {{when}}. Já dormiste? Se sim, regista quando acordaste. Se não, marca \"Não dormi\" — é na boa, é só para a app saber onde começa o teu dia.",
     "cycleNudgeOpen": "Registar ciclo",
     "cycleNudgeLater": "Agora não",
-    "unknownGap": "? (há dias sem consumos registados pelo meio)"
+    "unknownGap": "? (há dias sem consumos registados pelo meio)",
+    "goalBelow": "abaixo do intervalo ({{target}})"
   },
   "estadoTab": {
     "pValue": "p = {{p}}",

@@ -216,7 +216,13 @@
     "limitLastSuccess": "before {{target}} ✓",
     "firstNotBeforeFail": "1st use at {{time}} — target: {{hours}}h after waking",
     "firstNotBeforeSuccess": "{{hours}}h after waking ✓",
-    "atLimitFrequency": "You've reached your goal's limit: {{count}} uses today"
+    "atLimitFrequency": "You've reached your goal's limit: {{count}} uses today",
+    "keepFreqAbove": "This use goes past your goal range: already {{count}} today (up to {{hi}})",
+    "keepFreqOver": "Today you went past your goal range: {{count}} uses (up to {{hi}})",
+    "keepFreqAtTop": "You reached the top of your goal range: {{count}} uses today",
+    "keepDoseAbove": "Use on {{date}}: {{mg}}mg — above your goal range ({{range}} mg)",
+    "keepDoseIn": "Use on {{date}}: {{mg}}mg — within your goal range ({{range}} mg)",
+    "keepDoseBelow": "Use on {{date}}: {{mg}}mg (your goal: {{range}} mg)"
   },
   "nav": {
     "home": "Home",
@@ -288,7 +294,7 @@
     "alarmDoseActive": "✓ Active at",
     "alarmNote": "Reminders only appear when opening the app.",
     "urgeExercise": "Exercises when logging use",
-    "urgeExerciseDesc": "When outside your goals, suggests an exercise before registering.",
+    "urgeExerciseDesc": "Main switch. On, each goal decides: when you create or edit a goal you choose whether exercises show up before logging when you go past it. Off, they never show up.",
     "guideHeader": "How to use the app",
     "guideTapToLearn": "Tap each section to learn more.",
     "guide": [
@@ -477,7 +483,9 @@
         "limit_last": "Set last consumption time",
         "bedtime_before": "Set bedtime",
         "sleep_hours": "Set daily sleep hours",
-        "first_not_before": "1st use after waking up"
+        "first_not_before": "1st use after waking up",
+        "keep_frequency": "Keep uses per day around…",
+        "keep_quantity": "Keep mg per day around…"
       },
       "units": {
         "mg": "mg",
@@ -486,7 +494,14 @@
         "hora": "hour"
       },
       "countsFromLabel": "Count from",
-      "countsFromHint": "Days before this date don't count with this value. If you changed the goal, put the day you changed it."
+      "countsFromHint": "Days before this date don't count with this value. If you changed the goal, put the day you changed it.",
+      "keepAround": "Around ({{unit}} per day)",
+      "keepTolerance": "Margin, up and down (± {{unit}})",
+      "keepToleranceHint": "How much it can vary up or down and still count as within. Empty = exactly that value.",
+      "keepRangeHint": "A day counts as within the goal between {{lo}} and {{hi}} {{unit}}.",
+      "offerUrge": "When you go past this goal, offer exercises to delay",
+      "offerUrgeHint": "When you log a use that goes past this goal, the urge exercises show up first. Off, logging is a single tap.",
+      "offerUrgeGlobalOff": "Exercises are switched off in Settings — while they are, they don't show up for any goal."
     }
   },
   "messages": {
@@ -859,7 +874,9 @@
         "increase_interval": "⏳ Increase interval",
         "sleep_hours": "😴 Sleep hours",
         "bedtime_before": "🛏️ Bedtime before",
-        "first_not_before": "☀️ First use after"
+        "first_not_before": "☀️ First use after",
+        "keep_frequency": "🎚️ Keep frequency",
+        "keep_quantity": "⚖️ Keep quantity"
       },
       "explain": {
         "reduce_frequency": "Days with up to {{target}} uses",
@@ -869,7 +886,9 @@
         "sleep_hours": "Nights with ≥{{target}}h of sleep",
         "bedtime_before": "Nights in bed by {{target}}",
         "first_not_before": "Cycles with the 1st use ≥{{target}}h after waking",
-        "reduce_quantity_cycle": "Measured cycles (wake → wake) with up to {{target}}mg"
+        "reduce_quantity_cycle": "Measured cycles (wake → wake) with up to {{target}}mg",
+        "keep_frequency": "Days with {{lo}} to {{hi}} uses",
+        "keep_quantity": "Measured days with {{lo}} to {{hi}} mg"
       },
       "noData": "Not enough days in this period to tell yet.",
       "since": "Counts since {{date}}",
@@ -1104,6 +1123,16 @@
     },
     "week": {
       "soFar": "so far"
+    },
+    "keep": {
+      "inRange": "within the range",
+      "above": "above the range",
+      "below": "below the range",
+      "aboveShort": "above",
+      "belowShort": "below the range",
+      "zonesLine": "Within the range: {{in}} · below: {{below}} · above: {{above}}. Below does not count as missing.",
+      "cmpIn": "The recent average is within your goal range ({{range}}).",
+      "cmpOut": "The recent average is outside your goal range ({{range}})."
     }
   },
   "firebase": {
@@ -2073,7 +2102,13 @@
     "togetherNote": "Going together doesn't mean one causes the other.",
     "energyFew": "Comparing with the other check-ins needs {{min}} on each side (there are {{nA}} and {{nB}}).",
     "energyCompare": "In check-ins right before using, energy was low {{a}}% of the time; in the other {{nB}} check-ins, {{b}}%.",
-    "synthesisGoal": "With your goal of up to {{target}} uses per day: {{dentro}} days within and {{acima}} above, out of {{n}} days with use."
+    "synthesisGoal": "With your goal of up to {{target}} uses per day: {{dentro}} days within and {{acima}} above, out of {{n}} days with use.",
+    "keepQtyIn": "It is within your goal range ({{range}} mg).",
+    "keepQtyAbove": "It is above your goal range ({{range}} mg).",
+    "keepQtyBelow": "It is below your goal range ({{range}} mg).",
+    "keepFreqIn": "The average is within your goal range ({{range}} per day).",
+    "keepFreqAbove": "The average is above your goal range ({{range}} per day).",
+    "keepFreqBelow": "The average is below your goal range ({{range}} per day)."
   },
   "demoHome": {
     "sinceLast": "since the last one",
@@ -2188,7 +2223,8 @@
     "cycleNudge": "You have not logged a new cycle since {{when}}. Have you slept? If so, log when you woke up. If not, mark \"Didn't sleep\" — no problem, it just lets the app know where your day starts.",
     "cycleNudgeOpen": "Log cycle",
     "cycleNudgeLater": "Not now",
-    "unknownGap": "? (days without logged uses in between)"
+    "unknownGap": "? (days without logged uses in between)",
+    "goalBelow": "below the range ({{target}})"
   },
   "estadoTab": {
     "pValue": "p = {{p}}",

@@ -167,15 +167,63 @@ export const GOAL_DIRECTION = {
   increase_interval: 'min',
   first_not_before: 'min',
   sleep_hours: 'min',
+  // Metas de MANTER: "por volta de X, com margem ±Y". Não têm sentido de
+  // subida nem de descida — 'range' = dentro de [X−Y, X+Y].
+  keep_frequency: 'range',
+  keep_quantity: 'range',
+};
+
+export const isKeepGoal = (type) => type === 'keep_frequency' || type === 'keep_quantity';
+
+// Margem (±Y) de uma meta de manter. Vazia ou ilegível = 0 (exactamente X);
+// negativa conta como positiva (uma margem é uma distância).
+export const readTolerance = (tol) => {
+  const n = typeof tol === 'number' ? tol : parseFloat(tol);
+  return Number.isFinite(n) ? Math.abs(n) : 0;
+};
+
+// Onde fica um valor em relação a uma meta de manter:
+// 'below' (abaixo do intervalo), 'in' (dentro), 'above' (acima), ou null
+// (valor ou alvo ilegível — não se sabe). ABAIXO NÃO É FALHAR: quem mostra
+// isto nunca lhe pode dar cor de aviso nem frase que empurre para consumir
+// mais (CLAUDE.md, regra do elogio).
+export const keepGoalZone = (value, target, tolerance) => {
+  const v = typeof value === 'number' ? value : parseFloat(value);
+  const tg = typeof target === 'number' ? target : parseFloat(target);
+  if (!Number.isFinite(v) || !Number.isFinite(tg)) return null;
+  const tol = readTolerance(tolerance);
+  if (v < tg - tol) return 'below';
+  if (v > tg + tol) return 'above';
+  return 'in';
 };
 
 // true = cumprido, false = não, null = não dá para saber (alvo ou valor ilegível).
-export const meetsGoal = (type, value, target) => {
+// Metas de manter: true só DENTRO do intervalo; fora (abaixo ou acima) dá
+// false — quem precisa de distinguir abaixo de acima (cores, textos) usa
+// keepGoalZone, porque abaixo nunca leva cor de aviso.
+export const meetsGoal = (type, value, target, tolerance) => {
   const v = typeof value === 'number' ? value : parseFloat(value);
   const tg = typeof target === 'number' ? target : parseFloat(target);
   const dir = GOAL_DIRECTION[type];
   if (!dir || !Number.isFinite(v) || !Number.isFinite(tg)) return null;
+  if (dir === 'range') return keepGoalZone(v, tg, tolerance) === 'in';
   return dir === 'max' ? v <= tg : v >= tg;
+};
+
+// ===== "SURFAR O IMPULSO" META A META =====
+// Metas de CONSUMO (as que podem oferecer exercícios ao registar). As de sono
+// e de deitar não têm a ver com o acto de consumir.
+export const CONSUMPTION_GOAL_TYPES = ['reduce_frequency', 'reduce_quantity', 'increase_interval', 'first_not_before', 'limit_last', 'keep_frequency', 'keep_quantity'];
+export const isConsumptionGoal = (type) => CONSUMPTION_GOAL_TYPES.includes(type);
+
+// Esta meta, quando é passada, oferece exercícios para adiar?
+// - interruptor geral (Definições) desligado → nunca;
+// - meta com offerUrge escolhido → o que a pessoa escolheu;
+// - meta ANTIGA (sem offerUrge) → sim, como sempre foi (o interruptor geral
+//   decidia tudo). Assim nada muda para quem já usava sem mexer nas metas.
+export const goalOffersUrge = (goal, globalOn = true) => {
+  if (!globalOn || !goal || !isConsumptionGoal(goal.type)) return false;
+  return goal.offerUrge === undefined ? true : !!goal.offerUrge;
 };
 
 // Os dias de 'YYYY-MM-DD' a 'YYYY-MM-DD' (inclusive), em hora local.
@@ -225,6 +273,16 @@ export const goalTargetForDay = (goal, day) => {
   if (day >= from) return goal.target;
   const seg = (goal.targetHistory || []).find(h => h && h.from && day >= h.from && (!h.to || day <= h.to));
   return seg ? seg.target : null; // antes disso não havia esta meta → não se avalia
+};
+
+// A margem (±Y) que estava em vigor num dia, para as metas de manter — vem
+// do MESMO segmento de targetHistory que o alvo (mudar a margem também não
+// reescreve o passado). Antes de a meta existir → null.
+export const goalToleranceForDay = (goal, day) => {
+  const from = goalCountsFrom(goal);
+  if (!day || !from || day >= from) return readTolerance(goal?.tolerance);
+  const seg = (goal.targetHistory || []).find(h => h && h.from && day >= h.from && (!h.to || day <= h.to));
+  return seg ? readTolerance(seg.tolerance) : null;
 };
 
 // O primeiro dia em que a meta (com qualquer alvo) contou.

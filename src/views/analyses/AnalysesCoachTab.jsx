@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
 import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
-import { safeToISODate, getTodayKey, gapCrossesDays, datesInRange } from '../../utils/helpers';
+import { safeToISODate, getTodayKey, gapCrossesDays, datesInRange, keepGoalZone, readTolerance } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 import { diffPermutation, spearmanPermutation, MIN_PER_WINDOW, MIN_SHIFT, rangePermutation } from '../../utils/stats';
 
@@ -319,6 +319,16 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         ) : (
                             <>{t('coach.noConsumptions')}</>
                         )}
+                        {/* Meta de MANTER a frequência (X ± Y), se não houver a de reduzir:
+                            só se diz onde fica a média; abaixo ou acima a cinzento, sem juízo. */}
+                        {(() => {
+                            if (frequencyGoal || totalConsumptions === 0) return null;
+                            const keepFreq = goals.find(g => g.type === 'keep_frequency');
+                            const zone = keepFreq && parseFloat(avgPerDay) > 0 ? keepGoalZone(parseFloat(avgPerDay), keepFreq.target, keepFreq.tolerance) : null;
+                            if (!zone) return null;
+                            const range = `${keepFreq.target} ± ${readTolerance(keepFreq.tolerance)}`;
+                            return <> <span className={zone === 'in' ? 'text-emerald-400' : 'text-gray-300'}>{t(zone === 'in' ? 'coach.keepFreqIn' : zone === 'above' ? 'coach.keepFreqAbove' : 'coach.keepFreqBelow', { range })}</span></>;
+                        })()}
                     </p>
 
                     {/* Micro-trend (📈 last 7 vs previous 21) */}
@@ -521,7 +531,19 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                                    cala-se. */}
                                 {(() => {
                                     const metaQtd = goals.find(g => g.type === 'reduce_quantity' && g.target > 0);
-                                    if (!metaQtd) return null;
+                                    if (!metaQtd) {
+                                        // Meta de MANTER os mg (X ± Y): dentro = verde (é a meta
+                                        // dela); fora — abaixo ou acima — só a descrição, a cinzento.
+                                        const keepQtd = goals.find(g => g.type === 'keep_quantity' && parseFloat(g.target) > 0);
+                                        const zone = keepQtd ? keepGoalZone(avgMgPerDay, keepQtd.target, keepQtd.tolerance) : null;
+                                        if (!zone) return null;
+                                        const range = `${keepQtd.target} ± ${readTolerance(keepQtd.tolerance)}`;
+                                        return (
+                                            <> <span className={zone === 'in' ? 'text-emerald-400' : 'text-gray-300'}>
+                                                {t(zone === 'in' ? 'coach.keepQtyIn' : zone === 'above' ? 'coach.keepQtyAbove' : 'coach.keepQtyBelow', { range })}
+                                            </span></>
+                                        );
+                                    }
                                     const dentro = avgMgPerDay <= metaQtd.target;
                                     return (
                                         <> <span className={dentro ? 'text-emerald-400' : 'text-gray-300'}>

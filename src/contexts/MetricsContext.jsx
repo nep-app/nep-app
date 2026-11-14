@@ -420,6 +420,17 @@ export const MetricsProvider = ({ children }) => {
         return Math.max(0, Math.min(100, progress));
       }
 
+      // Metas de MANTER (X ± Y): a média dos últimos 7 dias dentro do
+      // intervalo = 100; fora (abaixo OU acima) = 0. Não há "progresso" a
+      // meio caminho: subir ou descer não é a favor de manter. Sem dados, 0
+      // (como as outras). Para o detalhe dia a dia (abaixo ≠ acima) ver
+      // analyticsService.getGoalAchievement.
+      if (goal.type === 'keep_frequency' || goal.type === 'keep_quantity') {
+        const avg = goal.type === 'keep_frequency' ? avgFrequencyLast7Days : parseFloat(last7Days.avgMg);
+        if (!(avg > 0)) return 0;
+        return meetsGoal(goal.type, avg, goal.target, goal.tolerance) ? 100 : 0;
+      }
+
       if (goal.type === 'increase_interval') {
         if (!analysis.intervalStats) return 0;
         const avg = parseFloat(analysis.intervalStats.avgHours);

@@ -2,7 +2,7 @@ import Dexie from 'dexie';
 import { db } from '../db/localDB';
 import i18n from '../i18n';
 import { deriveDailyMg, deriveDoseMg, mgBySleepCycle, typicalMgPerDose } from './mgDerivation';
-import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, gapCrossesDays, isDayMarkLog } from './helpers';
+import { getTodayKey, safeToISODate, getDateDaysAgo, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, gapCrossesDays, isDayMarkLog, keepGoalZone, readTolerance } from './helpers';
 
 // MODO DEMO: a demo renderiza a app real (com dados falsos). Estas funções
 // escrevem na base de dados REAL (localDB) — por isso, em demo, NÃO devem gravar
@@ -420,6 +420,31 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
       }
     }
 
+    // Aviso 2b: Dosagem com meta de MANTER (X ± Y mg), se não houver a de
+    // reduzir. Os mesmos mg MEDIDOS do aviso 2 (nunca estimativas). Acima do
+    // intervalo: laranja (como os outros "fora da meta"); dentro: verde (é a
+    // meta dela); ABAIXO: só o número, sem cor de aviso nem frase que empurre.
+    const keepQtyGoal = !quantityGoal ? (goals || []).find(g => g.type === 'keep_quantity') : null;
+    if (lastMg !== null && keepQtyGoal) {
+      const zone = keepGoalZone(lastMg, keepQtyGoal.target, keepQtyGoal.tolerance);
+      if (zone) {
+        let dateLabel = '';
+        try {
+          const d = lastMgTs ? new Date(lastMgTs) : null;
+          if (d && !isNaN(d.getTime())) dateLabel = d.toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' });
+        } catch (e) { /* sem data → usa recuo abaixo */ }
+        if (!dateLabel) dateLabel = (i18n.language || '').startsWith('en') ? 'recent' : 'há pouco';
+        const range = `${keepQtyGoal.target} ± ${readTolerance(keepQtyGoal.tolerance)}`;
+        if (zone === 'above') {
+          alerts.push({ text: i18n.t('alerts.keepDoseAbove', { mg: lastMg, date: dateLabel, range }), emoji: '📊', color: 'orange', type: 'negative' });
+        } else if (zone === 'in') {
+          alerts.push({ text: i18n.t('alerts.keepDoseIn', { mg: lastMg, date: dateLabel, range }), emoji: '💚', color: 'green', type: 'positive' });
+        } else {
+          alerts.push({ text: i18n.t('alerts.keepDoseBelow', { mg: lastMg, date: dateLabel, range }), emoji: '📊', color: 'gray', type: 'observational' });
+        }
+      }
+    }
+
     // Aviso 3: Horas de sono (se existe meta sleep_hours)
     const sleepGoal = (goals || []).find(g => g.type === 'sleep_hours');
     if (sleepGoal && filteredCycles.length > 0) {
@@ -658,6 +683,24 @@ export const updateUserStats = async (consumptions, cycles = null, dailyLogs = n
           type: 'negative',
           urge: true
         });
+      }
+    }
+
+    // Aviso 7b: Frequência com meta de MANTER (X ± Y), se não houver a de
+    // reduzir. Hoje ainda vai a meio: abaixo ou dentro do intervalo NÃO se diz
+    // nada (dizer "já estás dentro" a meio do dia seria empurrar para consumir).
+    // Só o limite de cima (observação, cinzento) e acima dele (laranja).
+    const keepFreqGoal = !frequencyGoal ? (goals || []).find(g => g.type === 'keep_frequency') : null;
+    if (keepFreqGoal && filteredConsumptions.length > 0) {
+      const todayKeyK = getTodayKey();
+      const todayCountK = filteredConsumptions.filter(c => (c.date || safeToISODate(c.timestamp || c.createdAt)) === todayKeyK).length;
+      const tgK = parseFloat(keepFreqGoal.target);
+      const hiK = tgK + readTolerance(keepFreqGoal.tolerance);
+      const zoneK = keepGoalZone(todayCountK, tgK, keepFreqGoal.tolerance);
+      if (zoneK === 'above') {
+        alerts.push({ text: i18n.t('alerts.keepFreqOver', { count: todayCountK, hi: hiK }), emoji: '⚠️', color: 'orange', type: 'negative', urge: true });
+      } else if (zoneK === 'in' && todayCountK === hiK) {
+        alerts.push({ text: i18n.t('alerts.keepFreqAtTop', { count: todayCountK }), emoji: '🎯', color: 'gray', type: 'observational' });
       }
     }
 

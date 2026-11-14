@@ -6,7 +6,7 @@ import { useData } from '../contexts/DataContext';
 import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
-import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, datesInRange, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog, meetsGoal, GOAL_DIRECTION, bedtimeMeetsTarget } from '../utils/helpers';
+import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, datesInRange, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog, meetsGoal, GOAL_DIRECTION, bedtimeMeetsTarget, isKeepGoal, keepGoalZone, readTolerance, goalToleranceForDay } from '../utils/helpers';
 import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
@@ -31,11 +31,20 @@ export function PatternsView({
     const freqGoal = (goals || []).find(g => g.type === 'reduce_frequency' && !g.completed) || null;
     // Meta de aumentar o intervalo entre consumos (horas), se ativa.
     const intervalGoal = (goals || []).find(g => g.type === 'increase_interval' && !g.completed) || null;
+    // Meta de MANTER a frequência (X ± Y), se ativa. Só dá cor onde não houver
+    // meta de reduzir (essa manda, como sempre). ABAIXO do intervalo nunca
+    // leva cor de aviso: fica neutro.
+    const keepFreqGoal = !freqGoal ? ((goals || []).find(g => g.type === 'keep_frequency' && !g.completed) || null) : null;
     // Cor de um número comparado com uma meta da pessoa (regra do elogio):
     // verde se cumpre, amarelo se não (como no Início; nunca vermelho).
-    // Sem meta, ou sem valor: branco, só descrição.
+    // Sem meta, ou sem valor: branco, só descrição. Manter: dentro = verde,
+    // acima = amarelo, abaixo = branco (abaixo não é falhar).
     const goalTone = (type, goal, value) => {
         if (!goal) return 'text-white';
+        if (isKeepGoal(type)) {
+            const zone = keepGoalZone(parseFloat(value), goal.target, goal.tolerance);
+            return zone === 'in' ? 'text-green-400' : zone === 'above' ? 'text-yellow-400' : 'text-white';
+        }
         const ok = meetsGoal(type, parseFloat(value), parseFloat(goal.target));
         return ok == null ? 'text-white' : ok ? 'text-green-400' : 'text-yellow-400';
     };
@@ -738,7 +747,7 @@ export function PatternsView({
                                                     // sem dormir) conta como 2 dias, em vez de pesar como um dia só.
                                                     // Descritiva, sem ✓/✗. Com menos de 2, não se sabe.
                                                     let mgAvg = null;
-                                                    if (g.type === 'reduce_quantity') {
+                                                    if (g.type === 'reduce_quantity' || g.type === 'keep_quantity') {
                                                         const counted = new Set((goalDays || []).map(dd => dd.d));
                                                         const cyc = metrics?.mgByCycleMode ? (metrics.mgCycles || []).filter(c => counted.has(c.day)) : null;
                                                         if (cyc && cyc.length >= 2) {
@@ -751,11 +760,18 @@ export function PatternsView({
                                                         }
                                                     }
 
+                                                    // Metas de manter: quantos dias abaixo / acima do intervalo
+                                                    // (abaixo NÃO é falhar — mostra-se à parte, a cinzento).
+                                                    const keepZones = isKeepGoal(g.type)
+                                                        ? (goalDays || []).reduce((acc, dd) => { if (dd.zone) acc[dd.zone]++; return acc; }, { below: 0, in: 0, above: 0 })
+                                                        : null;
+
                                                     return {
                                                         ...g,
                                                         achievementCount,
                                                         totalPossible,
                                                         successRate,
+                                                        keepZones,
                                                         goalDays,
                                                         mgAvg,
                                                         countsFrom: fromDate,
@@ -800,7 +816,7 @@ export function PatternsView({
                                                         </div>
                                                         <div className="px-2 py-1 text-center">
                                                             <div className="text-xs mb-1 text-gray-300 leading-tight min-h-[2rem] flex items-center justify-center">{t('patterns.dashboard.metricAvgDay')}</div>
-                                                            <div className={goalTone('reduce_frequency', freqGoal, avgPerDay) + ' text-2xl font-bold font-mono-theme'}>{avgPerDay}</div>
+                                                            <div className={(freqGoal ? goalTone('reduce_frequency', freqGoal, avgPerDay) : goalTone('keep_frequency', keepFreqGoal, avgPerDay)) + ' text-2xl font-bold font-mono-theme'}>{avgPerDay}</div>
                                                             {/* Em quantos dias se baseia a média e porque é que hoje não entra. */}
                                                             <div className="text-[10px] text-gray-500 leading-tight mt-0.5">
                                                                 {avgDays.length > 0
@@ -833,12 +849,18 @@ export function PatternsView({
                                                                 return { k, isToday, n: rollup[k]?.count || 0, unk: unknown.has(k) || (!isToday && !knownDays.has(k)), label: isToday ? t('home.today') : d.toLocaleDateString(i18n.language, { weekday: 'short' }).replace(/\.$/, '') };
                                                             });
                                                             const tg = freqGoal ? parseFloat(freqGoal.target) : NaN;
-                                                            const top = Math.max(1, ...days.map(d => d.n), Number.isFinite(tg) ? tg : 0);
+                                                            // Manter (X ± Y): marca-se o intervalo (faixa), sem cor de juízo.
+                                                            const kTg = keepFreqGoal ? parseFloat(keepFreqGoal.target) : NaN;
+                                                            const kTol = keepFreqGoal ? readTolerance(keepFreqGoal.tolerance) : 0;
+                                                            const kLo = Number.isFinite(kTg) ? Math.max(0, kTg - kTol) : NaN;
+                                                            const kHi = Number.isFinite(kTg) ? kTg + kTol : NaN;
+                                                            const top = Math.max(1, ...days.map(d => d.n), Number.isFinite(tg) ? tg : 0, Number.isFinite(kHi) ? kHi : 0);
                                                             return (
                                                                 <div>
                                                                     <div className="flex justify-between text-[10px] font-mono-theme tracking-widest uppercase text-gray-500 mb-1.5">
                                                                         <span>{i18n.language === 'en' ? 'This week' : 'Esta semana'}</span>
                                                                         {Number.isFinite(tg) && <span>{i18n.language === 'en' ? 'goal' : 'meta'} ≤{tg}</span>}
+                                                                        {Number.isFinite(kTg) && <span>{i18n.language === 'en' ? 'goal' : 'meta'} {kTg} ± {kTol}</span>}
                                                                     </div>
                                                                     <div className="relative grid grid-cols-7 gap-1.5 items-end h-14">
                                                                         {days.map(d => (
@@ -848,6 +870,9 @@ export function PatternsView({
                                                                         ))}
                                                                         {Number.isFinite(tg) && (
                                                                             <div className="absolute left-0 right-0 border-t border-dashed border-gray-400/60 pointer-events-none" style={{ bottom: `${(tg / top) * 100}%` }} />
+                                                                        )}
+                                                                        {Number.isFinite(kHi) && (
+                                                                            <div className="absolute left-0 right-0 border-y border-dashed border-gray-400/50 bg-gray-400/10 pointer-events-none" style={{ bottom: `${(kLo / top) * 100}%`, height: `${Math.max(1, ((kHi - kLo) / top) * 100)}%` }} />
                                                                         )}
                                                                     </div>
                                                                     <div className="grid grid-cols-7 gap-1.5 mt-1 text-center text-[10px] text-gray-500">
@@ -1058,13 +1083,25 @@ export function PatternsView({
                                                                 const BAR_SHADES = ['#7c3aed40', '#7c3aed70', '#7c3aeda0', '#7c3aed'];
                                                                 const GOAL_OK = '#10b981';   // emerald-500
                                                                 const GOAL_OVER = '#eab308'; // yellow-500
+                                                                const GOAL_BELOW = '#6b7280'; // gray-500 — abaixo do intervalo (manter): só descrição
+                                                                // A meta que dá cor às barras: a de reduzir; sem ela, a de manter.
+                                                                const barGoal = freqGoal || keepFreqGoal;
+                                                                const barKeep = !freqGoal && !!keepFreqGoal;
                                                                 const dayTarget = (date) => {
-                                                                    if (!freqGoal) return NaN;
-                                                                    return parseFloat(goalTargetForDay(freqGoal, date));
+                                                                    if (!barGoal) return NaN;
+                                                                    return parseFloat(goalTargetForDay(barGoal, date));
                                                                 };
                                                                 const barColor = (count, date) => {
                                                                     const tg = dayTarget(date);
-                                                                    if (Number.isFinite(tg)) return meetsGoal('reduce_frequency', count, tg) ? GOAL_OK : GOAL_OVER;
+                                                                    if (Number.isFinite(tg) && barKeep) {
+                                                                        // Manter: acima = amarelo; dentro = verde (menos hoje, que
+                                                                        // vai a meio — não se "premeia" chegar ao intervalo);
+                                                                        // abaixo = cinzento (abaixo não é falhar).
+                                                                        const zone = keepGoalZone(count, tg, goalToleranceForDay(barGoal, date));
+                                                                        if (zone === 'above') return GOAL_OVER;
+                                                                        if (zone === 'below') return GOAL_BELOW;
+                                                                        if (zone === 'in' && date !== getTodayKey()) return GOAL_OK;
+                                                                    } else if (Number.isFinite(tg)) return meetsGoal('reduce_frequency', count, tg) ? GOAL_OK : GOAL_OVER;
                                                                     if (count >= 10) return BAR_SHADES[3];
                                                                     if (count > 6) return BAR_SHADES[2];
                                                                     if (count > 3) return BAR_SHADES[1];
@@ -1131,9 +1168,27 @@ export function PatternsView({
                                                                                 const anyFreeDay = recentDates.some(d => !Number.isFinite(dayTarget(d)));
                                                                                 const tgNow = freqGoal ? parseFloat(freqGoal.target) : NaN;
                                                                                 const en = i18n.language === 'en';
+                                                                                const kNow = barKeep ? parseFloat(keepFreqGoal.target) : NaN;
+                                                                                const kTolNow = barKeep ? readTolerance(keepFreqGoal.tolerance) : 0;
                                                                                 return (
                                                                                     <>
-                                                                                        {anyGoalDay && (
+                                                                                        {anyGoalDay && barKeep && (
+                                                                                            <>
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    <div className="w-3 h-3 rounded" style={{ background: GOAL_OK }}></div>
+                                                                                                    <span>{t('patterns.keep.inRange', 'dentro do intervalo')}{Number.isFinite(kNow) ? ` (${Math.max(0, kNow - kTolNow)}–${kNow + kTolNow})` : ''}</span>
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    <div className="w-3 h-3 rounded" style={{ background: GOAL_OVER }}></div>
+                                                                                                    <span>{t('patterns.keep.above', 'acima do intervalo')}</span>
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-1">
+                                                                                                    <div className="w-3 h-3 rounded" style={{ background: GOAL_BELOW }}></div>
+                                                                                                    <span>{t('patterns.keep.below', 'abaixo do intervalo')}</span>
+                                                                                                </div>
+                                                                                            </>
+                                                                                        )}
+                                                                                        {anyGoalDay && !barKeep && (
                                                                                             <>
                                                                                                 <div className="flex items-center gap-1">
                                                                                                     <div className="w-3 h-3 rounded" style={{ background: GOAL_OK }}></div>
@@ -1244,8 +1299,14 @@ export function PatternsView({
                                                                             'increase_interval': t('patterns.goals.types.increase_interval'),
                                                                             'sleep_hours': t('patterns.goals.types.sleep_hours'),
                                                                             'bedtime_before': t('patterns.goals.types.bedtime_before'),
-                                                                            'first_not_before': t('patterns.goals.types.first_not_before')
+                                                                            'first_not_before': t('patterns.goals.types.first_not_before'),
+                                                                            'keep_frequency': t('patterns.goals.types.keep_frequency'),
+                                                                            'keep_quantity': t('patterns.goals.types.keep_quantity')
                                                                         };
+                                                                        const keep = isKeepGoal(goal.type);
+                                                                        const tol = keep ? readTolerance(goal.tolerance) : 0;
+                                                                        const tgNum = parseFloat(goal.target);
+                                                                        const range = keep && Number.isFinite(tgNum) ? { lo: Math.max(0, tgNum - tol), hi: tgNum + tol } : { lo: '?', hi: '?' };
                                                                         const explanations = {
                                                                             'reduce_frequency': t('patterns.goals.explain.reduce_frequency', { target: goal.target }),
                                                                             'reduce_quantity': t(metrics?.mgByCycleMode ? 'patterns.goals.explain.reduce_quantity_cycle' : 'patterns.goals.explain.reduce_quantity', { target: goal.target }),
@@ -1253,7 +1314,9 @@ export function PatternsView({
                                                                             'increase_interval': t('patterns.goals.explain.increase_interval', { target: goal.target }),
                                                                             'sleep_hours': t('patterns.goals.explain.sleep_hours', { target: goal.target }),
                                                                             'bedtime_before': t('patterns.goals.explain.bedtime_before', { target: goal.target }),
-                                                                            'first_not_before': t('patterns.goals.explain.first_not_before', { target: goal.target })
+                                                                            'first_not_before': t('patterns.goals.explain.first_not_before', { target: goal.target }),
+                                                                            'keep_frequency': t('patterns.goals.explain.keep_frequency', range),
+                                                                            'keep_quantity': t('patterns.goals.explain.keep_quantity', range)
                                                                         };
                                                                         return (
                                                                             <div key={goal.id} className="py-3">
@@ -1263,7 +1326,7 @@ export function PatternsView({
                                                                                             {goalTypeLabels[goal.type] || goal.type}
                                                                                         </div>
                                                                                         <div className={'text-xs italic ' + ('text-gray-400')}>
-                                                                                            {t('patterns.goals.target')} {goal.target + ({ increase_interval: 'h', sleep_hours: 'h', first_not_before: 'h', reduce_quantity: 'mg', reduce_frequency: i18n.language === 'en' ? 'x/day' : 'x/dia' }[goal.type] || '')}
+                                                                                            {t('patterns.goals.target')} {(keep ? `${goal.target} ± ${tol}` : goal.target) + ({ increase_interval: 'h', sleep_hours: 'h', first_not_before: 'h', reduce_quantity: 'mg', keep_quantity: ' mg', reduce_frequency: i18n.language === 'en' ? 'x/day' : 'x/dia', keep_frequency: i18n.language === 'en' ? ' x/day' : ' x/dia' }[goal.type] || '')}
                                                                                         </div>
                                                                                     </div>
                                                                                     <div className="text-right">
@@ -1284,19 +1347,24 @@ export function PatternsView({
                                                                                         <span className={'text-xs font-medium ' + ('text-gray-400')}>
                                                                                             {goal.achievementCount} / {goal.totalPossible}
                                                                                         </span>
-                                                                                        <span className={'text-xs font-bold ' + (goal.successRate >= 70 ? 'text-green-400' : goal.successRate >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
+                                                                                        <span className={'text-xs font-bold ' + (keep ? (goal.successRate >= 70 ? 'text-green-400' : 'text-gray-300') : goal.successRate >= 70 ? 'text-green-400' : goal.successRate >= 40 ? 'text-yellow-400' : 'text-orange-400')}>
                                                                                             {goal.successRate.toFixed(0)}%
                                                                                         </span>
                                                                                     </div>
                                                                                     <div className={'bg-gray-600' + ' rounded-full h-2 overflow-hidden'}>
                                                                                         <div
-                                                                                            className={/* cor de meta (a pessoa escolheu-a), mas nunca vermelho: abaixo de 40% fica laranja */ 'h-full transition-all duration-500 ' + (goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : goal.successRate >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-orange-500')}
+                                                                                            className={/* cor de meta (a pessoa escolheu-a), mas nunca vermelho: abaixo de 40% fica laranja. Manter: os dias fora podem ser ABAIXO (não é falhar), por isso sem amarelo/laranja — verde ou neutro */ 'h-full transition-all duration-500 ' + (keep ? (goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gray-400') : goal.successRate >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-500' : goal.successRate >= 40 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-orange-500')}
                                                                                             style={{width: `${Math.min(100, goal.successRate)}%`}}
                                                                                         ></div>
                                                                                     </div>
                                                                                 </div>
                                                                                 )}
-                                                                                {goal.type === 'reduce_quantity' && (
+                                                                                {keep && goal.keepZones && goal.totalPossible > 0 && (
+                                                                                    <p className="mt-1.5 text-[11px] leading-snug text-gray-400">
+                                                                                        {t('patterns.keep.zonesLine', { in: goal.keepZones.in, below: goal.keepZones.below, above: goal.keepZones.above })}
+                                                                                    </p>
+                                                                                )}
+                                                                                {(goal.type === 'reduce_quantity' || goal.type === 'keep_quantity') && (
                                                                                     <div className="mt-2 space-y-1.5 text-[11px] leading-snug">
                                                                                         <p className="text-gray-400">{t(metrics?.mgByCycleMode ? 'patterns.goals.qtyCycle' : 'patterns.goals.qtyDaily')}</p>
                                                                                         {goal.mgAvg && (
@@ -1312,7 +1380,7 @@ export function PatternsView({
                                                                                     <span>
                                                                                         {goal.countsFrom ? t('patterns.goals.since', { date: new Date(`${goal.countsFrom}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short', year: 'numeric' }) }) : ''}
                                                                                         {(goal.targetHistory || []).length > 0 && goal.currentFrom && (
-                                                                                            <span className="block">{t('patterns.goals.targetSince', { target: goal.target, date: new Date(`${goal.currentFrom}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) })}</span>
+                                                                                            <span className="block">{t('patterns.goals.targetSince', { target: keep ? `${goal.target} ± ${tol}` : goal.target, date: new Date(`${goal.currentFrom}T12:00:00`).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) })}</span>
                                                                                         )}
                                                                                     </span>
                                                                                     {goal.goalDays?.length > 0 && (
@@ -1325,8 +1393,8 @@ export function PatternsView({
                                                                                     <ul className="mt-2 max-h-72 overflow-y-auto divide-y divide-gray-700/60 text-xs">
                                                                                         {goal.goalDays.map((dd, ddi) => {
                                                                                             const v = dd.value;
-                                                                                            const val = goal.type === 'reduce_frequency' ? t('patterns.goals.dayVal.freq', { count: v })
-                                                                                                : goal.type === 'reduce_quantity' ? `${v} mg`
+                                                                                            const val = (goal.type === 'reduce_frequency' || goal.type === 'keep_frequency') ? t('patterns.goals.dayVal.freq', { count: v })
+                                                                                                : (goal.type === 'reduce_quantity' || goal.type === 'keep_quantity') ? `${v} mg`
                                                                                                 : goal.type === 'limit_last' ? (v?.late ? t('patterns.goals.dayVal.lastLate', { time: v.late }) : t('patterns.goals.dayVal.last', { time: v?.last }))
                                                                                                 : goal.type === 'first_not_before' ? t('patterns.goals.dayVal.first', { time: v?.time, after: v?.after })
                                                                                                 : goal.type === 'increase_interval' ? t('patterns.goals.dayVal.interval', { long: v?.long, total: v?.total })
@@ -1336,7 +1404,16 @@ export function PatternsView({
                                                                                             return (
                                                                                                 <li key={`${dd.d}-${ddi}`} className="flex items-center justify-between py-1.5">
                                                                                                     <span className="text-gray-300 capitalize">{new Date(`${dd.d}T12:00:00`).toLocaleDateString(i18n.language, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-                                                                                                    <span className="text-gray-200">{val} <span className={dd.ok ? 'text-green-400' : 'text-orange-400'}>{dd.ok ? '✓' : '✗'}</span></span>
+                                                                                                    {keep ? (
+                                                                                                        // Manter: dentro ✓ verde; acima ✗ laranja; ABAIXO só texto cinzento (não é falhar).
+                                                                                                        <span className="text-gray-200">{val} {dd.zone === 'in'
+                                                                                                            ? <span className="text-green-400">✓</span>
+                                                                                                            : dd.zone === 'above'
+                                                                                                                ? <span className="text-orange-400">{t('patterns.keep.aboveShort', 'acima')} ✗</span>
+                                                                                                                : <span className="text-gray-500">{t('patterns.keep.belowShort', 'abaixo do intervalo')}</span>}</span>
+                                                                                                    ) : (
+                                                                                                        <span className="text-gray-200">{val} <span className={dd.ok ? 'text-green-400' : 'text-orange-400'}>{dd.ok ? '✓' : '✗'}</span></span>
+                                                                                                    )}
                                                                                                 </li>
                                                                                             );
                                                                                         })}
@@ -1801,6 +1878,13 @@ export function PatternsView({
                                                 m.goal = m.goalType ? activeGoal(m.goalType) : null;
                                                 m.verdict = null;
                                                 m.lean = null;
+                                                // Meta de MANTER (frequência ou mg): NÃO há veredicto de
+                                                // direção — subir ou descer não é "a favor" de manter. Só se
+                                                // diz, a cinzento, se a média recente fica dentro ou fora do
+                                                // intervalo dela.
+                                                const keepType = m.goalType === 'reduce_frequency' ? 'keep_frequency' : m.goalType === 'reduce_quantity' ? 'keep_quantity' : null;
+                                                m.keepGoal = keepType ? activeGoal(keepType) : null;
+                                                m.keepZone = m.keepGoal && m.recent != null ? keepGoalZone(m.recent, m.keepGoal.target, m.keepGoal.tolerance) : null;
                                                 if (!m.goal || !m.change || m.change.direction === 'stable') return;
                                                 const up = m.recent > m.previous;
                                                 const lowerIsToward = m.goalType === 'bedtime_before' || GOAL_DIRECTION[m.goalType] === 'max';
@@ -1845,12 +1929,22 @@ export function PatternsView({
                                                 );
                                             };
                                             // Linha pequena: n de cada lado, acaso ou não, e (com meta) o veredicto.
+                                            const keepRangeTxt = (g) => {
+                                                const x = parseFloat(g.target), y = readTolerance(g.tolerance);
+                                                const lo = Math.max(0, x - y), hi = x + y;
+                                                const dec = Number.isInteger(lo) && Number.isInteger(hi) ? 0 : 1;
+                                                return `${fmtNum(lo, dec)}–${fmtNum(hi, dec)}`;
+                                            };
                                             const basisLine = (m) => {
                                                 const line = windowTestLine(m?.test);
-                                                if (!line) return null;
+                                                const keepTxt = m?.keepZone
+                                                    ? t(m.keepZone === 'in' ? 'patterns.keep.cmpIn' : 'patterns.keep.cmpOut', { range: keepRangeTxt(m.keepGoal) })
+                                                    : null;
+                                                if (!line && !keepTxt) return null;
                                                 return (
                                                     <p className="text-[11px] leading-snug text-gray-500 mt-1">
                                                         {line}
+                                                        {keepTxt && <span className="text-gray-400"> {keepTxt}</span>}
                                                         {m.verdict === 'toward' && <span className="text-green-400"> {t('patterns.progress.towardGoal', '✓ Na direção da tua meta.')}</span>}
                                                         {m.verdict === 'away' && <span className="text-yellow-400"> {t('patterns.progress.awayGoal', 'No sentido contrário ao da tua meta.')}</span>}
                                                         {m.lean === 'toward' && <span className="text-gray-400"> {t('patterns.progress.leanToward', 'No sentido da tua meta.')}</span>}

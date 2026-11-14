@@ -1,4 +1,4 @@
-import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, datesInRange } from '../utils/helpers';
+import { getTodayKey, safeToISODate, formatDateShort, subtractDays, getDateDaysAgo, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, meetsGoal, datesInRange, isKeepGoal, keepGoalZone, goalToleranceForDay, readTolerance } from '../utils/helpers';
 import i18n from '../i18n';
 import { isUnknownLongCycle } from '../utils/mgDerivation';
 
@@ -313,16 +313,29 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
     const readTarget = (v) => (timeTarget ? (v || null) : (Number.isFinite(parseFloat(v)) ? parseFloat(v) : null));
     const tgt = (d) => readTarget(opts.targetForDay ? opts.targetForDay(d) : goal.target);
     if (!opts.targetForDay && tgt(null) == null) return { achieved: 0, possible: 0, days: [] };
-    const meetsOn = (d, v) => { const t = tgt(d); return t == null ? null : meetsGoal(goal.type, v, t); };
+    // Metas de MANTER (keep_*): a margem ±Y do dia vem do mesmo segmento do
+    // alvo (goalToleranceForDay). Sem targetForDay, a margem actual.
+    const keep = isKeepGoal(goal.type);
+    const tolOn = (d) => (opts.targetForDay ? goalToleranceForDay(goal, d) : readTolerance(goal.tolerance));
+    const meetsOn = (d, v) => { const t = tgt(d); return t == null ? null : meetsGoal(goal.type, v, t, keep ? tolOn(d) : undefined); };
 
     let achieved = 0, possible = 0;
     // days: cada dia (ou ciclo) que contou, com o valor e se cumpriu — para a
-    // pessoa poder ver dia a dia de onde vem a percentagem.
+    // pessoa poder ver dia a dia de onde vem a percentagem. Nas metas de
+    // manter vai também a zona ('below' | 'in' | 'above'): abaixo do
+    // intervalo NÃO é falhar, e os ecrãs mostram-no a cinzento.
     const days = [];
-    const count = (ok, d, value) => { possible++; if (ok) achieved++; days.push({ d, ok: !!ok, value }); };
+    const count = (ok, d, value) => {
+        // Manter: a zona decide (calculada sobre o valor MOSTRADO, para o ✓ e
+        // o número de cada dia baterem sempre certo).
+        const zone = keep ? keepGoalZone(value, tgt(d), tolOn(d)) : undefined;
+        if (keep) ok = zone === 'in';
+        possible++; if (ok) achieved++;
+        days.push(keep ? { d, ok: !!ok, value, zone } : { d, ok: !!ok, value });
+    };
     const hhmm = (msVal) => { const x = new Date(msVal); return `${String(x.getHours()).padStart(2, '0')}:${String(x.getMinutes()).padStart(2, '0')}`; };
 
-    if (goal.type === 'reduce_frequency') {
+    if (goal.type === 'reduce_frequency' || goal.type === 'keep_frequency') {
         // Todos os dias do período (até ontem). Um dia sem consumos só conta se
         // houver OUTRO registo nesse dia — aí sabe-se que foi um dia a zero;
         // sem registo nenhum, não se sabe e fica de fora.
@@ -340,12 +353,15 @@ export const getGoalAchievement = (goal, consumptions = [], dailyLogs = [], cycl
         }
     }
 
-    if (goal.type === 'reduce_quantity' && Array.isArray(opts.mgCycles)) {
+    // keep_quantity conta EXACTAMENTE os mesmos dias/ciclos que reduce_quantity
+    // (só mg medidos; dias sem medição não contam nem a favor nem contra).
+    const qty = goal.type === 'reduce_quantity' || goal.type === 'keep_quantity';
+    if (qty && Array.isArray(opts.mgCycles)) {
         // POR CICLO DE SONO (acordar → acordar), já calculado em
         // mgDerivation.mgBySleepCycle: só ciclos fechados, ≤36h, com todos os
         // toques pesados (ou mg escrito à mão). Conta pelo dia em que se acordou.
         opts.mgCycles.forEach(c => { if (!inRange(c.day)) return; const ok = meetsOn(c.day, c.mg); if (ok != null) count(ok, c.day, c.mg); });
-    } else if (goal.type === 'reduce_quantity') {
+    } else if (qty) {
         // POR DIA (quem não regista ciclos): "Registar mg" à mão manda; senão,
         // mg MEDIDOS pelas pesagens (só dias 100% medidos — nunca estimativas);
         // e o campo antigo dos ciclos.

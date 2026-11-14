@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v8.0.2**
+**Versão actual: v8.1.0**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
@@ -34,10 +34,15 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
 - **Bem-estar** em dois toques (humor e energia — "Botões" ou "Quadrado") e,
   em "mais detalhes", água, comida, sesta, social, sintomas, notas.
 - **Emoções**, **reflexões** e **pensamentos**.
-- **Surfar o impulso:** ao registar um consumo, se uma meta for ultrapassada,
-  aparecem exercícios para adiar (timer de 15 min, respiração, ancorar…), com
-  "Registar agora" sempre à mão. O momento fica guardado logo ao abrir o
-  primeiro exercício.
+- **Surfar o impulso:** escolhe-se **meta a meta**. Ao criar ou editar uma meta
+  de consumo há a opção "Quando passares esta meta, oferecer exercícios para
+  adiar" (desligada nas metas novas). Ao registar um consumo que passe uma meta
+  com a opção ligada, aparecem exercícios para adiar (timer de 15 min,
+  respiração, ancorar…), com "Registar agora" sempre à mão e todas as metas
+  passadas listadas; sem nenhuma meta a pedir, o registo é um toque só. Metas
+  antigas (de antes da v8.1.0) continuam ligadas como sempre. O interruptor das
+  Config é o geral: desligado, nunca aparece. No modo demo aparece sempre. O
+  momento fica guardado logo ao abrir o primeiro exercício.
 - Registo de consumos passados (não abre o impulso) e marcação de dias
   "não registei" / atípicos (ficam fora das análises).
 
@@ -63,9 +68,18 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
 - **Reflexão Geral:** resumo em texto de tudo, escrito por regras (sem IA, nada sai do telemóvel), com as mesmas regras de "não sei".
 
 ### Metas (escolhidas pela pessoa)
-Reduzir frequência · reduzir mg · aumentar intervalo · primeiro consumo não
-antes de · limitar o último consumo · horas de sono · deitar antes de.
+Reduzir frequência · reduzir mg · **manter consumos por dia** · **manter mg por
+dia** · aumentar intervalo · primeiro consumo não antes de · limitar o último
+consumo · horas de sono · deitar antes de.
 Cada meta conta só desde o dia em que foi criada.
+
+**Metas de manter** (v8.1.0): "por volta de X, com margem ± Y" (ex.: 6 ± 1
+consumos por dia). Um dia cumpre se ficar entre X − Y e X + Y; os mg contam só
+dias com mg medido. **Abaixo do intervalo não é falhar**: aparece a cinzento,
+nunca com cor de aviso nem frase que empurre para consumir mais. Acima do
+intervalo tem o tratamento das outras metas (amarelo/laranja, nunca vermelho).
+No "Comparar" não há veredicto de direção para estas metas — só "dentro / fora
+do intervalo", a cinzento.
 
 ### Histórico
 Registos agrupados por dia (consumos, ciclos, reflexões…), pesquisa e filtros,
@@ -75,6 +89,9 @@ total de mg por dia.
 Modo de dados, PIN e bloqueio, **disfarce** (abre como calculadora),
 **lembretes push**, temas (Riso por defeito e outros), idioma PT/EN,
 exportação, substâncias. **Modo demo** com dados realistas, sem conta.
+Na conta da investigadora aparece ainda **Investigação**: as fichas semanais do
+modo investigação (médias de grupo só com ≥ 5 pessoas; CSV para descarregar).
+Só essa conta as pode ler (regra em `firestore.rules`, publicada à mão).
 
 ---
 

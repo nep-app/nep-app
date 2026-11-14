@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
-import { getTodayKey } from '../../utils/helpers';
+import { getTodayKey, isKeepGoal, isConsumptionGoal, readTolerance } from '../../utils/helpers';
 
 export const GoalModal = ({
   isOpen,
@@ -43,6 +43,8 @@ export const GoalModal = ({
   const goalOptions = [
     { type: 'reduce_quantity', icon: '📉', label: t('modals.goal.options.reduce_quantity'), unit: t('modals.goal.units.mg') },
     { type: 'reduce_frequency', icon: '🔢', label: t('modals.goal.options.reduce_frequency'), unit: t('modals.goal.units.consumos') },
+    { type: 'keep_frequency', icon: '🎚️', label: t('modals.goal.options.keep_frequency'), unit: t('modals.goal.units.consumos') },
+    { type: 'keep_quantity', icon: '⚖️', label: t('modals.goal.options.keep_quantity'), unit: t('modals.goal.units.mg') },
     { type: 'increase_interval', icon: '⏱️', label: t('modals.goal.options.increase_interval'), unit: t('modals.goal.units.horas') },
     { type: 'first_not_before', icon: '☀️', label: t('modals.goal.options.first_not_before'), unit: t('modals.goal.units.horas') },
     { type: 'limit_last', icon: '🌙', label: t('modals.goal.options.limit_last'), unit: t('modals.goal.units.hora') },
@@ -52,7 +54,8 @@ export const GoalModal = ({
 
   const handleSelectType = (type) => {
     setSelectedType(type);
-    setGoalForm({...goalForm, type: type, period: 'daily'});
+    // Meta NOVA: "oferecer exercícios" começa DESLIGADO (a pessoa liga se quiser).
+    setGoalForm({ ...goalForm, type: type, period: 'daily', tolerance: '', offerUrge: isConsumptionGoal(type) ? false : undefined });
   };
 
   const handleBack = () => {
@@ -62,11 +65,26 @@ export const GoalModal = ({
 
   const selectedOption = goalOptions.find(opt => opt.type === selectedType);
   const isTimeType = selectedType === 'limit_last' || selectedType === 'bedtime_before';
+  const isKeepType = isKeepGoal(selectedType);
+  const offersUrgeOption = isConsumptionGoal(selectedType);
+  // Metas antigas (sem offerUrge) contam como ligadas — é o estado em que
+  // sempre funcionaram. Só se grava se a pessoa mexer.
+  const offerUrgeShown = goalForm.offerUrge === undefined ? true : !!goalForm.offerUrge;
+  // Interruptor geral das Definições: desligado = nunca aparece, seja qual for a meta.
+  const urgeGlobalOn = (() => { try { return localStorage.getItem('nep_urge_exercise') !== 'false'; } catch { return true; } })();
+  // Intervalo [X−Y, X+Y] para mostrar enquanto se escreve (só com X legível).
+  const keepRange = (() => {
+    const x = parseFloat(goalForm.target);
+    if (!isKeepType || !Number.isFinite(x)) return null;
+    const y = readTolerance(goalForm.tolerance);
+    return { lo: Math.max(0, x - y), hi: x + y };
+  })();
 
   // Como mostrar o valor de uma meta já definida (hora tal-e-tal, ou número + unidade)
   const goalValueLabel = (g, opt) => {
     const timeType = g.type === 'limit_last' || g.type === 'bedtime_before';
     if (timeType) return g.target; // já é "HH:MM"
+    if (isKeepGoal(g.type)) return `${g.target} ± ${readTolerance(g.tolerance)} ${opt?.unit || ''}`.trim();
     return `${g.target} ${opt?.unit || ''}`.trim();
   };
 
@@ -181,7 +199,7 @@ export const GoalModal = ({
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                {isTimeType ? t('modals.goal.timeLimit') : t('modals.goal.metaUnit', { unit: selectedOption?.unit })}
+                {isTimeType ? t('modals.goal.timeLimit') : isKeepType ? t('modals.goal.keepAround', { unit: selectedOption?.unit }) : t('modals.goal.metaUnit', { unit: selectedOption?.unit })}
               </label>
               <input
                 type={isTimeType ? 'time' : 'number'}
@@ -190,14 +208,40 @@ export const GoalModal = ({
                   // A editar: mudar o valor passa a contar a partir de HOJE (os dias de
                   // antes ficam com o valor antigo). Pode-se escolher outra data abaixo.
                   const v = e.target.value;
-                  const changed = editingGoal && String(v) !== String(goalForm.originalTarget);
+                  const changed = editingGoal && (String(v) !== String(goalForm.originalTarget)
+                    || (isKeepType && String(goalForm.tolerance ?? '') !== String(goalForm.originalTolerance ?? '')));
                   setGoalForm({ ...goalForm, target: v, countsFrom: changed ? getTodayKey() : goalForm.originalFrom ?? goalForm.countsFrom });
                 }}
                 className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
-                placeholder={isTimeType ? '00:00' : `Ex: ${selectedOption?.unit === 'mg' ? '300' : selectedOption?.unit === 'consumos' ? '5' : '2'}`}
+                placeholder={isTimeType ? '00:00' : `Ex: ${({ reduce_quantity: '300', keep_quantity: '300', reduce_frequency: '5', keep_frequency: '6' })[selectedType] || '2'}`}
                 required
               />
             </div>
+            {isKeepType && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  {t('modals.goal.keepTolerance', { unit: selectedOption?.unit })}
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={goalForm.tolerance ?? ''}
+                  onChange={(e) => {
+                    // Mudar a margem também conta a partir de HOJE (como o valor).
+                    const v = e.target.value;
+                    const changed = editingGoal && (String(v) !== String(goalForm.originalTolerance ?? '') || String(goalForm.target) !== String(goalForm.originalTarget));
+                    setGoalForm({ ...goalForm, tolerance: v, countsFrom: changed ? getTodayKey() : goalForm.originalFrom ?? goalForm.countsFrom });
+                  }}
+                  className="bg-gray-700 border-gray-600 text-white w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-400"
+                  placeholder={`Ex: ${selectedType === 'keep_quantity' ? '50' : '1'}`}
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  {keepRange
+                    ? t('modals.goal.keepRangeHint', { lo: keepRange.lo, hi: keepRange.hi, unit: selectedOption?.unit })
+                    : t('modals.goal.keepToleranceHint')}
+                </p>
+              </div>
+            )}
             {editingGoal && (
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">{t('modals.goal.countsFromLabel')}</label>
@@ -210,6 +254,22 @@ export const GoalModal = ({
                 />
                 <p className="text-xs text-gray-400 mt-1">{t('modals.goal.countsFromHint')}</p>
               </div>
+            )}
+            {offersUrgeOption && (
+              <label className="flex items-start gap-3 bg-gray-700/50 border border-gray-600 rounded-lg p-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={offerUrgeShown}
+                  onChange={(e) => setGoalForm({ ...goalForm, offerUrge: e.target.checked })}
+                  className="mt-0.5 w-4 h-4 accent-purple-500 flex-shrink-0"
+                />
+                <span className="text-sm text-gray-200 leading-snug">
+                  🌊 {t('modals.goal.offerUrge')}
+                  <span className="block text-xs text-gray-400 mt-0.5">
+                    {urgeGlobalOn ? t('modals.goal.offerUrgeHint') : t('modals.goal.offerUrgeGlobalOff')}
+                  </span>
+                </span>
+              </label>
             )}
             <button
               onClick={handleSubmit}

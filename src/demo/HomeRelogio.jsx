@@ -5,7 +5,7 @@ import { useUI } from '../contexts/UIContext';
 import * as Icons from '../components/Icons';
 import { SubstancesModal } from '../components/modals/SubstancesModal';
 import { formatSubstances } from '../utils/substances';
-import { getTodayKey, safeToISODate, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, getDateDaysAgo, meetsGoal, gapCrossesDays } from '../utils/helpers';
+import { getTodayKey, safeToISODate, getDateKeyFromItem, bedtimeMeetsTarget, limitLastDeadline, getDateDaysAgo, meetsGoal, gapCrossesDays, keepGoalZone, readTolerance } from '../utils/helpers';
 import { getUserStats } from '../utils/userStats';
 import { useMetrics } from '../contexts/MetricsContext';
 
@@ -214,11 +214,17 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
     const lastWms = Math.max(-Infinity, ...weighings.filter(w => !w.notWeighed).map(tsOf).filter(x => x != null));
     if (mgStats && mgStats.mg != null && !isNaN(mgStats.mg) && now - lastWms <= 3 * DAY_MS) {
       const g = goal('reduce_quantity');
+      // Meta de MANTER os mg (X ± Y), se não houver a de reduzir. Abaixo do
+      // intervalo: cinzento, só descrição (abaixo não é falhar).
+      const k = !g ? goal('keep_quantity') : null;
       const when = mgStats.ts ? new Date(mgStats.ts).toLocaleDateString(i18n.language, { day: 'numeric', month: 'short' }) : '';
+      const kZone = k ? keepGoalZone(Math.round(mgStats.mg), k.target, k.tolerance) : null;
       out.interval.push({
         label: t(mgStats.byCycle ? 'home2.mgCycle' : 'home2.mgDay', { date: when }),
         value: `${Math.round(mgStats.mg)} mg`,
-        goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('reduce_quantity', mgStats.mg, g.target), target: `≤ ${g.target} mg` } : null,
+        goal: g && !isNaN(parseFloat(g.target)) ? { ok: meetsGoal('reduce_quantity', mgStats.mg, g.target), target: `≤ ${g.target} mg` }
+          : kZone ? { ok: kZone === 'in', below: kZone === 'below', target: `${k.target} ± ${readTolerance(k.tolerance)} mg` }
+          : null,
       });
     }
     return out;
@@ -343,10 +349,10 @@ export function HomeRelogio({ onMarkConsumption, onLogPast, currentReflection, a
               {withGoal.length > 0 && (
                 <div className="grid grid-cols-1 gap-1.5">
                   {withGoal.map((r, i) => (
-                    <div key={i} className={'flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ' + (r.goal.ok ? 'bg-green-500/15 border-green-400/45' : 'bg-yellow-500/12 border-yellow-400/45')}>
+                    <div key={i} className={'flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ' + (r.goal.below ? 'bg-gray-700/30 border-gray-600' : r.goal.ok ? 'bg-green-500/15 border-green-400/45' : 'bg-yellow-500/12 border-yellow-400/45')}>
                       <span className="text-xs text-gray-200"><span aria-hidden="true">{r.icon} </span>{r.label} <span className="font-semibold text-gray-50">{r.value}</span></span>
-                      <span className={'text-[11px] font-semibold whitespace-nowrap ' + (r.goal.ok ? 'text-green-200' : 'text-yellow-200')}>
-                        {r.goal.ok ? `✓ ${t('home2.goalOk', { target: r.goal.target })}` : t('home2.goalOff', { target: r.goal.target })}
+                      <span className={'text-[11px] font-semibold whitespace-nowrap ' + (r.goal.below ? 'text-gray-400' : r.goal.ok ? 'text-green-200' : 'text-yellow-200')}>
+                        {r.goal.below ? t('home2.goalBelow', { target: r.goal.target }) : r.goal.ok ? `✓ ${t('home2.goalOk', { target: r.goal.target })}` : t('home2.goalOff', { target: r.goal.target })}
                       </span>
                     </div>
                   ))}
@@ -568,6 +574,11 @@ function WeekDots({ goals }) {
   const { consumptionsByDate = {}, unloggedDates } = useMetrics();
   const freqGoal = goals.find(g => g.type === 'reduce_frequency' && !g.completed);
   const target = freqGoal ? parseFloat(freqGoal.target) : null;
+  // Meta de MANTER (X ± Y), se não houver a de reduzir: dentro = verde,
+  // acima = amarelo, ABAIXO = cinzento. Hoje (a meio) só "acima" tem cor.
+  const keepGoal = !freqGoal ? goals.find(g => g.type === 'keep_frequency' && !g.completed) : null;
+  const keepTarget = keepGoal ? parseFloat(keepGoal.target) : NaN;
+  const keepTol = keepGoal ? readTolerance(keepGoal.tolerance) : 0;
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = getDateDaysAgo(6 - i);
     const k = safeToISODate(d);
@@ -581,16 +592,21 @@ function WeekDots({ goals }) {
     };
   });
   const total = days.reduce((s, d) => s + d.count, 0);
-  const dot = (n) => {
+  const dot = (n, isToday) => {
     if (n === 0) return 'bg-gray-700/60 text-gray-500';
     if (Number.isFinite(target)) return meetsGoal('reduce_frequency', n, target) ? 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40' : 'bg-yellow-500/20 text-yellow-200 ring-1 ring-yellow-400/40';
+    if (Number.isFinite(keepTarget)) {
+      const zone = keepGoalZone(n, keepTarget, keepTol);
+      if (zone === 'above') return 'bg-yellow-500/20 text-yellow-200 ring-1 ring-yellow-400/40';
+      if (zone === 'in' && !isToday) return 'bg-emerald-500/20 text-emerald-200 ring-1 ring-emerald-400/40';
+    }
     return 'bg-gray-700/60 text-gray-200 ring-1 ring-gray-600';
   };
   return (
     <section className="w-full px-1">
       <div className="flex justify-between items-center mb-1.5 border-b border-gray-700/60 pb-1">
         <span className="text-[11px] uppercase tracking-wide text-gray-500">{t('home.thisWeek')}</span>
-        <span className="text-[11px] text-gray-500">{total}x{Number.isFinite(target) ? ` · ${t('home.goalTarget')}: ≤${target}x` : ''}</span>
+        <span className="text-[11px] text-gray-500">{total}x{Number.isFinite(target) ? ` · ${t('home.goalTarget')}: ≤${target}x` : Number.isFinite(keepTarget) ? ` · ${t('home.goalTarget')}: ${keepTarget} ± ${keepTol}x` : ''}</span>
       </div>
       <div className="flex justify-between">
         {days.map(d => (
@@ -598,7 +614,7 @@ function WeekDots({ goals }) {
             {d.unknown ? (
               <div title={t('home.notLoggedDay')} aria-label={t('home.notLoggedDay')} className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border border-dashed border-gray-600 text-gray-500 ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>?</div>
             ) : (
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${dot(d.count)} ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>{d.count}</div>
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${dot(d.count, d.isToday)} ${d.isToday ? 'ring-2 ring-gray-200/40' : ''}`}>{d.count}</div>
             )}
             <span className={`text-[10px] ${d.isToday ? 'text-gray-100 font-semibold' : 'text-gray-400'}`}>{d.label}</span>
           </div>
