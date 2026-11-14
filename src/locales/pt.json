@@ -2333,7 +2333,13 @@
     "noteHint": "Escreve e depois escolhe a resposta.",
     "dismiss": "dispensar",
     "saved": "Intenção guardada",
-    "editTitle": "Intenção"
+    "editTitle": "Intenção",
+    "optsTitle": "Opções da intenção",
+    "optsDesc": "Esconde os botões que não usas ou dá-lhes as tuas palavras. Os registos antigos não mudam: um botão escondido continua a contar onde já foi usado. Fica guardado só neste aparelho.",
+    "optsShow": "mostrar",
+    "optsHide": "esconder",
+    "optsHint": "Deixa o nome em branco para voltar ao original.",
+    "optsRename": "Nome de"
   },
   "intentionStats": {
     "title": "Intenção · correu como querias?",

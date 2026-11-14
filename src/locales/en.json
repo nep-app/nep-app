@@ -2333,7 +2333,13 @@
     "noteHint": "Write it, then pick an answer.",
     "dismiss": "dismiss",
     "saved": "Intention saved",
-    "editTitle": "Intention"
+    "editTitle": "Intention",
+    "optsTitle": "Intention options",
+    "optsDesc": "Hide the buttons you don't use or give them your own words. Old entries don't change: a hidden button still counts where it was used. Saved only on this device.",
+    "optsShow": "show",
+    "optsHide": "hide",
+    "optsHint": "Leave the name blank to go back to the original.",
+    "optsRename": "Name for"
   },
   "intentionStats": {
     "title": "Intention · did it go the way you wanted?",

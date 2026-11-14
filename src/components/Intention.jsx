@@ -31,10 +31,36 @@ const HOW_PT = {
 };
 const OUTCOME_PT = { yes: 'sim', partly: 'mais ou menos', no: 'não' };
 
-export const intentionLabel = (t, key) => INTENTION_PT[key]
+// ===== AS OPÇÕES DE CADA PESSOA (Config → Opções da intenção) =====
+// Esconder um botão ou dar-lhe outro nome. Guardado SÓ neste aparelho
+// (localStorage), como os outros interruptores. Os consumos continuam a
+// guardar a CHAVE ('work', 'ateBefore'…), por isso:
+// - mudar o nome muda como aparece em todo o lado (Início, Histórico, Análises),
+//   sem reescrever registos;
+// - esconder só tira o botão das escolhas novas; os registos antigos com essa
+//   opção continuam a aparecer e a contar.
+export const INTENTION_PREFS_KEY = 'nep_intention_prefs';
+export const readIntentionPrefs = () => {
+  try {
+    const p = JSON.parse(localStorage.getItem(INTENTION_PREFS_KEY) || '{}');
+    return { hidden: Array.isArray(p.hidden) ? p.hidden : [], names: p.names && typeof p.names === 'object' ? p.names : {} };
+  } catch { return { hidden: [], names: {} }; }
+};
+export const saveIntentionPrefs = (prefs) => {
+  try { localStorage.setItem(INTENTION_PREFS_KEY, JSON.stringify(prefs)); } catch { /* best-effort */ }
+};
+// Prefixo para não misturar "Como?" com "O que querias?" (podem ter o mesmo texto).
+const prefId = (group, key) => `${group}:${key}`;
+const customName = (group, key) => {
+  const n = readIntentionPrefs().names[prefId(group, key)];
+  return typeof n === 'string' && n.trim() ? n.trim() : null;
+};
+const isHidden = (group, key) => readIntentionPrefs().hidden.includes(prefId(group, key));
+
+export const intentionLabel = (t, key) => customName('i', key) || (INTENTION_PT[key]
   ? t(`intention.opt.${key}`, INTENTION_PT[key])
-  : String(key); // texto escrito pela pessoa ("＋ outra")
-export const howLabel = (t, key) => HOW_PT[key] ? t(`intention.how.${key}`, HOW_PT[key]) : String(key);
+  : String(key)); // texto escrito pela pessoa ("＋ outra")
+export const howLabel = (t, key) => customName('h', key) || (HOW_PT[key] ? t(`intention.how.${key}`, HOW_PT[key]) : String(key));
 export const outcomeLabel = (t, key) => t(`intention.outcome.${key}`, OUTCOME_PT[key] || key);
 
 // Interruptor das Definições — DESLIGADO por defeito.
@@ -88,14 +114,14 @@ export function IntentionPicker({ intentions = [], how = [], onChange, customOpt
           <span className="text-xs font-normal text-gray-500 ml-2">{t('intention.optionalMany', 'opcional · podes escolher várias')}</span>
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {INTENTION_KEYS.map(k => (
+          {INTENTION_KEYS.filter(k => !isHidden('i', k) || ints.includes(k)).map(k => (
             <button key={k} type="button" aria-pressed={ints.includes(k)} onClick={() => onChange({ intentions: toggle(ints, k), how: hows })} className={chipCls(ints.includes(k))}>
               {intentionLabel(t, k)}
             </button>
           ))}
-          {customs.map(k => (
+          {customs.filter(k => !isHidden('i', k) || ints.includes(k)).map(k => (
             <button key={'c-' + k} type="button" aria-pressed={ints.includes(k)} onClick={() => onChange({ intentions: toggle(ints, k), how: hows })} className={chipCls(ints.includes(k))}>
-              {k}
+              {intentionLabel(t, k)}
             </button>
           ))}
           {!writing && (
@@ -127,7 +153,7 @@ export function IntentionPicker({ intentions = [], how = [], onChange, customOpt
           <span className="text-xs font-normal text-gray-500 ml-2">{t('intention.optional', 'opcional')}</span>
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {HOW_KEYS.map(k => (
+          {HOW_KEYS.filter(k => !isHidden('h', k) || hows.includes(k)).map(k => (
             <button key={k} type="button" aria-pressed={hows.includes(k)} onClick={() => onChange({ intentions: ints, how: toggle(hows, k) })} className={chipCls(hows.includes(k))}>
               {howLabel(t, k)}
             </button>
@@ -336,6 +362,60 @@ export function OutcomeEditor({ evaluation, onChange }) {
           className="mt-2 bg-gray-700 border border-gray-600 text-white text-sm w-full p-2.5 rounded-lg focus:ring-2 focus:ring-purple-400 resize-none"
         />
       )}
+    </div>
+  );
+}
+
+// Config → "Opções da intenção": esconder ou mudar o nome de cada botão.
+export function IntentionOptionsSettings({ consumptions = [] }) {
+  const { t } = useTranslation();
+  const [prefs, setPrefs] = useState(() => readIntentionPrefs());
+  const update = (next) => { setPrefs(next); saveIntentionPrefs(next); };
+  const customs = useMemo(() => customIntentionsFrom(consumptions), [consumptions]);
+  const groups = [
+    { id: 'i', title: t('intention.whatTitle', 'O que querias?'), keys: [...INTENTION_KEYS, ...customs],
+      base: (k) => INTENTION_PT[k] ? t(`intention.opt.${k}`, INTENTION_PT[k]) : k },
+    { id: 'h', title: t('intention.howTitle', 'Como?'), keys: HOW_KEYS,
+      base: (k) => t(`intention.how.${k}`, HOW_PT[k]) },
+  ];
+  const setName = (id, v) => {
+    const names = { ...prefs.names };
+    const clean = sanitizeText(v).slice(0, MAX_CUSTOM);
+    if (clean.trim()) names[id] = clean; else delete names[id];
+    update({ ...prefs, names });
+  };
+  const toggleHidden = (id) => update({ ...prefs, hidden: prefs.hidden.includes(id) ? prefs.hidden.filter(x => x !== id) : [...prefs.hidden, id] });
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-gray-400">{t('intention.optsDesc', 'Esconde os botões que não usas ou dá-lhes as tuas palavras. Os registos antigos não mudam: um botão escondido continua a contar onde já foi usado. Fica guardado só neste aparelho.')}</p>
+      {groups.map(g => (
+        <div key={g.id}>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{g.title}</p>
+          <div className="divide-y divide-gray-700 border-y border-gray-700">
+            {g.keys.map(k => {
+              const id = prefId(g.id, k);
+              const hidden = prefs.hidden.includes(id);
+              return (
+                <div key={id} className="flex items-center gap-2 py-1.5">
+                  <input
+                    defaultValue={prefs.names[id] || ''}
+                    placeholder={g.base(k)}
+                    maxLength={MAX_CUSTOM}
+                    onBlur={(e) => setName(id, e.target.value)}
+                    aria-label={t('intention.optsRename', 'Nome de') + ' ' + g.base(k)}
+                    className={'flex-1 min-w-0 bg-gray-700/60 border border-gray-600 rounded-lg px-2.5 py-1.5 text-sm placeholder-gray-400 ' + (hidden ? 'text-gray-500 line-through' : 'text-white')}
+                  />
+                  <button type="button" onClick={() => toggleHidden(id)} aria-pressed={!hidden}
+                    className={'text-xs px-2.5 py-1.5 rounded-lg border whitespace-nowrap ' + (hidden ? 'border-gray-600 text-gray-400' : 'border-gray-500 text-gray-200')}>
+                    {hidden ? t('intention.optsShow', 'mostrar') : t('intention.optsHide', 'esconder')}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <p className="text-[11px] text-gray-500">{t('intention.optsHint', 'Deixa o nome em branco para voltar ao original.')}</p>
     </div>
   );
 }

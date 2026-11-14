@@ -2,7 +2,8 @@ import React, { useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../components/Icons';
 import { PushRemindersSettings } from '../components/PushRemindersSettings';
-import { isOutcomeAskOn, OUTCOME_SETTING_KEY } from '../components/Intention';
+import { isOutcomeAskOn, OUTCOME_SETTING_KEY, IntentionOptionsSettings } from '../components/Intention';
+import { useData } from '../contexts/DataContext';
 import { ResearchViewer, RESEARCH_ADMIN_UID } from '../components/ResearchViewer';
 import { safeLocalStorage } from '../utils/storage';
 import { useAuth } from '../contexts/AuthContext';
@@ -186,6 +187,7 @@ export const SettingsView = ({
 
     // "Correu como querias?" — cartão no Início horas depois de um consumo.
     // DESLIGADO por defeito (só 'true' liga).
+    const { consumptions: dataConsumptions = [] } = useData();
     const [askOutcomeOn, setAskOutcomeOn] = useState(() => isOutcomeAskOn());
     const handleAskOutcomeToggle = (on) => {
         setAskOutcomeOn(on);
@@ -341,6 +343,15 @@ export const SettingsView = ({
                         <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${askOutcomeOn ? 'translate-x-7' : 'translate-x-1'}`} />
                     </button>
                 </div>
+                {/* Opções da intenção: esconder / mudar o nome de cada botão. */}
+                <div className="border-t border-gray-700 my-4" />
+                <details className="group">
+                    <summary className="cursor-pointer list-none flex items-center justify-between text-sm font-semibold text-white">
+                        <span>🏷️ {t('intention.optsTitle', 'Opções da intenção')}</span>
+                        <span className="text-gray-400 group-open:rotate-180 transition-transform">▾</span>
+                    </summary>
+                    <div className="mt-3"><IntentionOptionsSettings consumptions={dataConsumptions} /></div>
+                </details>
             </Section>
 
             {/* ── Comunidade / Fórum (atalho externo) ── */}
