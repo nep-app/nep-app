@@ -17,7 +17,7 @@ da mesma pessoa ficam ligadas entre si).
 | --- | --- |
 | consumos | nº de consumos, dias com consumo, consumos por parte do dia |
 | mg | total e média por consumo — **só quando há medição** |
-| sono | nº de ciclos, horas médias, hora média de deitar (média de relógio desde 14-11-2026), gatilhos |
+| sono | nº de ciclos, horas médias, hora média de deitar (média de relógio desde 14-11-2026). Os gatilhos deixaram de ser recolhidos a 15-11-2026 e foram apagados das fichas recalculadas |
 | bem-estar | nº de registos, humor e energia médios, contagem de emoções (as da lista da app) |
 | metas | que tipos de meta a pessoa tem |
 
@@ -70,7 +70,7 @@ uma linha por pessoa-semana.
    - intenção / "correu como querias" com autorização à parte;
    - dados demográficos mínimos.
 3. Há campos que se podem **tirar** por não servirem nenhuma pergunta?
-   (ex.: gatilhos do sono, contagem de emoções)
+   (ex.: contagem de emoções; os gatilhos do sono já saíram a 15-11-2026)
 4. Quem decide o que se faz com os dados, quem tem acesso, por quanto tempo se
    guardam, e como se apaga a ficha de alguém que pede.
 5. Mínimo de pessoas para publicar qualquer número (hoje o ecrã não mostra

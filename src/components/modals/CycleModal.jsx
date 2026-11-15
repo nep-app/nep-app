@@ -39,11 +39,6 @@ export const CycleModal = ({
 
   if (!isOpen) return null;
 
-  const triggersList = [
-    'Stress', 'Ansiedade', 'Solidão', 'Festa', 'Trabalho', 'Família',
-    'Hábito', 'Tristeza', 'Dependência', 'Tédio', 'Cansaço', 'Dor física',
-    'Insónia', 'Conflito', 'Celebração'
-  ];
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]" onClick={onClose}>
@@ -156,28 +151,10 @@ export const CycleModal = ({
               </div>
             );
           })()}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t('modals.cycle.triggersLabel')}</label>
-            <div className="grid grid-cols-2 gap-2">
-              {triggersList.map(trigger => (
-                <label key={trigger} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={cycleForm.triggers.includes(trigger)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setCycleForm({...cycleForm, triggers: [...cycleForm.triggers, trigger]});
-                      } else {
-                        setCycleForm({...cycleForm, triggers: cycleForm.triggers.filter(t => t !== trigger)});
-                      }
-                    }}
-                    className="rounded text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <span className="text-sm text-gray-300">{t('triggers.' + trigger, trigger)}</span>
-                </label>
-              ))}
-            </div>
-          </div>
+          {/* Os "gatilhos" saíram do ciclo (15-11-2026, decidido com a Teresa):
+              linguagem de prevenção de recaída, repetiam intenções/emoções/sintomas
+              e quase não eram usados. Os ciclos antigos guardam os que tinham
+              (cycleForm.triggers continua a ser lido e gravado ao editar). */}
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-300">{t('modals.cycle.notesLabel')}</label>
             <textarea

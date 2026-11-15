@@ -1,4 +1,4 @@
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, deleteField } from 'firebase/firestore';
 import { analyzeNote } from '../utils/sentimentAnalysis';
 
 export const DATA_MODE_KEY = 'nep_data_mode';
@@ -105,10 +105,8 @@ const aggregateWeek = (weekKey, consumptions, cycles, wellbeingLogs, reflections
         const [h, m] = c.bedtime.split(':').map(Number);
         return h + m / 60;
     }).filter(h => h !== null);
-    const triggerCounts = {};
-    wCycles.forEach(c => (c.triggers || []).forEach(t => {
-        triggerCounts[t] = (triggerCounts[t] || 0) + 1;
-    }));
+    // Gatilhos: deixaram de ser recolhidos (15-11-2026, ver PLANO-INVESTIGACAO.md).
+
 
     // Wellbeing
     const moods = wWb.map(w => Number(w.mood)).filter(n => n > 0);
@@ -141,7 +139,9 @@ const aggregateWeek = (weekKey, consumptions, cycles, wellbeingLogs, reflections
             count: wCycles.length,
             avgHours: avg(sleepHours),
             avgBedtimeHour: circularMeanHour(bedtimeHours),
-            triggerCounts: Object.keys(triggerCounts).length > 0 ? triggerCounts : null,
+            // Apaga o campo das fichas já enviadas (a escrita é com merge, por isso
+            // sem isto o valor antigo ficava lá para sempre).
+            triggerCounts: deleteField(),
         } : null,
         wellbeing: hasWellbeing ? {
             count: wWb.length,
