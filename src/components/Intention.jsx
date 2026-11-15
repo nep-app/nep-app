@@ -8,7 +8,7 @@ import { safeToISODate, getTodayKey } from '../utils/helpers';
 // dexieEncryption.js, e o modo investigação não os envia):
 //   intentions: string[]  — chaves da lista abaixo ou texto curto ("＋ outra")
 //   how:        string[]  — chaves da lista "Como?"
-//   evaluation: { outcome: 'yes'|'partly'|'no'|'dismissed', note?, at }
+//   evaluation: { outcome: 'yes'|'partly'|'no'|'unsure'|'dismissed', note?, at }
 // Regras (decididas pela Teresa):
 // - Registar continua a ser UM toque. Nada disto fica à frente do registo.
 // - Tudo opcional. Ignorar = nunca mais se pergunta sobre esse consumo.
@@ -21,7 +21,9 @@ import { safeToISODate, getTodayKey } from '../utils/helpers';
 // depois as análises só encontram custos. Chaves novas, as antigas não mudam.
 export const INTENTION_KEYS = ['pleasure', 'fun', 'curiosity', 'work', 'party', 'people', 'getThrough', 'notFeel', 'habit', 'dontKnow'];
 export const HOW_KEYS = ['ateBefore', 'water', 'mixed', 'tested', 'accompanied', 'alone'];
-export const OUTCOME_KEYS = ['yes', 'partly', 'no'];
+// 'unsure' = "não sei" (15-11-2026, pedido da Teresa): é uma resposta (conta
+// como avaliado), mas não entra no "a de b" — não é sim nem não.
+export const OUTCOME_KEYS = ['yes', 'partly', 'no', 'unsure'];
 const MAX_CUSTOM = 40;
 
 const INTENTION_PT = {
@@ -33,7 +35,7 @@ const HOW_PT = {
   ateBefore: 'comi antes', water: 'bebi água', mixed: 'misturei', tested: 'testei',
   accompanied: 'acompanhada/o', alone: 'sozinha/o',
 };
-const OUTCOME_PT = { yes: 'sim', partly: 'mais ou menos', no: 'não' };
+const OUTCOME_PT = { yes: 'sim', partly: 'mais ou menos', no: 'não', unsure: 'não sei' };
 
 // ===== AS OPÇÕES DE CADA PESSOA (Config → Opções da intenção) =====
 // Esconder um botão ou dar-lhe outro nome. Guardado SÓ neste aparelho
@@ -306,7 +308,7 @@ export function OutcomeCard({ consumptions, onSave }) {
         {ints.length > 0 && <span className="text-gray-300"> · {ints.join(' · ')}</span>}
       </p>
       <p className="text-sm font-semibold text-white mt-1">{t('intention.askTitle', 'Correu como querias?')}</p>
-      <div className="grid grid-cols-3 gap-2 mt-3">
+      <div className="grid grid-cols-2 gap-2 mt-3">
         {OUTCOME_KEYS.map(k => (
           <button key={k} type="button" onClick={() => finish(k)} className="py-2 rounded-xl text-sm font-semibold bg-gray-700/70 border border-gray-600 text-gray-100 hover:bg-gray-700">
             {outcomeLabel(t, k)}
@@ -347,7 +349,7 @@ export function OutcomeEditor({ evaluation, onChange }) {
       <p className="text-sm font-semibold text-gray-200 mb-2">{t('intention.askTitle', 'Correu como querias?')}
         <span className="text-xs font-normal text-gray-500 ml-2">{t('intention.optional', 'opcional')}</span>
       </p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {OUTCOME_KEYS.map(k => (
           <button key={k} type="button" aria-pressed={cur === k}
             onClick={() => onChange(cur === k ? null : { ...(evaluation || {}), outcome: k, at: new Date().toISOString() })}

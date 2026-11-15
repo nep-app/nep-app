@@ -31,8 +31,10 @@ export function IntentionStats({ consumptions }) {
     const evaluated = inRange.filter(isEvaluated);
 
     const count = (arr) => {
-      const r = { yes: 0, partly: 0, no: 0, n: arr.length };
+      // "não sei" conta à parte: não entra no "a de b" (não é sim nem não).
+      const r = { yes: 0, partly: 0, no: 0, unsure: 0, n: 0 };
       arr.forEach(c => { r[c.evaluation.outcome]++; });
+      r.n = r.yes + r.partly + r.no;
       return r;
     };
     const has = (field, key) => (c) => Array.isArray(c[field]) && c[field].includes(key);
@@ -43,15 +45,15 @@ export function IntentionStats({ consumptions }) {
       .filter(k => typeof k === 'string' && !INTENTION_KEYS.includes(k)))].sort((a, b) => a.localeCompare(b));
     const intentionRows = [...INTENTION_KEYS, ...customs]
       .map(k => ({ key: k, ...count(evaluated.filter(has('intentions', k))) }))
-      .filter(r => r.n > 0);
+      .filter(r => r.n + r.unsure > 0);
 
     const howRows = HOW_KEYS.map(k => {
-      const withArr = evaluated.filter(has('how', k));
+      const withArr = evaluated.filter(has('how', k)).filter(c => c.evaluation.outcome !== 'unsure');
       const row = { key: k, ...count(withArr) };
       if (row.n === 0) return row;
       // Com / sem esta etiqueta, entre os consumos avaliados que têm alguma
       // resposta no "Como?" (quem não respondeu ao "Como?" não diz "não").
-      const answeredHow = evaluated.filter(c => Array.isArray(c.how) && c.how.length > 0);
+      const answeredHow = evaluated.filter(c => Array.isArray(c.how) && c.how.length > 0 && c.evaluation.outcome !== 'unsure');
       const withoutArr = answeredHow.filter(c => !c.how.includes(k));
       row.without = count(withoutArr);
       if (withArr.length >= MIN_PER_WINDOW && withoutArr.length >= MIN_PER_WINDOW) {
@@ -59,7 +61,7 @@ export function IntentionStats({ consumptions }) {
         row.p = diffPermutation(withoutArr.map(yes), withArr.map(yes), PERM_M).p;
       }
       return row;
-    }).filter(r => r.n > 0);
+    }).filter(r => r.n + r.unsure > 0);
 
     return { since, total: inRange.length, nEval: evaluated.length, intentionRows, howRows };
   }, [consumptions]);
@@ -103,6 +105,7 @@ export function IntentionStats({ consumptions }) {
           </div>
           <p className="text-[11px] text-gray-500 mt-1">
             {t('intentionStats.breakdown', { yes: r.yes, partly: r.partly, no: r.no, defaultValue: 'sim {{yes}} · mais ou menos {{partly}} · não {{no}}' })}
+            {r.unsure > 0 && <> · {t('intentionStats.unsure', { n: r.unsure, defaultValue: 'não sei {{n}}' })}</>}
           </p>
         </>
       )}

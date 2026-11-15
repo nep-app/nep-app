@@ -2313,7 +2313,8 @@
     "outcome": {
       "yes": "yes",
       "partly": "sort of",
-      "no": "no"
+      "no": "no",
+      "unsure": "not sure"
     },
     "whatTitle": "What did you want?",
     "optionalMany": "optional · pick as many as you like",
@@ -2354,6 +2355,7 @@
     "aOfB": "went the way you wanted: {{a}} of {{b}}",
     "breakdown": "yes {{yes}} · sort of {{partly}} · no {{no}}",
     "compare": "Other uses with \"How?\" answered: {{c}} of {{d}} — the difference {{verdict}}.",
-    "note": "\"yes\" = it went the way you wanted. Grey: fewer than {{min}} answers, nothing is said yet. Uses without an answer are left out — the app doesn't guess. No intention is better than another: this only shows what happened."
+    "note": "\"yes\" = it went the way you wanted. Grey: fewer than {{min}} answers, nothing is said yet. Uses without an answer are left out — the app doesn't guess. No intention is better than another: this only shows what happened.",
+    "unsure": "not sure {{n}}"
   }
 }
