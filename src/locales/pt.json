@@ -2297,7 +2297,10 @@
       "getThrough": "aguentar o dia",
       "notFeel": "não sentir",
       "habit": "hábito",
-      "dontKnow": "não sei"
+      "dontKnow": "não sei",
+      "pleasure": "prazer",
+      "fun": "diversão",
+      "curiosity": "curiosidade"
     },
     "how": {
       "ateBefore": "comi antes",

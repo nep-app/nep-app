@@ -16,12 +16,16 @@ import { safeToISODate, getTodayKey } from '../utils/helpers';
 // - "não" é cinzento como as outras respostas (nunca vermelho).
 
 // Ordem FIXA (é a ordem em que aparecem e em que se contam nas Análises).
-export const INTENTION_KEYS = ['work', 'party', 'people', 'getThrough', 'notFeel', 'habit', 'dontKnow'];
+// prazer / diversão / curiosidade à frente (14-11-2026, pedido da Teresa): a
+// lista vinha virada para trabalho e sofrimento — o prazer some-se dos dados e
+// depois as análises só encontram custos. Chaves novas, as antigas não mudam.
+export const INTENTION_KEYS = ['pleasure', 'fun', 'curiosity', 'work', 'party', 'people', 'getThrough', 'notFeel', 'habit', 'dontKnow'];
 export const HOW_KEYS = ['ateBefore', 'water', 'mixed', 'tested', 'accompanied', 'alone'];
 export const OUTCOME_KEYS = ['yes', 'partly', 'no'];
 const MAX_CUSTOM = 40;
 
 const INTENTION_PT = {
+  pleasure: 'prazer', fun: 'diversão', curiosity: 'curiosidade',
   work: 'trabalhar', party: 'festa', people: 'estar com pessoas', getThrough: 'aguentar o dia',
   notFeel: 'não sentir', habit: 'hábito', dontKnow: 'não sei',
 };
