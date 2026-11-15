@@ -942,6 +942,20 @@ export function AuthenticatedApp() {
                             ...(sleepValue !== null ? { sleep: sleepValue } : {})
                         };
                         await addCycle(item);
+                        // "Como acordaste?" (opcional, no ciclo novo): grava também um
+                        // registo de bem-estar à hora de acordar, para contar onde o
+                        // bem-estar conta (Análises, Sinais…). Só se a pessoa tocou.
+                        const wm = cycleForm.wakeMood !== '' && cycleForm.wakeMood != null ? parseInt(cycleForm.wakeMood) : null;
+                        const we = cycleForm.wakeEnergy !== '' && cycleForm.wakeEnergy != null ? parseInt(cycleForm.wakeEnergy) : null;
+                        if (Number.isFinite(wm) || Number.isFinite(we)) {
+                            await addWellbeingLog({
+                                id: genId(), date: dateKey, timestamp: timestampISO,
+                                mood: Number.isFinite(wm) ? wm : null, energy: Number.isFinite(we) ? we : null,
+                                waterGlasses: 0, exerciseType: null, exerciseDuration: null, napDuration: null,
+                                social: false, food: false, emotions: [], symptoms: [], customSymptom: '', notes: '',
+                                isAtypical: false, atypicalReason: '', source: 'wake',
+                            });
+                        }
                         showToast(t('messages.cycleCreated'), 'success');
                     }
 

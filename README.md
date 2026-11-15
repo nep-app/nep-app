@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v8.3.3**
+**Versão actual: v8.4.0**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
@@ -30,7 +30,8 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
   consumo/dia calculam-se entre pesagens; dias com só parte medida aparecem
   como "≥ X mg"; períodos "não sei se pesei" ficam sem mg.
 - **Sono** (hora de deitar, horas dormidas, "não dormi"). O ciclo conta para o
-  dia em que se acorda.
+  dia em que se acorda. Ao criar o ciclo, "☀️ Como acordaste?" (opcional): humor
+  e energia num toque, gravados também como bem-estar dessa manhã.
 - **Bem-estar** em dois toques (humor e energia — "Botões" ou "Quadrado") e,
   em "mais detalhes", água, comida, sesta, social, sintomas, notas.
 - **Emoções**, **reflexões** e **pensamentos**.

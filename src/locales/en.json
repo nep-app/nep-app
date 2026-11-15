@@ -448,7 +448,9 @@
       "submit": "Start New Cycle",
       "submitEdit": "Save Cycle",
       "noSleepButton": "Didn't sleep",
-      "noSleepNote": "Leaving it blank is not the same as zero — blank means the app does not know."
+      "noSleepNote": "Leaving it blank is not the same as zero — blank means the app does not know.",
+      "wakeTitle": "How did you wake up?",
+      "wakeOptional": "optional — also saved to wellbeing"
     },
     "emotions": {
       "title": "Emotions of the Day",

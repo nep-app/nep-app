@@ -448,7 +448,9 @@
       "submit": "Iniciar Novo Ciclo",
       "submitEdit": "Guardar Ciclo",
       "noSleepButton": "Não dormi",
-      "noSleepNote": "Deixar em branco não é o mesmo que zero — em branco, a app não sabe."
+      "noSleepNote": "Deixar em branco não é o mesmo que zero — em branco, a app não sabe.",
+      "wakeTitle": "Como acordaste?",
+      "wakeOptional": "opcional — fica também no bem-estar"
     },
     "emotions": {
       "title": "Emoções do Dia",
