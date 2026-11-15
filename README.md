@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v8.4.1**
+**Versão actual: v8.5.0**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
@@ -36,7 +36,7 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
 - **Bem-estar** em dois toques (humor e energia — "Botões" ou "Quadrado") e,
   em "mais detalhes", água, comida, sesta, social, sintomas, notas.
 - **Emoções**, **reflexões** e **pensamentos**.
-- **Surfar o impulso:** escolhe-se **meta a meta**. Ao criar ou editar uma meta
+- **Uma pausa antes** (antigo "Surfar o impulso"): escolhe-se **meta a meta**. Ao criar ou editar uma meta
   de consumo há a opção "Quando passares esta meta, oferecer exercícios para
   adiar" (desligada nas metas novas). Ao registar um consumo que passe uma meta
   com a opção ligada, aparecem exercícios para adiar (timer de 15 min,

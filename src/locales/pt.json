@@ -144,7 +144,7 @@
     "s1Title": "Bem-vinda.",
     "s1Body": "Aqui não há metas de \"parar\" nem julgamento. É um espaço teu para notares o que se passa contigo — ao teu ritmo.",
     "s2Title": "Um toque chega.",
-    "s2Body": "Marca um consumo, escreve um pensamento, ou surfa um impulso quando ele aparecer. Fazes só o que te fizer sentido.",
+    "s2Body": "Marca um consumo, escreve um pensamento, ou faz uma pausa quando quiseres. Fazes só o que te fizer sentido.",
     "s3Title": "Só teu.",
     "s3Body": "Os teus dados ficam cifrados e privados neste telemóvel. Nas Definições podes ligar os lembretes e o modo disfarce quando quiseres."
   },
@@ -159,7 +159,7 @@
     "logPastTitle": "Registar consumo passado",
     "logPastWhen": "Quando foi?",
     "logPastNotes": "Notas (opcional)",
-    "logPastHint": "Guarda sem abrir o surfar e sem contar como impulso — para quando te esqueceste de registar na altura.",
+    "logPastHint": "Guarda sem abrir a pausa e sem contar nas pausas — para quando te esqueceste de registar na altura.",
     "dailyMessage": "Mensagem de Hoje",
     "markConsumption": "Marcar Consumo Agora",
     "thoughts": "Pensamentos",
@@ -293,8 +293,8 @@
     "alarmDoseDesc": "Lembrete para registar a dose do dia",
     "alarmDoseActive": "✓ Ativo às",
     "alarmNote": "Os lembretes só aparecem ao abrir a app.",
-    "urgeExercise": "Exercícios ao registar consumo",
-    "urgeExerciseDesc": "Interruptor geral. Ligado, cada meta decide: ao criar ou editar uma meta escolhes se, quando a passares, aparecem exercícios antes de registar. Desligado, nunca aparecem.",
+    "urgeExercise": "Uma pausa antes de registar",
+    "urgeExerciseDesc": "Interruptor geral. Ligado, cada meta decide: ao criar ou editar uma meta escolhes se, quando a passares, aparece primeiro uma pausa com exercícios (podes sempre registar logo). Desligado, nunca aparece.",
     "guideHeader": "Como usar a app",
     "guideTapToLearn": "Toca em cada secção para saber mais.",
     "guide": [
@@ -503,9 +503,9 @@
       "keepTolerance": "Margem, para cima e para baixo (± {{unit}})",
       "keepToleranceHint": "Quanto pode variar para cima ou para baixo e ainda contar como dentro. Vazio = exatamente esse valor.",
       "keepRangeHint": "Um dia conta como dentro da meta entre {{lo}} e {{hi}} {{unit}}.",
-      "offerUrge": "Quando passares esta meta, oferecer exercícios para adiar",
-      "offerUrgeHint": "Ao registar um consumo que passe esta meta, aparece primeiro o \"Surfar o impulso\". Desligado, o registo é um toque só.",
-      "offerUrgeGlobalOff": "Os exercícios estão desligados nas Definições — enquanto estiverem, não aparecem em meta nenhuma."
+      "offerUrge": "Quando passares esta meta, oferecer uma pausa antes de registar",
+      "offerUrgeHint": "Ao registar um consumo que passe esta meta, aparece primeiro \"Uma pausa antes\" (com \"Registar agora\" no topo). Desligado, o registo é um toque só.",
+      "offerUrgeGlobalOff": "A pausa está desligada nas Definições — enquanto estiver, não aparece em meta nenhuma."
     }
   },
   "messages": {
@@ -1243,18 +1243,18 @@
     }
   },
   "urge": {
-    "savedLocalOnly": "Guardei o impulso só neste telemóvel (a base deu erro).",
-    "title": "Exercícios para o Impulso",
-    "subtitle": "Escolhe um exercício para fazer agora",
-    "whyLabel": "Por que apareceu este aviso:",
+    "savedLocalOnly": "Guardei a pausa só neste telemóvel (a base deu erro).",
+    "title": "Uma pausa antes",
+    "subtitle": "Podes registar já ou fazer uma pausa — as duas estão bem.",
+    "whyLabel": "Aparece porque o pediste nesta meta:",
     "openButton": "💪 Fazer um exercício",
-    "timerTitle": "Adia 15 minutos",
-    "timerShortDesc": "Surfar o impulso — se ainda quiseres depois, é uma escolha consciente",
-    "timerDesc": "O impulso é como uma onda — sobe, atinge o pico e desce. Aguenta 15 minutos e vê o que acontece.",
+    "timerTitle": "Pausa de 15 minutos",
+    "timerShortDesc": "15 minutos antes de decidir. Depois decides tu.",
+    "timerDesc": "A vontade costuma subir e descer. Dá-te uns minutos e vê como estás.",
     "timerLabel": "min",
-    "timerQuote": "\"Não preciso de agir agora. O impulso passa — deixo-o passar.\"",
-    "timerDoneTitle": "Conseguiste!",
-    "timerDoneDesc": "Ainda tens vontade? Se sim, é uma escolha consciente. Se não — o impulso passou.",
+    "timerQuote": "\"Não tenho de decidir já.\"",
+    "timerDoneTitle": "O tempo passou",
+    "timerDoneDesc": "Como estás agora? Registar ou não — a escolha é tua.",
     "start": "Iniciar",
     "pause": "Pausar",
     "resume": "Retomar",
@@ -1268,10 +1268,10 @@
     "breatheHold": "Segura",
     "breatheOut": "Expira",
     "breathingDone": "4 ciclos concluídos!",
-    "breathingDoneDesc": "O teu sistema nervoso acalmou. Como te sentes agora?",
+    "breathingDoneDesc": "Como te sentes agora?",
     "thoughtsTitle": "Escreve o que sentes",
     "thoughtsShortDesc": "Nomear a emoção reduz a sua intensidade — abre o diário",
-    "proceedAnyway": "Registar consumo mesmo assim →"
+    "proceedAnyway": "Registar agora →"
   },
   "defaultStrategies": [
     "Pergunta o que precisas agora: descanso, comida/água, companhia ou calma — trata primeiro a necessidade real",
@@ -1279,16 +1279,16 @@
     "Rotina de sono (mesmo fim-de-semana): deita 21h-02h, acordar mesma hora ±1h. Padrões ajudam regulação emocional"
   ],
   "urgeStats": {
-    "title": "Surfar o impulso",
+    "title": "Pausas antes de registar",
     "subtitlePeriod": "neste período",
     "subtitleAll": "desde sempre",
-    "surfed": "impulsos surfados",
-    "delayed": "consumos adiados",
+    "surfed": "pausas com exercício",
+    "delayed": "sem registar logo",
     "avgHeld": "até ao consumo seguinte",
     "openedNoUse": "abriste sem usar",
-    "reinforceNone": "Abriste o surfar, mas ainda sem usar nenhuma estratégia.",
-    "reinforceMany": "Das {{surfed}} vezes que usaste as estratégias, em {{delayed}} não carregaste em \"consumir na mesma\".",
-    "openedNoUseNote": "Abriste o surfar sem usar nada {{count}}x. Para registos retroativos usa o \"＋ Registar consumo passado\" na Home — não abre o surfar nem conta como impulso.",
+    "reinforceNone": "Abriste a pausa, mas ainda sem fazer nenhum exercício.",
+    "reinforceMany": "Das {{surfed}} vezes que fizeste uma pausa com exercício, em {{delayed}} não registaste logo a seguir.",
+    "openedNoUseNote": "Abriste a pausa sem fazer nada {{count}}x. Para registos antigos usa o \"＋ Registar consumo passado\" no Início — não abre a pausa nem conta aqui.",
     "avgHeldNote_one": "O tempo é de {{count}} vez: a que teve um consumo nas 24 h seguintes.",
     "avgHeldNote_other": "O tempo é a média de {{count}} vezes: as que tiveram um consumo nas 24 h seguintes."
   },

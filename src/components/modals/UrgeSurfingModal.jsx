@@ -66,7 +66,7 @@ function TimerExercise({ onBack }) {
       </div>
       {done ? (
         <div className="text-center space-y-1 px-4">
-          <p className="text-green-400 font-semibold text-lg">✅ {t('urge.timerDoneTitle')}</p>
+          <p className="text-white font-semibold text-lg">✅ {t('urge.timerDoneTitle')}</p>
           <p className="text-sm text-gray-300">{t('urge.timerDoneDesc')}</p>
         </div>
       ) : (
@@ -178,7 +178,7 @@ function NeedCheck({ onBack }) {
   return (
     <div className="flex flex-col gap-4 py-2">
       <p className="text-sm text-gray-300 text-center px-2">
-        {pt ? 'Este impulso costuma esconder uma necessidade. Do que é que precisas mesmo agora?' : 'This urge often hides a need. What do you actually need right now?'}
+        {pt ? 'Às vezes a vontade vem de uma necessidade. Do que é que precisas agora?' : 'Sometimes the urge comes from a need. What do you need right now?'}
       </p>
       <div className="grid grid-cols-2 gap-3">
         {NEEDS.map(item => (
@@ -239,8 +239,8 @@ function GroundingExercise({ onBack }) {
         </>
       ) : (
         <div className="text-center space-y-1 px-4">
-          <p className="text-green-400 font-semibold text-lg">✅ {pt ? 'Ancoraste-te.' : 'You grounded yourself.'}</p>
-          <p className="text-sm text-gray-300">{pt ? 'Repara como o impulso pode já não estar tão forte.' : 'Notice how the urge may not be as strong now.'}</p>
+          <p className="text-white font-semibold text-lg">{pt ? 'Feito.' : 'Done.'}</p>
+          <p className="text-sm text-gray-300">{pt ? 'Como estás agora? Registar ou não, a escolha é tua.' : 'How are you now? Log it or not, it is your call.'}</p>
           <button onClick={() => setI(0)} className="text-xs text-purple-300 underline mt-2">{pt ? 'Fazer outra vez' : 'Do it again'}</button>
         </div>
       )}
@@ -263,7 +263,7 @@ function MoveExercise({ onBack }) {
   return (
     <div className="flex flex-col gap-4 py-2">
       <p className="text-sm text-gray-300 text-center px-2">
-        {pt ? 'Mexer o corpo ajuda a descarregar o pico do impulso. Escolhe o que der agora:' : 'Moving your body helps the urge peak pass. Do whatever you can right now:'}
+        {pt ? 'Mexer o corpo muda o estado. Escolhe o que der agora:' : 'Moving your body shifts your state. Do whatever you can right now:'}
       </p>
       <div className="space-y-2">
         {ITEMS.map((it, idx) => (
@@ -274,7 +274,7 @@ function MoveExercise({ onBack }) {
         ))}
       </div>
       <p className="text-xs text-gray-400 italic text-center px-4">
-        {pt ? 'Não tens de fazer tudo. Uma coisa já chega para partir o impulso.' : "You don't have to do all of it. One thing is enough to break the urge."}
+        {pt ? 'Não tens de fazer tudo. Uma coisa já chega.' : "You don't have to do all of it. One thing is enough."}
       </p>
       <button onClick={onBack} className="text-xs text-gray-500 hover:text-gray-300 text-center">{t('urge.backToMenu')}</button>
     </div>
@@ -343,7 +343,7 @@ export function UrgeSurfingModal({ onClose, onOpenThoughts, onOpenReflection, on
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div>
-              <h2 className="text-base font-bold text-white">💪 {t('urge.title')}</h2>
+              <h2 className="text-base font-bold text-white">⏸️ {t('urge.title')}</h2>
               <p className="text-xs text-gray-400 mt-0.5">{t('urge.subtitle')}</p>
             </div>
             <button onClick={handleClose} className="text-gray-500 hover:text-white text-2xl leading-none ml-4">✕</button>

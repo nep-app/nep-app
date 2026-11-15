@@ -144,7 +144,7 @@
     "s1Title": "Welcome.",
     "s1Body": "There are no \"quit\" goals here, and no judgement. This is your space to notice what's going on with you — at your own pace.",
     "s2Title": "One tap is enough.",
-    "s2Body": "Log a use, write a thought, or surf an urge when it shows up. You only do what makes sense to you.",
+    "s2Body": "Log a use, write a thought, or take a pause whenever you like. You only do what makes sense to you.",
     "s3Title": "Only yours.",
     "s3Body": "Your data stays encrypted and private on this phone. In Settings you can turn on reminders and disguise mode whenever you want."
   },
@@ -159,7 +159,7 @@
     "logPastTitle": "Log a past use",
     "logPastWhen": "When was it?",
     "logPastNotes": "Notes (optional)",
-    "logPastHint": "Saves without opening urge-surfing and without counting as an urge — for when you forgot to log it at the time.",
+    "logPastHint": "Saves without opening the pause and without counting in the pauses — for when you forgot to log it at the time.",
     "dailyMessage": "Daily Message",
     "markConsumption": "Log Use Now",
     "thoughts": "Thoughts",
@@ -293,8 +293,8 @@
     "alarmDoseDesc": "Reminder to log today's dose",
     "alarmDoseActive": "✓ Active at",
     "alarmNote": "Reminders only appear when opening the app.",
-    "urgeExercise": "Exercises when logging use",
-    "urgeExerciseDesc": "Main switch. On, each goal decides: when you create or edit a goal you choose whether exercises show up before logging when you go past it. Off, they never show up.",
+    "urgeExercise": "A pause before logging",
+    "urgeExerciseDesc": "Master switch. On, each goal decides: when creating or editing a goal you choose whether, when you go past it, a pause with exercises shows first (you can always log right away). Off, it never shows.",
     "guideHeader": "How to use the app",
     "guideTapToLearn": "Tap each section to learn more.",
     "guide": [
@@ -503,9 +503,9 @@
       "keepTolerance": "Margin, up and down (± {{unit}})",
       "keepToleranceHint": "How much it can vary up or down and still count as within. Empty = exactly that value.",
       "keepRangeHint": "A day counts as within the goal between {{lo}} and {{hi}} {{unit}}.",
-      "offerUrge": "When you go past this goal, offer exercises to delay",
-      "offerUrgeHint": "When you log a use that goes past this goal, the urge exercises show up first. Off, logging is a single tap.",
-      "offerUrgeGlobalOff": "Exercises are switched off in Settings — while they are, they don't show up for any goal."
+      "offerUrge": "When I go past this goal, offer a pause before logging",
+      "offerUrgeHint": "When you log a use that goes past this goal, \"A pause first\" shows first (with \"Log it now\" at the top). Off, logging is one tap.",
+      "offerUrgeGlobalOff": "The pause is switched off in Settings — while it is, it won't show for any goal."
     }
   },
   "messages": {
@@ -1243,18 +1243,18 @@
     "uses": "uses"
   },
   "urge": {
-    "savedLocalOnly": "Saved this urge on this phone only (the database had an error).",
-    "title": "Urge Exercises",
-    "subtitle": "Choose an exercise to do right now",
-    "whyLabel": "Why this reminder appeared:",
+    "savedLocalOnly": "Saved the pause only on this phone (the database failed).",
+    "title": "A pause first",
+    "subtitle": "You can log now or take a pause — both are fine.",
+    "whyLabel": "It shows because you asked for it in this goal:",
     "openButton": "💪 Do an exercise",
-    "timerTitle": "Delay 15 minutes",
-    "timerShortDesc": "Surf the urge — if you still want to after, it's a conscious choice",
-    "timerDesc": "An urge is like a wave — it rises, peaks and passes. Hold on for 15 minutes and see what happens.",
+    "timerTitle": "15-minute pause",
+    "timerShortDesc": "15 minutes before deciding. Then it's your call.",
+    "timerDesc": "Urges tend to rise and fall. Give yourself a few minutes and see how you are.",
     "timerLabel": "min",
-    "timerQuote": "\"I don't need to act now. The urge will pass — I let it pass.\"",
-    "timerDoneTitle": "You did it!",
-    "timerDoneDesc": "Do you still want to? If yes, it's a conscious choice. If not — the urge passed.",
+    "timerQuote": "\"I don't have to decide right now.\"",
+    "timerDoneTitle": "Time's up",
+    "timerDoneDesc": "How are you now? Log it or not — it's your call.",
     "start": "Start",
     "pause": "Pause",
     "resume": "Resume",
@@ -1268,10 +1268,10 @@
     "breatheHold": "Hold",
     "breatheOut": "Exhale",
     "breathingDone": "4 cycles complete!",
-    "breathingDoneDesc": "Your nervous system has calmed. How do you feel now?",
+    "breathingDoneDesc": "How do you feel now?",
     "thoughtsTitle": "Write what you feel",
     "thoughtsShortDesc": "Naming the emotion reduces its intensity — opens the journal",
-    "proceedAnyway": "Register use anyway →"
+    "proceedAnyway": "Log it now →"
   },
   "defaultStrategies": [
     "Ask what you need right now: rest, food/water, company or calm — meet the real need first",
@@ -1279,16 +1279,16 @@
     "Sleep routine (same on weekends): to bed 9pm-2am, wake at the same time ±1h. Patterns help emotional regulation"
   ],
   "urgeStats": {
-    "title": "Surfing the urge",
+    "title": "Pauses before logging",
     "subtitlePeriod": "this period",
     "subtitleAll": "all time",
-    "surfed": "urges surfed",
-    "delayed": "uses delayed",
+    "surfed": "pauses with an exercise",
+    "delayed": "not logged right away",
     "avgHeld": "until the next use",
     "openedNoUse": "opened, unused",
-    "reinforceNone": "You opened urge-surfing, but haven't used a strategy yet.",
-    "reinforceMany": "Of the {{surfed}} times you used the strategies, in {{delayed}} you didn't tap \"use anyway\".",
-    "openedNoUseNote": "You opened urge-surfing without using anything {{count}}×. For past entries use \"＋ Log a past use\" on Home — it doesn't open urge-surfing or count as an urge.",
+    "reinforceNone": "You opened the pause, but haven't done an exercise yet.",
+    "reinforceMany": "Of the {{surfed}} times you paused with an exercise, {{delayed}} weren't followed by logging right away.",
+    "openedNoUseNote": "You opened the pause without doing anything {{count}}x. For past entries use \"＋ Log past use\" on Home — it doesn't open the pause or count here.",
     "avgHeldNote_one": "The time comes from {{count}} time: the one followed by a use within 24 h.",
     "avgHeldNote_other": "The time is the average of {{count}} times: those followed by a use within 24 h."
   },
