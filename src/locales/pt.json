@@ -2309,12 +2309,27 @@
       "curiosity": "curiosidade"
     },
     "how": {
-      "ateBefore": "comi antes",
+      "ateBefore": "comi",
       "water": "bebi água",
       "mixed": "misturei",
       "tested": "testei",
       "accompanied": "acompanhada/o",
-      "alone": "sozinha/o"
+      "alone": "sozinha/o",
+      "home": "casa",
+      "work": "trabalho",
+      "bathroom": "casa de banho (fora de casa)",
+      "someonesPlace": "casa de alguém",
+      "party": "festa",
+      "street": "rua",
+      "otherPlace": "outro sítio",
+      "atEase": "à vontade",
+      "hidden": "às escondidas",
+      "mixNone": "nada",
+      "alcohol": "álcool",
+      "otherSubstance": "outra substância",
+      "newBag": "saco novo",
+      "newPerson": "pessoa nova",
+      "sleptBefore": "dormi antes"
     },
     "outcome": {
       "yes": "sim",
@@ -2351,18 +2366,29 @@
     "optsHint": "Deixa o nome em branco para voltar ao original.",
     "optsRename": "Nome de",
     "youWanted": "Querias:",
-    "howShort": "Como:"
+    "howShort": "Como:",
+    "sameAsLast": "igual",
+    "different": "diferente",
+    "sameSaved": "Igual à última vez",
+    "group": {
+      "place": "Onde",
+      "privacy": "À vontade ou às escondidas",
+      "company": "Com quem",
+      "mix": "Mistura",
+      "source": "De onde veio",
+      "body": "Corpo"
+    }
   },
   "intentionStats": {
     "title": "Intenção · correu como querias?",
     "since": "Desde {{date}} · {{x}} de {{y}} consumos avaliados",
     "noneEvaluated": "Ainda não há consumos avaliados. A pergunta «correu como querias?» liga-se nas Definições; também se pode responder ao editar um consumo no Histórico.",
     "byIntention": "Por intenção",
-    "byHow": "Por «Como?»",
+    "byHow": "À volta do consumo",
     "few": "poucos registos ({{n}})",
     "aOfB": "correu como querias: {{a}} de {{b}}",
     "breakdown": "sim {{yes}} · mais ou menos {{partly}} · não {{no}}",
-    "compare": "Nos outros consumos com «Como?» respondido: {{c}} de {{d}} — a diferença {{verdict}}.",
+    "compare": "Nos outros consumos com esta pergunta respondida: {{c}} de {{d}} — a diferença {{verdict}}.",
     "note": "«sim» = correu como querias. A cinzento: menos de {{min}} avaliações, ainda não se diz nada. Os consumos sem avaliação não entram — a app não adivinha. Nenhuma intenção é melhor do que outra: isto só mostra o que aconteceu.",
     "unsure": "não sei {{n}}"
   }

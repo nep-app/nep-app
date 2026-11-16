@@ -2309,12 +2309,27 @@
       "curiosity": "curiosity"
     },
     "how": {
-      "ateBefore": "ate before",
+      "ateBefore": "ate",
       "water": "drank water",
       "mixed": "mixed",
       "tested": "tested",
       "accompanied": "with someone",
-      "alone": "alone"
+      "alone": "alone",
+      "home": "home",
+      "work": "work",
+      "bathroom": "bathroom (away from home)",
+      "someonesPlace": "someone's place",
+      "party": "party",
+      "street": "street",
+      "otherPlace": "other place",
+      "atEase": "at ease",
+      "hidden": "hidden",
+      "mixNone": "nothing",
+      "alcohol": "alcohol",
+      "otherSubstance": "another substance",
+      "newBag": "new bag",
+      "newPerson": "new person",
+      "sleptBefore": "slept before"
     },
     "outcome": {
       "yes": "yes",
@@ -2351,18 +2366,29 @@
     "optsHint": "Leave the name blank to go back to the original.",
     "optsRename": "Name for",
     "youWanted": "You wanted:",
-    "howShort": "How:"
+    "howShort": "How:",
+    "sameAsLast": "same",
+    "different": "different",
+    "sameSaved": "Same as last time",
+    "group": {
+      "place": "Where",
+      "privacy": "At ease or hidden",
+      "company": "With whom",
+      "mix": "Mixed with",
+      "source": "Where it came from",
+      "body": "Body"
+    }
   },
   "intentionStats": {
     "title": "Intention · did it go the way you wanted?",
     "since": "Since {{date}} · {{x}} of {{y}} uses answered",
     "noneEvaluated": "No uses answered yet. The \"did it go the way you wanted?\" question can be turned on in Settings; you can also answer it when editing a use in History.",
     "byIntention": "By intention",
-    "byHow": "By \"How?\"",
+    "byHow": "Around the use",
     "few": "few records ({{n}})",
     "aOfB": "went the way you wanted: {{a}} of {{b}}",
     "breakdown": "yes {{yes}} · sort of {{partly}} · no {{no}}",
-    "compare": "Other uses with \"How?\" answered: {{c}} of {{d}} — the difference {{verdict}}.",
+    "compare": "In the other uses with this question answered: {{c}} of {{d}} — the difference {{verdict}}.",
     "note": "\"yes\" = it went the way you wanted. Grey: fewer than {{min}} answers, nothing is said yet. Uses without an answer are left out — the app doesn't guess. No intention is better than another: this only shows what happened.",
     "unsure": "not sure {{n}}"
   }

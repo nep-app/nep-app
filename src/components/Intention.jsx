@@ -20,7 +20,20 @@ import { safeToISODate, getTodayKey } from '../utils/helpers';
 // lista vinha virada para trabalho e sofrimento — o prazer some-se dos dados e
 // depois as análises só encontram custos. Chaves novas, as antigas não mudam.
 export const INTENTION_KEYS = ['pleasure', 'fun', 'curiosity', 'work', 'party', 'people', 'getThrough', 'notFeel', 'habit', 'dontKnow'];
-export const HOW_KEYS = ['ateBefore', 'water', 'mixed', 'tested', 'accompanied', 'alone'];
+// "À volta do consumo" (16-11-2026, decidido com a Teresa): em grupos curtos,
+// sem a palavra "cuidados". single = só uma escolha por grupo.
+export const HOW_GROUPS = [
+  { id: 'place',   single: true,  pt: 'Onde',                       en: 'Where',             keys: ['home', 'work', 'bathroom', 'someonesPlace', 'party', 'street', 'otherPlace'] },
+  { id: 'privacy', single: true,  pt: 'À vontade ou às escondidas', en: 'At ease or hidden', keys: ['atEase', 'hidden'] },
+  { id: 'company', single: true,  pt: 'Com quem',                   en: 'With whom',         keys: ['alone', 'accompanied'] },
+  { id: 'mix',     single: true,  pt: 'Mistura',                    en: 'Mixed with',        keys: ['mixNone', 'alcohol', 'otherSubstance'] },
+  { id: 'source',  single: false, pt: 'De onde veio',               en: 'Where it came from', keys: ['newBag', 'newPerson'] },
+  { id: 'body',    single: false, pt: 'Corpo',                      en: 'Body',              keys: ['ateBefore', 'water', 'sleptBefore'] },
+];
+// Chaves antigas (v8.2–8.5): continuam a aparecer e a contar nos registos que as
+// têm, mas já não se oferecem nas escolhas novas.
+const HOW_LEGACY = ['mixed', 'tested'];
+export const HOW_KEYS = [...HOW_GROUPS.flatMap(g => g.keys), ...HOW_LEGACY];
 // 'unsure' = "não sei" (15-11-2026, pedido da Teresa): é uma resposta (conta
 // como avaliado), mas não entra no "a de b" — não é sim nem não.
 export const OUTCOME_KEYS = ['yes', 'partly', 'no', 'unsure'];
@@ -32,8 +45,14 @@ const INTENTION_PT = {
   notFeel: 'não sentir', habit: 'hábito', dontKnow: 'não sei',
 };
 const HOW_PT = {
-  ateBefore: 'comi antes', water: 'bebi água', mixed: 'misturei', tested: 'testei',
-  accompanied: 'acompanhada/o', alone: 'sozinha/o',
+  home: 'casa', work: 'trabalho', bathroom: 'casa de banho (fora de casa)', someonesPlace: 'casa de alguém',
+  party: 'festa', street: 'rua', otherPlace: 'outro sítio',
+  atEase: 'à vontade', hidden: 'às escondidas',
+  alone: 'sozinha/o', accompanied: 'acompanhada/o',
+  mixNone: 'nada', alcohol: 'álcool', otherSubstance: 'outra substância',
+  newBag: 'saco novo', newPerson: 'pessoa nova',
+  ateBefore: 'comi', water: 'bebi água', sleptBefore: 'dormi antes',
+  mixed: 'misturei', tested: 'testei',
 };
 const OUTCOME_PT = { yes: 'sim', partly: 'mais ou menos', no: 'não', unsure: 'não sei' };
 
@@ -153,26 +172,42 @@ export function IntentionPicker({ intentions = [], how = [], onChange, customOpt
           </div>
         )}
       </div>
-      <div>
-        <p className="text-sm font-semibold text-gray-200 mb-2">
-          {t('intention.howTitle', 'Como?')}
-          <span className="text-xs font-normal text-gray-500 ml-2">{t('intention.optional', 'opcional')}</span>
-        </p>
+      {HOW_GROUPS.map(g => {
+        const visible = g.keys.filter(k => !isHidden('h', k) || hows.includes(k));
+        if (visible.length === 0) return null;
+        const pick = (k) => {
+          let next = toggle(hows, k);
+          // Grupos de uma só escolha: escolher uma tira as outras do grupo.
+          if (g.single && next.includes(k)) next = next.filter(x => x === k || !g.keys.includes(x));
+          onChange({ intentions: ints, how: next });
+        };
+        return (
+          <div key={g.id}>
+            <p className="text-xs font-semibold text-gray-400 mb-1.5">{t(`intention.group.${g.id}`, g.pt)}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {visible.map(k => (
+                <button key={k} type="button" aria-pressed={hows.includes(k)} onClick={() => pick(k)} className={chipCls(hows.includes(k))}>
+                  {howLabel(t, k)}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+      {hows.filter(k => HOW_LEGACY.includes(k)).length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {HOW_KEYS.filter(k => !isHidden('h', k) || hows.includes(k)).map(k => (
-            <button key={k} type="button" aria-pressed={hows.includes(k)} onClick={() => onChange({ intentions: ints, how: toggle(hows, k) })} className={chipCls(hows.includes(k))}>
-              {howLabel(t, k)}
-            </button>
+          {hows.filter(k => HOW_LEGACY.includes(k)).map(k => (
+            <button key={k} type="button" aria-pressed onClick={() => onChange({ intentions: ints, how: toggle(hows, k) })} className={chipCls(true)}>{howLabel(t, k)}</button>
           ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
 // Barra pequena, NÃO bloqueante, depois do registo: "✓ Consumo registado · ＋ intenção".
 // Some sozinha em ~5 s. Ignorar = não se pergunta mais sobre esse consumo.
-export function RegisteredBar({ onAdd, onDone, ms = 5000 }) {
+export function RegisteredBar({ onAdd, onSame, onDone, ms = 5000 }) {
   const { t } = useTranslation();
   useEffect(() => {
     const id = setTimeout(onDone, ms);
@@ -183,8 +218,13 @@ export function RegisteredBar({ onAdd, onDone, ms = 5000 }) {
       <div role="status" className="pointer-events-auto flex items-center gap-1 pl-4 pr-1.5 py-1.5 rounded-full bg-gray-800 border border-gray-600 shadow-lg text-sm text-gray-100 motion-safe:animate-fadeInUp">
         <span>✓ {t('intention.registered', 'Consumo registado')}</span>
         <span className="text-gray-500 mx-1">·</span>
+        {onSame && (
+          <button type="button" onClick={onSame} className="px-3 py-1.5 rounded-full font-semibold text-purple-200 hover:bg-purple-500/20">
+            ↺ {t('intention.sameAsLast', 'igual')}
+          </button>
+        )}
         <button type="button" onClick={onAdd} className="px-3 py-1.5 rounded-full font-semibold text-purple-200 hover:bg-purple-500/20">
-          ＋ {t('intention.addIntention', 'intenção')}
+          ＋ {onSame ? t('intention.different', 'diferente') : t('intention.addIntention', 'intenção')}
         </button>
       </div>
     </div>
@@ -311,7 +351,7 @@ export function OutcomeCard({ consumptions, onSave }) {
         {t('intention.youWanted', 'Querias:')} <span className="font-semibold text-white">{ints.join(' · ')}</span>
       </p>
       {Array.isArray(candidate.how) && candidate.how.length > 0 && (
-        <p className="text-xs text-gray-400 mt-0.5">{t('intention.howShort', 'Como:')} {candidate.how.map(k => howLabel(t, k)).join(' · ')}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{candidate.how.map(k => howLabel(t, k)).join(' · ')}</p>
       )}
       <p className="text-sm font-semibold text-white mt-2">{t('intention.askTitle', 'Correu como querias?')}</p>
       <div className="grid grid-cols-2 gap-2 mt-3">
@@ -387,8 +427,8 @@ export function IntentionOptionsSettings({ consumptions = [] }) {
   const groups = [
     { id: 'i', title: t('intention.whatTitle', 'O que querias?'), keys: [...INTENTION_KEYS, ...customs],
       base: (k) => INTENTION_PT[k] ? t(`intention.opt.${k}`, INTENTION_PT[k]) : k },
-    { id: 'h', title: t('intention.howTitle', 'Como?'), keys: HOW_KEYS,
-      base: (k) => t(`intention.how.${k}`, HOW_PT[k]) },
+    ...HOW_GROUPS.map(g => ({ id: 'h', gid: g.id, title: t(`intention.group.${g.id}`, g.pt), keys: g.keys,
+      base: (k) => t(`intention.how.${k}`, HOW_PT[k]) })),
   ];
   const setName = (id, v) => {
     const names = { ...prefs.names };
@@ -401,7 +441,7 @@ export function IntentionOptionsSettings({ consumptions = [] }) {
     <div className="space-y-4">
       <p className="text-xs text-gray-400">{t('intention.optsDesc', 'Esconde os botões que não usas ou dá-lhes as tuas palavras. Os registos antigos não mudam: um botão escondido continua a contar onde já foi usado. Fica guardado só neste aparelho.')}</p>
       {groups.map(g => (
-        <div key={g.id}>
+        <div key={g.gid || g.id}>
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{g.title}</p>
           <div className="divide-y divide-gray-700 border-y border-gray-700">
             {g.keys.map(k => {

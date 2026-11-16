@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { safeToISODate } from '../utils/helpers';
 import { diffPermutation, MIN_PER_WINDOW } from '../utils/stats';
-import { INTENTION_KEYS, HOW_KEYS, OUTCOME_KEYS, intentionLabel, howLabel, hasIntentionData } from './Intention';
+import { INTENTION_KEYS, HOW_KEYS, HOW_GROUPS, OUTCOME_KEYS, intentionLabel, howLabel, hasIntentionData } from './Intention';
 
 // ===== ANÁLISES · INTENÇÃO E "CORREU COMO QUERIAS?" =====
 // - Só aparece se houver dados (intenção, "como" ou avaliação).
@@ -52,8 +52,11 @@ export function IntentionStats({ consumptions }) {
       const row = { key: k, ...count(withArr) };
       if (row.n === 0) return row;
       // Com / sem esta etiqueta, entre os consumos avaliados que têm alguma
-      // resposta no "Como?" (quem não respondeu ao "Como?" não diz "não").
-      const answeredHow = evaluated.filter(c => Array.isArray(c.how) && c.how.length > 0 && c.evaluation.outcome !== 'unsure');
+      // resposta NO MESMO GRUPO (ex.: "às escondidas" compara-se com os que
+      // marcaram "à vontade", não com quem não respondeu a essa pergunta).
+      const grp = HOW_GROUPS.find(g => g.keys.includes(k));
+      const answeredHow = evaluated.filter(c => Array.isArray(c.how) && c.evaluation.outcome !== 'unsure'
+        && (grp ? c.how.some(x => grp.keys.includes(x)) : c.how.length > 0));
       const withoutArr = answeredHow.filter(c => !c.how.includes(k));
       row.without = count(withoutArr);
       if (withArr.length >= MIN_PER_WINDOW && withoutArr.length >= MIN_PER_WINDOW) {

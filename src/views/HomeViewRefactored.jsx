@@ -81,6 +81,34 @@ export function HomeViewRefactored({
       showToast(t('messages.consumptionEditError'), 'error');
     }
   };
+  // "↺ igual à última vez": copia a intenção e o "à volta" do consumo anterior
+  // mais recente que os tenha (os consumos vêm em séries: o dia no trabalho, a
+  // noite em casa). Um toque; muda-se depois no Histórico se não for igual.
+  const lastMarked = useMemo(() => {
+    let best = null, bestT = -Infinity;
+    (allConsumptions || consumptions || []).forEach(c => {
+      if (!c || c.deleted || c.id === justLoggedId) return;
+      const has = (Array.isArray(c.intentions) && c.intentions.length) || (Array.isArray(c.how) && c.how.length);
+      if (!has) return;
+      const ts = new Date(c.timestamp || c.createdAt).getTime();
+      if (Number.isFinite(ts) && ts > bestT) { best = c; bestT = ts; }
+    });
+    return best;
+  }, [allConsumptions, consumptions, justLoggedId]);
+  const sameAsLast = async () => {
+    const id = justLoggedId;
+    setJustLoggedId(null);
+    if (!id || !lastMarked) return;
+    const updates = {};
+    if (Array.isArray(lastMarked.intentions) && lastMarked.intentions.length) updates.intentions = [...lastMarked.intentions];
+    if (Array.isArray(lastMarked.how) && lastMarked.how.length) updates.how = [...lastMarked.how];
+    try {
+      await updateItem('consumptions', id, updates);
+      showToast(t('intention.sameSaved', 'Igual à última vez'), 'success');
+    } catch {
+      showToast(t('messages.consumptionEditError'), 'error');
+    }
+  };
   const saveEvaluation = async (id, evaluation) => {
     try { await updateItem('consumptions', id, { evaluation }); }
     catch { showToast(t('messages.consumptionEditError'), 'error'); }
@@ -622,6 +650,7 @@ export function HomeViewRefactored({
     {justLoggedId && !intentionFor && (
       <RegisteredBar
         onAdd={() => { setIntentionFor(justLoggedId); setJustLoggedId(null); }}
+        onSame={lastMarked ? sameAsLast : undefined}
         onDone={closeBar}
       />
     )}
