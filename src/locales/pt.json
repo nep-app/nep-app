@@ -2240,7 +2240,16 @@
     "tagConfirmByDay": "Há {{count}} consumos sem substância. Marcar cada um com a principal do seu dia? Os que já têm substância não mudam.",
     "tagDoneByDay": "Feito: {{count}} consumos marcados com a principal do seu dia.",
     "askAmountLabel": "Perguntar a quantidade em cada consumo de {{name}}",
-    "askAmountHint": "Para quem mede cada dose (ex.: ml, comprimidos). Aparece ao editar um consumo e em \"Registar um consumo passado\" — o registo rápido continua a ser um toque só. A quantidade fica guardada no registo, mas ainda não entra nas contas de mg (essas vêm da balança)."
+    "askAmountHint": "Para quem mede cada dose (ex.: ml, comprimidos). Aparece ao editar um consumo e em \"Registar um consumo passado\" — o registo rápido continua a ser um toque só. A quantidade fica guardada no registo, mas ainda não entra nas contas de mg (essas vêm da balança).",
+    "routeLabel": "Via habitual de {{name}}",
+    "routeNone": "via: —",
+    "route": {
+      "snorted": "snifada",
+      "smoked": "fumada / vaporizada",
+      "oral": "oral",
+      "injected": "injetada",
+      "other": "outra"
+    }
   },
   "home2": {
     "sleepTitle": "Sono",
@@ -2376,7 +2385,8 @@
       "company": "Com quem",
       "mix": "Mistura",
       "source": "De onde veio",
-      "body": "Corpo"
+      "body": "Corpo",
+      "route": "Via"
     }
   },
   "intentionStats": {
@@ -2390,6 +2400,8 @@
     "breakdown": "sim {{yes}} · mais ou menos {{partly}} · não {{no}}",
     "compare": "Nos outros consumos com esta pergunta respondida: {{c}} de {{d}} — a diferença {{verdict}}.",
     "note": "«sim» = correu como querias. A cinzento: menos de {{min}} avaliações, ainda não se diz nada. Os consumos sem avaliação não entram — a app não adivinha. Nenhuma intenção é melhor do que outra: isto só mostra o que aconteceu.",
-    "unsure": "não sei {{n}}"
+    "unsure": "não sei {{n}}",
+    "byRoute": "Por via",
+    "compareRoute": "Pelas outras vias: {{c}} de {{d}} — a diferença {{verdict}}."
   }
 }

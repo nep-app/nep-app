@@ -107,8 +107,9 @@ export const EditConsumptionModal = ({
                 <IntentionPicker
                   intentions={editingConsumption.intentions || []}
                   how={editingConsumption.how || []}
+                  route={editingConsumption.route || null}
                   customOptions={customIntentions}
-                  onChange={({ intentions, how }) => setEditingConsumption({ ...editingConsumption, intentions, how })}
+                  onChange={({ intentions, how, route }) => setEditingConsumption({ ...editingConsumption, intentions, how, route: route || null })}
                 />
                 {showOutcome && (
                   <OutcomeEditor

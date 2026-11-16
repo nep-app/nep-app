@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sanitizeText } from '../utils/validation';
 import { safeToISODate, getTodayKey } from '../utils/helpers';
+import { ROUTE_KEYS, ROUTE_PT } from '../utils/substances';
 
 // ===== INTENÇÃO E "CORREU COMO QUERIAS?" =====
 // Campos novos NO PRÓPRIO consumo (cifrados com o resto — não são índices em
@@ -116,18 +117,20 @@ const chipCls = (on) => 'text-[13px] px-3 py-1.5 rounded-full border transition-
 const toggle = (list, key) => (list.includes(key) ? list.filter(k => k !== key) : [...list, key]);
 
 // As duas filas de botões ("O que querias?" e "Como?"). Várias escolhas.
-export function IntentionPicker({ intentions = [], how = [], onChange, customOptions = [] }) {
+export function IntentionPicker({ intentions = [], how = [], route = null, onChange, customOptions = [] }) {
   const { t } = useTranslation();
   const [writing, setWriting] = useState(false);
   const [draft, setDraft] = useState('');
   const ints = Array.isArray(intentions) ? intentions : [];
+  // A via vai sempre junta, para nenhuma alteração a apagar.
+  const emit = (patch) => onChange({ intentions: ints, how: hows, route: route || null, ...patch });
   const hows = Array.isArray(how) ? how : [];
   // Escritas à mão: as já usadas + as deste consumo (sem repetir).
   const customs = [...new Set([...customOptions, ...ints.filter(k => !INTENTION_PT[k])])];
 
   const addCustom = () => {
     const v = sanitizeText(draft).slice(0, MAX_CUSTOM);
-    if (v && !ints.includes(v)) onChange({ intentions: [...ints, v], how: hows });
+    if (v && !ints.includes(v)) emit({ intentions: [...ints, v], how: hows });
     setDraft(''); setWriting(false);
   };
 
@@ -140,12 +143,12 @@ export function IntentionPicker({ intentions = [], how = [], onChange, customOpt
         </p>
         <div className="flex flex-wrap gap-1.5">
           {INTENTION_KEYS.filter(k => !isHidden('i', k) || ints.includes(k)).map(k => (
-            <button key={k} type="button" aria-pressed={ints.includes(k)} onClick={() => onChange({ intentions: toggle(ints, k), how: hows })} className={chipCls(ints.includes(k))}>
+            <button key={k} type="button" aria-pressed={ints.includes(k)} onClick={() => emit({ intentions: toggle(ints, k), how: hows })} className={chipCls(ints.includes(k))}>
               {intentionLabel(t, k)}
             </button>
           ))}
           {customs.filter(k => !isHidden('i', k) || ints.includes(k)).map(k => (
-            <button key={'c-' + k} type="button" aria-pressed={ints.includes(k)} onClick={() => onChange({ intentions: toggle(ints, k), how: hows })} className={chipCls(ints.includes(k))}>
+            <button key={'c-' + k} type="button" aria-pressed={ints.includes(k)} onClick={() => emit({ intentions: toggle(ints, k), how: hows })} className={chipCls(ints.includes(k))}>
               {intentionLabel(t, k)}
             </button>
           ))}
@@ -179,7 +182,7 @@ export function IntentionPicker({ intentions = [], how = [], onChange, customOpt
           let next = toggle(hows, k);
           // Grupos de uma só escolha: escolher uma tira as outras do grupo.
           if (g.single && next.includes(k)) next = next.filter(x => x === k || !g.keys.includes(x));
-          onChange({ intentions: ints, how: next });
+          emit({ intentions: ints, how: next });
         };
         return (
           <div key={g.id}>
@@ -194,10 +197,21 @@ export function IntentionPicker({ intentions = [], how = [], onChange, customOpt
           </div>
         );
       })}
+      {/* Via: vem da substância (Config → Substâncias). Só se toca quando foi diferente. */}
+      <div>
+        <p className="text-xs font-semibold text-gray-400 mb-1.5">{t('intention.group.route', 'Via')}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {ROUTE_KEYS.map(k => (
+            <button key={k} type="button" aria-pressed={route === k} onClick={() => emit({ route: route === k ? null : k })} className={chipCls(route === k)}>
+              {t(`substances.route.${k}`, ROUTE_PT[k])}
+            </button>
+          ))}
+        </div>
+      </div>
       {hows.filter(k => HOW_LEGACY.includes(k)).length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {hows.filter(k => HOW_LEGACY.includes(k)).map(k => (
-            <button key={k} type="button" aria-pressed onClick={() => onChange({ intentions: ints, how: toggle(hows, k) })} className={chipCls(true)}>{howLabel(t, k)}</button>
+            <button key={k} type="button" aria-pressed onClick={() => emit({ intentions: ints, how: toggle(hows, k) })} className={chipCls(true)}>{howLabel(t, k)}</button>
           ))}
         </div>
       )}
@@ -232,10 +246,10 @@ export function RegisteredBar({ onAdd, onSame, onDone, ms = 5000 }) {
 }
 
 // Folha curta com as duas filas. Fechar sem guardar = não fica nada.
-export function IntentionSheet({ open, onClose, onSave, customOptions = [] }) {
+export function IntentionSheet({ open, onClose, onSave, customOptions = [], initialRoute = null }) {
   const { t } = useTranslation();
-  const [val, setVal] = useState({ intentions: [], how: [] });
-  useEffect(() => { if (open) setVal({ intentions: [], how: [] }); }, [open]);
+  const [val, setVal] = useState({ intentions: [], how: [], route: null });
+  useEffect(() => { if (open) setVal({ intentions: [], how: [], route: initialRoute || null }); }, [open, initialRoute]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
@@ -243,7 +257,7 @@ export function IntentionSheet({ open, onClose, onSave, customOptions = [] }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
   if (!open) return null;
-  const empty = val.intentions.length === 0 && val.how.length === 0;
+  const empty = val.intentions.length === 0 && val.how.length === 0 && (val.route || null) === (initialRoute || null);
   return (
     <div className="fixed inset-0 z-[85] bg-black/50 flex items-end justify-center" onClick={onClose}>
       <div
@@ -253,7 +267,7 @@ export function IntentionSheet({ open, onClose, onSave, customOptions = [] }) {
         style={{ paddingBottom: 'max(20px, env(safe-area-inset-bottom))' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <IntentionPicker intentions={val.intentions} how={val.how} onChange={setVal} customOptions={customOptions} />
+        <IntentionPicker intentions={val.intentions} how={val.how} route={val.route} onChange={setVal} customOptions={customOptions} />
         <div className="flex gap-3 mt-5">
           <button type="button" onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-medium text-gray-300 bg-gray-700 hover:bg-gray-600">
             {t('intention.notNow', 'Agora não')}

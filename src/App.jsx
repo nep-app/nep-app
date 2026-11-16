@@ -36,7 +36,7 @@ import { HomeViewRefactored } from './views/HomeViewRefactored';
 import { useDemoPrefs } from './demo/DemoPrefsContext';
 import { useSubstances } from './hooks/useSubstances';
 import { applyDemoTheme, readAppTheme, subscribeAppTheme } from './demo/themes';
-import { cleanEntries } from './utils/substances';
+import { cleanEntries, routeFor } from './utils/substances';
 
 // 🔥 Views pesadas: LAZY LOAD (só carrega quando user navega)
 // - AnalysesView: 143KB + recharts 243KB = 386KB
@@ -373,6 +373,9 @@ export function AuthenticatedApp() {
                     const now = new Date();
                     const item = { id: genId(), timestamp: now.toISOString(), date: getTodayKey(), notes: '' };
                     if (defaultSubstanceEntries.length) item.substances = defaultSubstanceEntries;
+                    // Via habitual da substância (Config → Substâncias), se houver.
+                    const route = routeFor(defaultSubstanceEntries, substanceList);
+                    if (route) item.route = route;
                     await addConsumption(item);
                     if (!quiet) showToast(t('messages.consumptionSaved'), 'success');
                     return item.id;

@@ -17,7 +17,7 @@ import { getUserStats, updateUserStats } from '../utils/userStats';
 import { OnboardingWelcome } from '../components/OnboardingWelcome';
 import { useDemoPrefs } from '../demo/DemoPrefsContext';
 import { useSubstances } from '../hooks/useSubstances';
-import { cleanEntries } from '../utils/substances';
+import { cleanEntries, routeFor } from '../utils/substances';
 import { SubstancePicker } from '../components/SubstancePicker';
 import { SubstancesModal } from '../components/modals/SubstancesModal';
 import { HomeRelogio } from '../demo/HomeRelogio';
@@ -66,13 +66,15 @@ export function HomeViewRefactored({
     const id = await markConsumption({ quiet: true });
     if (id) setJustLoggedId(id);
   };
-  const saveIntention = async ({ intentions, how }) => {
+  const intentionTarget = useMemo(() => (allConsumptions || consumptions || []).find(c => c && c.id === intentionFor) || null, [allConsumptions, consumptions, intentionFor]);
+  const saveIntention = async ({ intentions, how, route }) => {
     const id = intentionFor;
     setIntentionFor(null);
     if (!id) return;
     const updates = {};
     if (intentions.length) updates.intentions = intentions;
     if (how.length) updates.how = how;
+    if ((route || null) !== (intentionTarget?.route || null)) updates.route = route || null;
     if (!Object.keys(updates).length) return;
     try {
       await updateItem('consumptions', id, updates);
@@ -102,6 +104,7 @@ export function HomeViewRefactored({
     const updates = {};
     if (Array.isArray(lastMarked.intentions) && lastMarked.intentions.length) updates.intentions = [...lastMarked.intentions];
     if (Array.isArray(lastMarked.how) && lastMarked.how.length) updates.how = [...lastMarked.how];
+    if (lastMarked.route) updates.route = lastMarked.route;
     try {
       await updateItem('consumptions', id, updates);
       showToast(t('intention.sameSaved', 'Igual à última vez'), 'success');
@@ -146,6 +149,8 @@ export function HomeViewRefactored({
       const item = { id: genId(), timestamp: d.toISOString(), date: safeToISODate(d), notes: pastNotes || '' };
       const chosen = cleanEntries(pastSubstances);
       if (chosen.length) item.substances = chosen;
+      const route = routeFor(chosen, substanceList);
+      if (route) item.route = route;
       await addConsumption(item);
       setJustLoggedId(item.id);
     } catch {
@@ -654,7 +659,7 @@ export function HomeViewRefactored({
         onDone={closeBar}
       />
     )}
-    <IntentionSheet open={!!intentionFor} onClose={closeSheet} onSave={saveIntention} customOptions={customIntentions} />
+    <IntentionSheet open={!!intentionFor} onClose={closeSheet} onSave={saveIntention} customOptions={customIntentions} initialRoute={intentionTarget?.route || null} />
 
     {showOnboarding && <OnboardingWelcome onDone={dismissOnboarding} />}
 

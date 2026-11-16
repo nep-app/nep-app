@@ -58,7 +58,10 @@ export function useSubstances() {
   // não pede, a não ser que a pessoa ligue isto — ex.: doses medidas em ml).
   const setAskAmount = useCallback((id, on) => updateItem('substances', id, { askAmount: !!on }), [updateItem]);
 
+  // Via habitual desta substância ('' = nenhuma).
+  const setRoute = useCallback((id, route) => updateItem('substances', id, { route: route || null }), [updateItem]);
+
   const defaultEntries = useMemo(() => defaultSubstanceEntries(substances), [substances]);
 
-  return { substances, allSubstances: all, addSubstance, removeSubstance, setDefaultSubstance, setAskAmount, defaultEntries };
+  return { substances, allSubstances: all, addSubstance, removeSubstance, setDefaultSubstance, setAskAmount, setRoute, defaultEntries };
 }

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { safeToISODate } from '../utils/helpers';
 import { diffPermutation, MIN_PER_WINDOW } from '../utils/stats';
 import { INTENTION_KEYS, HOW_KEYS, HOW_GROUPS, OUTCOME_KEYS, intentionLabel, howLabel, hasIntentionData } from './Intention';
+import { ROUTE_KEYS, ROUTE_PT } from '../utils/substances';
 
 // ===== ANÁLISES · INTENÇÃO E "CORREU COMO QUERIAS?" =====
 // - Só aparece se houver dados (intenção, "como" ou avaliação).
@@ -66,7 +67,22 @@ export function IntentionStats({ consumptions }) {
       return row;
     }).filter(r => r.n + r.unsure > 0);
 
-    return { since, total: inRange.length, nEval: evaluated.length, intentionRows, howRows };
+    // Via (vem da substância): só interessa a quem usa mais do que uma via.
+    const withRoute = evaluated.filter(c => ROUTE_KEYS.includes(c.route) && c.evaluation.outcome !== 'unsure');
+    const routeRows = new Set(withRoute.map(c => c.route)).size < 2 ? [] : ROUTE_KEYS.map(k => {
+      const withArr = withRoute.filter(c => c.route === k);
+      const row = { key: k, ...count(evaluated.filter(c => c.route === k)) };
+      if (row.n === 0 && row.unsure === 0) return null;
+      const withoutArr = withRoute.filter(c => c.route !== k);
+      row.without = count(withoutArr);
+      if (withArr.length >= MIN_PER_WINDOW && withoutArr.length >= MIN_PER_WINDOW) {
+        const yes = (c) => (c.evaluation.outcome === 'yes' ? 1 : 0);
+        row.p = diffPermutation(withoutArr.map(yes), withArr.map(yes), PERM_M).p;
+      }
+      return row;
+    }).filter(Boolean);
+
+    return { since, total: inRange.length, nEval: evaluated.length, intentionRows, howRows, routeRows };
   }, [consumptions]);
 
   if (!data) return null;
@@ -133,6 +149,18 @@ export function IntentionStats({ consumptions }) {
             <div className="mb-4">
               <p className="text-sm font-medium text-gray-300 mb-1">{t('intentionStats.byIntention', 'Por intenção')}</p>
               {data.intentionRows.map(r => <Row key={'i-' + r.key} label={intentionLabel(t, r.key)} r={r} />)}
+            </div>
+          )}
+          {data.routeRows.length > 0 && (
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-300 mb-1">{t('intentionStats.byRoute', 'Por via')}</p>
+              {data.routeRows.map(r => (
+                <Row key={'r-' + r.key} label={t(`substances.route.${r.key}`, ROUTE_PT[r.key])} r={r} extra={r.p !== undefined ? (
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {t('intentionStats.compareRoute', { c: r.without.yes, d: r.without.n, verdict: verdict(r.p), defaultValue: 'Pelas outras vias: {{c}} de {{d}} — a diferença {{verdict}}.' })}
+                  </p>
+                ) : null} />
+              ))}
             </div>
           )}
           {data.howRows.length > 0 && (

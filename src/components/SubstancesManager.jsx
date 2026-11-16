@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import * as Icons from './Icons';
 import { useSubstances } from '../hooks/useSubstances';
 import { useData } from '../contexts/DataContext';
-import { MAX_NAME, principalPeriods, principalNameOn, dayBefore } from '../utils/substances';
+import { MAX_NAME, principalPeriods, principalNameOn, dayBefore, ROUTE_KEYS, ROUTE_PT } from '../utils/substances';
 import { getTodayKey, getDateKeyFromItem, formatDate } from '../utils/helpers';
 
 const showDay = (day) => formatDate(`${day}T12:00:00`);
@@ -14,7 +14,7 @@ const showDay = (day) => formatDate(`${day}T12:00:00`);
 // mudar sem querer. Tirar daqui não mexe nos registos antigos.
 export function SubstancesManager() {
   const { t } = useTranslation();
-  const { substances, allSubstances, addSubstance, removeSubstance, setDefaultSubstance, setAskAmount } = useSubstances();
+  const { substances, allSubstances, addSubstance, removeSubstance, setDefaultSubstance, setAskAmount, setRoute } = useSubstances();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const current = substances.find(s => s.isDefault);
@@ -64,7 +64,17 @@ export function SubstancesManager() {
         <ul className="space-y-2">
           {substances.map(s => (
             <li key={s.id} className="flex items-center justify-between gap-2 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2">
-              <span className="text-sm text-white min-w-0 truncate">{s.name}</span>
+              <span className="text-sm text-white min-w-0 truncate flex-1">{s.name}</span>
+              {/* Via habitual: o registo assume esta; muda-se no consumo se for diferente. */}
+              <select
+                value={s.route || ''}
+                onChange={(e) => setRoute(s.id, e.target.value)}
+                aria-label={t('substances.routeLabel', { name: s.name, defaultValue: 'Via habitual de {{name}}' })}
+                className="bg-gray-800 border border-gray-600 text-gray-200 text-xs rounded-lg px-1.5 py-1 max-w-[9.5rem]"
+              >
+                <option value="">{t('substances.routeNone', 'via: —')}</option>
+                {ROUTE_KEYS.map(k => <option key={k} value={k}>{t(`substances.route.${k}`, ROUTE_PT[k])}</option>)}
+              </select>
               <button
                 onClick={() => removeSubstance(s.id)}
                 aria-label={t('substances.remove', { name: s.name })}

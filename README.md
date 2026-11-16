@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v8.6.0**
+**Versão actual: v8.7.0**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
@@ -48,7 +48,8 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
 - **Intenção (opcional):** registar continua a ser um toque; depois aparece
   durante 5 s "＋ intenção" (ou "↺ igual" à última vez). "O que querias?" e,
   à volta do consumo: Onde · À vontade ou às escondidas · Com quem · Mistura ·
-  De onde veio · Corpo. Também se edita no Histórico. Com o interruptor ligado
+  De onde veio · Corpo · Via (a via habitual de cada substância define-se em
+  Config → Substâncias; o consumo assume-a e só se muda quando é diferente). Também se edita no Histórico. Com o interruptor ligado
   (desligado por defeito), ao abrir a app pergunta uma vez "correu como
   querias?" sobre um consumo de há 3–36 h. Fica cifrado e **nunca vai para o
   modo investigação**. Nas Análises → Estado: "X de Y avaliados", por intenção.

@@ -2240,7 +2240,16 @@
     "tagConfirmByDay": "There are {{count}} consumptions without a substance. Tag each one with the main substance of its day? Those that already have a substance stay as they are.",
     "tagDoneByDay": "Done: {{count}} consumptions tagged with the main substance of their day.",
     "askAmountLabel": "Ask the amount for each use of {{name}}",
-    "askAmountHint": "For people who measure each dose (e.g. ml, pills). It shows when editing a use and in \"Log a past use\" — quick log stays a single tap. The amount is saved with the record, but does not count in the mg calculations yet (those come from the scale)."
+    "askAmountHint": "For people who measure each dose (e.g. ml, pills). It shows when editing a use and in \"Log a past use\" — quick log stays a single tap. The amount is saved with the record, but does not count in the mg calculations yet (those come from the scale).",
+    "routeLabel": "Usual route for {{name}}",
+    "routeNone": "route: —",
+    "route": {
+      "snorted": "snorted",
+      "smoked": "smoked / vaped",
+      "oral": "oral",
+      "injected": "injected",
+      "other": "other"
+    }
   },
   "home2": {
     "sleepTitle": "Sleep",
@@ -2376,7 +2385,8 @@
       "company": "With whom",
       "mix": "Mixed with",
       "source": "Where it came from",
-      "body": "Body"
+      "body": "Body",
+      "route": "Route"
     }
   },
   "intentionStats": {
@@ -2390,6 +2400,8 @@
     "breakdown": "yes {{yes}} · sort of {{partly}} · no {{no}}",
     "compare": "In the other uses with this question answered: {{c}} of {{d}} — the difference {{verdict}}.",
     "note": "\"yes\" = it went the way you wanted. Grey: fewer than {{min}} answers, nothing is said yet. Uses without an answer are left out — the app doesn't guess. No intention is better than another: this only shows what happened.",
-    "unsure": "not sure {{n}}"
+    "unsure": "not sure {{n}}",
+    "byRoute": "By route",
+    "compareRoute": "By the other routes: {{c}} of {{d}} — the difference {{verdict}}."
   }
 }

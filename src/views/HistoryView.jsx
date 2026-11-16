@@ -15,6 +15,7 @@ import { DayMarksPanel } from '../components/ui/DayMarksPanel';
 import { EMOTION_EN } from '../constants/emotions';
 import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 import { intentionLabel, howLabel, outcomeLabel } from '../components/Intention';
+import { ROUTE_PT } from '../utils/substances';
 
 const { getDateRangeForPeriod, filterByDateRange, getPeriodLabel } = analyticsService;
 
@@ -1808,7 +1809,7 @@ export function HistoryView({
                                                                                         {/* Intenção / como / correu como querias (opcionais, cifrados como o resto). */}
                                                                                         {((c.intentions?.length || 0) + (c.how?.length || 0) > 0 || (c.evaluation && c.evaluation.outcome !== 'dismissed')) && (
                                                                                             <div className="text-xs mt-1 text-gray-400">
-                                                                                                {[...(c.intentions || []).map(k => intentionLabel(t, k)), ...(c.how || []).map(k => howLabel(t, k))].join(' · ')}
+                                                                                                {[...(c.intentions || []).map(k => intentionLabel(t, k)), ...(c.how || []).map(k => howLabel(t, k)), ...(c.route ? [t(`substances.route.${c.route}`, ROUTE_PT[c.route] || c.route)] : [])].join(' · ')}
                                                                                                 {c.evaluation && c.evaluation.outcome !== 'dismissed' && <> {(c.intentions?.length || c.how?.length) ? ' · ' : ''}{t('intention.historyOutcome', 'correu como querias:')} {outcomeLabel(t, c.evaluation.outcome)}</>}
                                                                                             </div>
                                                                                         )}

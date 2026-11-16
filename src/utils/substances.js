@@ -105,3 +105,17 @@ export const countedConsumptions = (consumptions, substances) => {
   if (periods.length === 0) return consumptions || [];
   return (consumptions || []).filter(c => countsForPrincipal(c, principalNameOn(periods, getDateKeyFromItem(c))));
 };
+
+// ===== VIA (16-11-2026) =====
+// Cada substância pode ter a sua via habitual (Config → Substâncias). Ao
+// registar, o consumo fica com a via da primeira substância que a tenha
+// (campo `route`). Muda-se no consumo só quando é diferente.
+export const ROUTE_KEYS = ['snorted', 'smoked', 'oral', 'injected', 'other'];
+export const ROUTE_PT = { snorted: 'snifada', smoked: 'fumada / vaporizada', oral: 'oral', injected: 'injetada', other: 'outra' };
+export const routeFor = (entries, list) => {
+  for (const e of entries || []) {
+    const sub = (list || []).find(x => sameName(x?.name, e?.name));
+    if (sub && ROUTE_KEYS.includes(sub.route)) return sub.route;
+  }
+  return null;
+};
