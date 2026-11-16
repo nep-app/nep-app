@@ -378,7 +378,7 @@
     "layoutCurrent": "The usual one",
     "screenTitle": "Home, colours & notifications",
     "askOutcome": "Ask later if it went the way you wanted",
-    "askOutcomeDesc": "Between 3 and 36 hours after a use, a quiet card shows up on Home: \"did it go the way you wanted?\". Answer or dismiss it. No notifications, nothing left pending."
+    "askOutcomeDesc": "Between 3 and 36 hours after a use where you marked an intention, a discreet card shows on Home: «You wanted: … — did it go as you wanted?». Uses without an intention aren't asked about. Answer or dismiss. No notifications, nothing left pending."
   },
   "modals": {
     "dailyLog": {
@@ -2349,7 +2349,9 @@
     "optsShow": "show",
     "optsHide": "hide",
     "optsHint": "Leave the name blank to go back to the original.",
-    "optsRename": "Name for"
+    "optsRename": "Name for",
+    "youWanted": "You wanted:",
+    "howShort": "How:"
   },
   "intentionStats": {
     "title": "Intention · did it go the way you wanted?",

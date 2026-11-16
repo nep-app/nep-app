@@ -253,6 +253,9 @@ export const pickOutcomeCandidate = (consumptions, now = Date.now()) => {
   let best = null, bestT = -Infinity;
   (consumptions || []).forEach(c => {
     if (!c || c.deleted || c.evaluation !== undefined) return;
+    // Só se pergunta "correu como querias?" quando se sabe O QUE querias
+    // (16-11-2026, Teresa: "se não sei o que registei, como sei se cumpriu?").
+    if (!Array.isArray(c.intentions) || c.intentions.length === 0) return;
     const ts = new Date(c.timestamp || c.createdAt).getTime();
     if (!Number.isFinite(ts)) return;
     const h = (now - ts) / 3600000;
@@ -303,11 +306,14 @@ export function OutcomeCard({ consumptions, onSave }) {
   const ints = (Array.isArray(candidate.intentions) ? candidate.intentions : []).map(k => intentionLabel(t, k));
   return (
     <div className="bg-gray-800/60 border border-gray-700 rounded-2xl p-4">
-      <p className="text-xs text-gray-400">
-        {whenText(t, i18n.language, candidate.timestamp || candidate.createdAt)}
-        {ints.length > 0 && <span className="text-gray-300"> · {ints.join(' · ')}</span>}
+      <p className="text-xs text-gray-400">{whenText(t, i18n.language, candidate.timestamp || candidate.createdAt)}</p>
+      <p className="text-sm text-gray-200 mt-1">
+        {t('intention.youWanted', 'Querias:')} <span className="font-semibold text-white">{ints.join(' · ')}</span>
       </p>
-      <p className="text-sm font-semibold text-white mt-1">{t('intention.askTitle', 'Correu como querias?')}</p>
+      {Array.isArray(candidate.how) && candidate.how.length > 0 && (
+        <p className="text-xs text-gray-400 mt-0.5">{t('intention.howShort', 'Como:')} {candidate.how.map(k => howLabel(t, k)).join(' · ')}</p>
+      )}
+      <p className="text-sm font-semibold text-white mt-2">{t('intention.askTitle', 'Correu como querias?')}</p>
       <div className="grid grid-cols-2 gap-2 mt-3">
         {OUTCOME_KEYS.map(k => (
           <button key={k} type="button" onClick={() => finish(k)} className="py-2 rounded-xl text-sm font-semibold bg-gray-700/70 border border-gray-600 text-gray-100 hover:bg-gray-700">
