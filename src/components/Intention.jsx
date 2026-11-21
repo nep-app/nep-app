@@ -103,11 +103,29 @@ export const hasIntentionData = (c) => !!c && (
 
 // Intenções escritas à mão ("＋ outra") já usadas, para voltarem a aparecer
 // como botão. Ordem alfabética (fixa), no máximo 6.
+// Intenções escritas à mão: ficam numa lista própria neste aparelho (pela
+// ordem em que foram criadas) + as que aparecem nos consumos (para não se
+// perderem num aparelho novo). Antes só se mostravam 6, por ordem alfabética,
+// e a 7.ª fazia desaparecer outra dos botões (21-11-2026).
+const CUSTOM_KEY = 'nep_intention_customs';
+const readCustoms = () => {
+  try { const v = JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]'); return Array.isArray(v) ? v.filter(x => typeof x === 'string' && x) : []; }
+  catch { return []; }
+};
+export const rememberCustomIntention = (v) => {
+  try {
+    const list = readCustoms();
+    if (!list.includes(v)) localStorage.setItem(CUSTOM_KEY, JSON.stringify([...list, v]));
+  } catch { /* best-effort */ }
+};
 export const customIntentionsFrom = (consumptions) => {
-  const set = new Set();
-  (consumptions || []).forEach(c => (Array.isArray(c?.intentions) ? c.intentions : [])
-    .forEach(k => { if (typeof k === 'string' && k && !INTENTION_PT[k]) set.add(k); }));
-  return [...set].sort((a, b) => a.localeCompare(b)).slice(0, 6);
+  const out = [...readCustoms()];
+  const seen = new Set(out);
+  // Dos consumos: mais antigos primeiro, para a ordem ser a de criação.
+  const sorted = [...(consumptions || [])].sort((a, b) => String(a?.timestamp || '').localeCompare(String(b?.timestamp || '')));
+  sorted.forEach(c => (Array.isArray(c?.intentions) ? c.intentions : [])
+    .forEach(k => { if (typeof k === 'string' && k && !INTENTION_PT[k] && !seen.has(k)) { seen.add(k); out.push(k); } }));
+  return out;
 };
 
 const chipCls = (on) => 'text-[13px] px-3 py-1.5 rounded-full border transition-colors ' + (on
@@ -130,6 +148,7 @@ export function IntentionPicker({ intentions = [], how = [], route = null, onCha
 
   const addCustom = () => {
     const v = sanitizeText(draft).slice(0, MAX_CUSTOM);
+    if (v) rememberCustomIntention(v);
     if (v && !ints.includes(v)) emit({ intentions: [...ints, v], how: hows });
     setDraft(''); setWriting(false);
   };
