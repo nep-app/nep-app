@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../../i18n';
-import { getEmotionCategory, EMOTION_EN } from '../../constants/emotions';
+import { getEmotionCategory, EMOTION_EN, applyWordForm } from '../../constants/emotions';
 import { safeToISODate } from '../../utils/helpers';
 import { diffPermutation, MIN_PER_WINDOW, rangePermutation } from '../../utils/stats';
 import { IntentionStats } from '../../components/IntentionStats';
@@ -33,7 +33,7 @@ export const AnalysesEstadoTab = React.memo(function AnalysesEstadoTab({
 }) {
     const { t, i18n } = useTranslation();
     // TRIGGER_EN covers old-format emotions stored without emoji prefix
-    const translateEmotion = (emotion) => i18n.language === 'en' ? (EMOTION_EN[emotion] || TRIGGER_EN[emotion] || emotion) : emotion;
+    const translateEmotion = (emotion) => i18n.language === 'en' ? (EMOTION_EN[emotion] || TRIGGER_EN[emotion] || emotion) : applyWordForm(emotion);
 
     const TRIGGER_EN = {
         'Stress': 'Stress', 'Ansiedade': 'Anxiety', 'Solidão': 'Loneliness',

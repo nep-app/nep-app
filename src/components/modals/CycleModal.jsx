@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { toLocalDatetimeInput } from '../../utils/helpers';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
+import { Scale10 } from '../ui/Scale10';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const CycleModal = ({
@@ -12,7 +13,7 @@ export const CycleModal = ({
   setCycleForm,
   onSubmit
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
 
   // A EDITAR: encher o formulário com o ciclo UMA vez, ao abrir. Antes este
@@ -114,43 +115,17 @@ export const CycleModal = ({
           </div>
           {/* ☀️ COMO ACORDASTE? (só ao registar um ciclo NOVO; opcional)
               Pedido da Teresa: dizer logo ao acordar como está, sem ter de ir ao
-              Bem-estar ("senão não vou"). Os mesmos botões do bem-estar rápido
-              (2·4·6·8·10). Se tocar, o App grava também um registo de bem-estar
-              à hora de acordar (submitCycle). Se não tocar, não grava nada. */}
-          {!editingCycle && (() => {
-            const en = i18n.language === 'en';
-            const rows = [
-              { key: 'wakeMood', title: en ? 'Mood' : 'Humor', rgb: '169 139 240', words: en ? ['very low', 'low', 'so-so', 'good', 'very good'] : ['muito em baixo', 'em baixo', 'assim-assim', 'bem', 'muito bem'] },
-              { key: 'wakeEnergy', title: en ? 'Energy' : 'Energia', rgb: '110 193 255', words: en ? ['none', 'little', 'medium', 'some', 'lots'] : ['nenhuma', 'pouca', 'média', 'alguma', 'muita'] },
-            ];
-            return (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-300">☀️ {t('modals.cycle.wakeTitle', 'Como acordaste?')} <span className="text-xs text-gray-400">({t('modals.cycle.wakeOptional', 'opcional — fica também no bem-estar')})</span></p>
-                {rows.map(row => {
-                  const cur = cycleForm[row.key] != null && cycleForm[row.key] !== '' ? Number(cycleForm[row.key]) : null;
-                  return (
-                    <div key={row.key}>
-                      <div className="text-xs text-gray-400 mb-1">{row.title}</div>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {row.words.map((w, i) => {
-                          const v = 2 + i * 2;
-                          const on = cur === v;
-                          return (
-                            <button key={w} type="button" aria-pressed={on}
-                              onClick={() => setCycleForm({ ...cycleForm, [row.key]: on ? '' : v })}
-                              className={'rounded-2xl border pt-2 pb-1.5 px-0.5 flex flex-col items-center gap-1 transition-colors ' + (on ? 'bg-purple-600 border-purple-300 text-white' : 'bg-gray-700/40 border-gray-600 text-gray-300 hover:border-gray-400')}>
-                              <span className="w-4 h-4 rounded-full" style={{ background: `rgb(${row.rgb} / ${[0.3, 0.45, 0.6, 0.8, 1][i]})` }} />
-                              <span className="text-[10px] leading-tight text-center">{w}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })()}
+              Bem-estar ("senão não vou"). A mesma escala de 1 a 10 do bem-estar
+              rápido (Scale10). Se tocar, o App grava também um registo de
+              bem-estar à hora de acordar (submitCycle). Se não tocar, não grava
+              nada; tocar outra vez no mesmo número desmarca. */}
+          {!editingCycle && (
+            <div className="space-y-3">
+              <p className="text-sm font-medium text-gray-300">☀️ {t('modals.cycle.wakeTitle', 'Como acordaste?')} <span className="text-xs text-gray-400">({t('modals.cycle.wakeOptional', 'opcional — fica também no bem-estar')})</span></p>
+              <Scale10 kind="mood" value={cycleForm.wakeMood} onChange={(v) => setCycleForm(f => ({ ...f, wakeMood: v == null ? '' : v }))} />
+              <Scale10 kind="energy" value={cycleForm.wakeEnergy} onChange={(v) => setCycleForm(f => ({ ...f, wakeEnergy: v == null ? '' : v }))} />
+            </div>
+          )}
           {/* Os "gatilhos" saíram do ciclo (15-11-2026, decidido com a Teresa):
               linguagem de prevenção de recaída, repetiam intenções/emoções/sintomas
               e quase não eram usados. Os ciclos antigos guardam os que tinham

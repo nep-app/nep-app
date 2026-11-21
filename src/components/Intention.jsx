@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { sanitizeText } from '../utils/validation';
 import { safeToISODate, getTodayKey } from '../utils/helpers';
 import { ROUTE_KEYS, ROUTE_PT } from '../utils/substances';
+import { applyWordForm } from '../constants/emotions';
 
 // ===== INTENÇÃO E "CORREU COMO QUERIAS?" =====
 // Campos novos NO PRÓPRIO consumo (cifrados com o resto — não são índices em
@@ -86,7 +87,8 @@ const isHidden = (group, key) => readIntentionPrefs().hidden.includes(prefId(gro
 export const intentionLabel = (t, key) => customName('i', key) || (INTENTION_PT[key]
   ? t(`intention.opt.${key}`, INTENTION_PT[key])
   : String(key)); // texto escrito pela pessoa ("＋ outra")
-export const howLabel = (t, key) => customName('h', key) || (HOW_PT[key] ? t(`intention.how.${key}`, HOW_PT[key]) : String(key));
+// "sozinha/o", "acompanhada/o" no género escolhido nas Definições (só visual).
+export const howLabel = (t, key) => customName('h', key) || (HOW_PT[key] ? applyWordForm(t(`intention.how.${key}`, HOW_PT[key])) : String(key));
 export const outcomeLabel = (t, key) => t(`intention.outcome.${key}`, OUTCOME_PT[key] || key);
 
 // Interruptor das Definições — DESLIGADO por defeito.

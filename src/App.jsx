@@ -1526,6 +1526,7 @@ export function AuthenticatedApp() {
                                 emotionsForm={emotionsForm}
                                 setEmotionsForm={setEmotionsForm}
                                 onSubmit={submitEmotions}
+                                wellbeingLogs={wellbeingLogs}
                             />
                         </Suspense>
 

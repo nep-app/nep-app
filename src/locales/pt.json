@@ -378,7 +378,12 @@
     "layoutCurrent": "A de sempre",
     "screenTitle": "Início, cores e notificações",
     "askOutcome": "Perguntar depois se correu como querias",
-    "askOutcomeDesc": "Entre 3 e 36 horas depois de um consumo em que marcaste uma intenção, aparece um cartão discreto no Início: «Querias: … — correu como querias?». Consumos sem intenção não são perguntados. Respondes ou dispensas. Sem notificações e nada fica por responder."
+    "askOutcomeDesc": "Entre 3 e 36 horas depois de um consumo em que marcaste uma intenção, aparece um cartão discreto no Início: «Querias: … — correu como querias?». Consumos sem intenção não são perguntados. Respondes ou dispensas. Sem notificações e nada fica por responder.",
+    "wordFormTitle": "Como queres que a app fale de ti",
+    "wordFormA": "cansada",
+    "wordFormO": "cansado",
+    "wordFormX": "cansad@",
+    "wordFormDesc": "Nas emoções e nas intenções. «cansad@» mostra as duas formas (cansada/o), como até agora. Só muda o que lês: os teus registos ficam iguais."
   },
   "modals": {
     "dailyLog": {
@@ -2403,5 +2408,11 @@
     "unsure": "não sei {{n}}",
     "byRoute": "Por via",
     "compareRoute": "Pelas outras vias: {{c}} de {{d}} — a diferença {{verdict}}."
+  },
+  "emotionPicker": {
+    "title": "Emoções (opcional)",
+    "yours": "As tuas",
+    "fineHint": "Se quiseres, a palavra exata:",
+    "titleRequired": "Como te sentes?"
   }
 }

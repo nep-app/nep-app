@@ -378,7 +378,12 @@
     "layoutCurrent": "The usual one",
     "screenTitle": "Home, colours & notifications",
     "askOutcome": "Ask later if it went the way you wanted",
-    "askOutcomeDesc": "Between 3 and 36 hours after a use where you marked an intention, a discreet card shows on Home: «You wanted: … — did it go as you wanted?». Uses without an intention aren't asked about. Answer or dismiss. No notifications, nothing left pending."
+    "askOutcomeDesc": "Between 3 and 36 hours after a use where you marked an intention, a discreet card shows on Home: «You wanted: … — did it go as you wanted?». Uses without an intention aren't asked about. Answer or dismiss. No notifications, nothing left pending.",
+    "wordFormTitle": "How the app talks about you (Portuguese)",
+    "wordFormA": "cansada",
+    "wordFormO": "cansado",
+    "wordFormX": "cansad@",
+    "wordFormDesc": "Only matters in Portuguese, where words like “tired” change with gender. «cansad@» shows both forms (cansada/o). It only changes what you read: your entries stay the same."
   },
   "modals": {
     "dailyLog": {
@@ -2403,5 +2408,11 @@
     "unsure": "not sure {{n}}",
     "byRoute": "By route",
     "compareRoute": "By the other routes: {{c}} of {{d}} — the difference {{verdict}}."
+  },
+  "emotionPicker": {
+    "title": "Emotions (optional)",
+    "yours": "Yours",
+    "fineHint": "If you like, the exact word:",
+    "titleRequired": "How do you feel?"
   }
 }

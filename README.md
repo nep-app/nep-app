@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v8.7.1**
+**Versão actual: v8.8.0**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
@@ -32,10 +32,27 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
 - **Sono** (hora de deitar, horas dormidas, "não dormi"; os "gatilhos" saíram
   na v8.4.1 — os ciclos antigos guardam os seus). O ciclo conta para o
   dia em que se acorda. Ao criar o ciclo, "☀️ Como acordaste?" (opcional): humor
-  e energia num toque, gravados também como bem-estar dessa manhã.
-- **Bem-estar** em dois toques (humor e energia — "Botões" ou "Quadrado") e,
-  em "mais detalhes", água, comida, sesta, social, sintomas, notas.
-- **Emoções**, **reflexões** e **pensamentos**.
+  e energia na mesma escala de 1 a 10 do bem-estar, gravados também como
+  bem-estar dessa manhã.
+- **Bem-estar** rápido: humor e energia numa escala de **1 a 10** (um toque por
+  linha, todos os números à vista, palavras só nas pontas; ao lado aparece a
+  palavra do número escolhido, ex. "6 · assim-assim"; tocar outra vez desmarca —
+  sem toque fica em branco, nunca se inventa um valor). Em "mais detalhes":
+  data, água, comida, sesta, social, sintomas, notas.
+- **Emoções** (no bem-estar e no registo só de emoções): **9 famílias** em
+  grelha (bem · calma · com energia · em baixo · ansiosa · irritada · cansada ·
+  desligada · craving); tocar na família já conta, e por baixo aparecem as
+  palavras exatas dessa família, se se quiser. Por cima, **"As tuas"**: as 4
+  mais escolhidas nos teus registos (só aparece quando há dados). As palavras
+  gravam-se exatamente como antes, por isso os registos antigos e as Análises
+  não mudam; uma família sem palavra exata grava o seu nome (as novas: "😊 Bem",
+  "⚡ Com energia", "😢 Em baixo", "🔌 Desligada/o"; calma, ansiosa, irritada,
+  cansada e craving gravam a palavra que já existia). Cores neutras: nenhuma
+  família é "boa" ou "má".
+- **Como a app fala de ti** (Definições): "cansada" · "cansado" · "cansad@"
+  (= "cansada/o", como antes). Muda só o que se lê nas emoções e nas intenções;
+  os dados gravam sempre a mesma palavra.
+- **Reflexões** e **pensamentos**.
 - **Uma pausa antes** (antigo "Surfar o impulso"): escolhe-se **meta a meta**. Ao criar ou editar uma meta
   de consumo há a opção "Quando passares esta meta, oferecer exercícios para
   adiar" (desligada nas metas novas). Ao registar um consumo que passe uma meta
@@ -171,7 +188,7 @@ src/
 │   ├── modals/          # Modais (consumo, ciclo, emoções, reflexão, urge surfing…)
 │   └── ui/              # Componentes reutilizáveis
 ├── constants/
-│   └── emotions.js      # Lista de emoções (PT/EN)
+│   └── emotions.js      # Emoções (PT/EN), famílias e género das palavras
 ├── contexts/
 │   ├── AuthContext.jsx        # PIN, autenticação, bloqueio
 │   ├── DataContext.jsx        # Dados da app

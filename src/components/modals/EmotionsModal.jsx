@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import * as Icons from '../Icons';
-import { EMOTION_CATEGORIES, EMOTION_EN } from '../../constants/emotions';
+import { EmotionPicker } from '../ui/EmotionPicker';
 import { useModalKeyboard } from '../../hooks/useModalKeyboard';
 
 export const EmotionsModal = ({
@@ -9,10 +9,10 @@ export const EmotionsModal = ({
   onClose,
   emotionsForm,
   setEmotionsForm,
-  onSubmit
+  onSubmit,
+  wellbeingLogs = []
 }) => {
-  const { t, i18n } = useTranslation();
-  const displayEmotion = (e) => (i18n.language === 'en' && EMOTION_EN[e]) ? EMOTION_EN[e] : e;
+  const { t } = useTranslation();
   useModalKeyboard(isOpen, onClose, onSubmit);
 
   if (!isOpen) return null;
@@ -27,17 +27,9 @@ export const EmotionsModal = ({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const toggleEmotion = (emotion) => {
-    if (emotionsForm.emotions.includes(emotion)) {
-      setEmotionsForm({ ...emotionsForm, emotions: emotionsForm.emotions.filter(em => em !== emotion) });
-    } else {
-      setEmotionsForm({ ...emotionsForm, emotions: [...emotionsForm.emotions, emotion] });
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[60]" onClick={onClose}>
-      <div className="bg-gray-800 rounded-2xl p-6 max-w-xl w-full max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-xl font-bold text-white">{t('modals.emotions.title')}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-300">
@@ -55,60 +47,14 @@ export const EmotionsModal = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="text-md font-semibold mb-3 text-red-400">{t('modals.emotions.negativeLabel')}</h4>
-              <div className="space-y-2">
-                {EMOTION_CATEGORIES.negative.map(emotion => (
-                  <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={emotionsForm.emotions.includes(emotion)}
-                      onChange={() => toggleEmotion(emotion)}
-                      className="rounded text-red-600 focus:ring-red-500"
-                    />
-                    <span className="text-sm text-gray-300">{displayEmotion(emotion)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-md font-semibold mb-3 text-green-400">{t('modals.emotions.positiveLabel')}</h4>
-              <div className="space-y-2">
-                {EMOTION_CATEGORIES.positive.map(emotion => (
-                  <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={emotionsForm.emotions.includes(emotion)}
-                      onChange={() => toggleEmotion(emotion)}
-                      className="rounded text-green-600 focus:ring-green-500"
-                    />
-                    <span className="text-sm text-gray-300">{displayEmotion(emotion)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {EMOTION_CATEGORIES.neutral.length > 0 && (
-            <div className="pt-4 border-t border-gray-700">
-              <h4 className="text-md font-semibold mb-3 text-gray-400">{t('modals.emotions.otherLabel')}</h4>
-              <div className="grid grid-cols-2 gap-2">
-                {EMOTION_CATEGORIES.neutral.map(emotion => (
-                  <label key={emotion} className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={emotionsForm.emotions.includes(emotion)}
-                      onChange={() => toggleEmotion(emotion)}
-                      className="rounded text-gray-600 focus:ring-gray-500"
-                    />
-                    <span className="text-sm text-gray-300">{displayEmotion(emotion)}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* O mesmo seletor do Bem-estar (famílias + "As tuas"); cores neutras.
+              Grava as mesmas strings de sempre. */}
+          <EmotionPicker
+            value={emotionsForm.emotions || []}
+            onChange={(emotions) => setEmotionsForm(f => ({ ...f, emotions }))}
+            logs={wellbeingLogs}
+            title={t('emotionPicker.titleRequired')}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">{t('modals.emotions.notesLabel')}</label>
