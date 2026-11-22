@@ -125,22 +125,23 @@ export const FAMILY_OF = (() => {
 export const FAMILY_VALUES = EMOTION_FAMILIES.map(f => f.value);
 
 // ===== GÉNERO DAS PALAVRAS (só visual) =====
-// 'a' → cansada · 'o' → cansado · 'x' → como está guardado ("Cansado/a").
+// 'a' → cansada · 'o' → cansado · 'e' → cansade (neutro, pedido da Teresa
+// 22-11-2026) · sem escolha → como está guardado ("cansada/o").
 // Os dados gravam SEMPRE a string original; isto só muda o que se lê.
 export const WORD_FORM_KEY = 'nep_word_form';
 export const getWordForm = () => {
   try {
     const v = localStorage.getItem(WORD_FORM_KEY);
-    return v === 'a' || v === 'o' ? v : 'x';
+    return v === 'a' || v === 'o' || v === 'e' ? v : 'x';
   } catch { return 'x'; }
 };
 export const setWordForm = (v) => {
   try { localStorage.setItem(WORD_FORM_KEY, v); } catch { /* fica só nesta sessão */ }
   try { window.dispatchEvent(new Event('nep-word-form')); } catch { /* sem window */ }
 };
-// "Cansado/a" → "Cansada" (a) / "Cansado" (o); "Produtiva/o" idem.
+// "Cansado/a" → "Cansada" (a) / "Cansado" (o) / "Cansade" (e); "Produtiva/o" idem.
 export const applyWordForm = (text, form = getWordForm()) => {
-  if (!text || (form !== 'a' && form !== 'o')) return text;
+  if (!text || (form !== 'a' && form !== 'o' && form !== 'e')) return text;
   return String(text).replace(/([A-Za-zÀ-ÿ]*)([oa])\/([oa])(?![A-Za-zÀ-ÿ])/g, (_, stem) => stem + form);
 };
 

@@ -1,0 +1,1 @@
+import{r as e}from"./vendor-react-C_6PPKRX.js";import{aG as r}from"./index-B45E5noe.js";const t=()=>{const[t,n]=e.useState(r);return e.useEffect(()=>{const e=()=>n(r());return window.addEventListener("nep-word-form",e),window.addEventListener("storage",e),()=>{window.removeEventListener("nep-word-form",e),window.removeEventListener("storage",e)}},[]),t};export{t as u};

@@ -3,7 +3,7 @@
 > Aplicação web de redução de danos para consumo de substâncias psicoativas
 
 <!-- Fonte única da versão: package.json. Atualizar lá; este número deve acompanhar. -->
-**Versão actual: v8.8.0**
+**Versão actual: v8.8.1**
 
 A app começou como um tracker simples e evoluiu para uma plataforma completa de redução de danos — agnóstica à substância, que funciona para estimulantes, dissociativos, empatogénios ou qualquer outra substância que o utilizador queira monitorizar.
 
@@ -49,7 +49,7 @@ Barra de baixo: **Início · Padrões · Análises · Histórico · Config**.
   "⚡ Com energia", "😢 Em baixo", "🔌 Desligada/o"; calma, ansiosa, irritada,
   cansada e craving gravam a palavra que já existia). Cores neutras: nenhuma
   família é "boa" ou "má".
-- **Como a app fala de ti** (Definições): "cansada" · "cansado" · "cansad@"
+- **Como a app fala de ti** (Definições): "cansada" · "cansado" · "cansade"
   (= "cansada/o", como antes). Muda só o que se lê nas emoções e nas intenções;
   os dados gravam sempre a mesma palavra.
 - **Reflexões** e **pensamentos**.

@@ -13,7 +13,7 @@ import { useDemoPrefs, saveAppLayout } from '../demo/DemoPrefsContext';
 import { setWordForm } from '../constants/emotions';
 import { useWordForm } from '../hooks/useWordForm';
 
-// Género das palavras: "cansada" · "cansado" · "cansad@" (a app mostra as duas
+// Género das palavras: "cansada" · "cansado" · "cansade" (a app mostra as duas
 // formas, "cansada/o", como até agora). Só muda o que se lê; os dados gravam
 // sempre a mesma palavra.
 const WordFormSettings = () => {
@@ -22,7 +22,7 @@ const WordFormSettings = () => {
     const opts = [
         ['a', t('settings.wordFormA', 'cansada')],
         ['o', t('settings.wordFormO', 'cansado')],
-        ['x', t('settings.wordFormX', 'cansad@')],
+        ['e', t('settings.wordFormE', 'cansade')],
     ];
     return (
         <div>
@@ -33,7 +33,7 @@ const WordFormSettings = () => {
                         className={'px-3.5 py-1.5 rounded-full transition-colors ' + (form === id ? 'bg-purple-600 text-white font-semibold' : 'text-gray-300')}>{lbl}</button>
                 ))}
             </div>
-            <p className="text-xs text-gray-400 mt-1.5">{t('settings.wordFormDesc', 'Nas emoções e nas intenções. «cansad@» mostra as duas formas (cansada/o). Só muda o que lês: os teus registos ficam iguais.')}</p>
+            <p className="text-xs text-gray-400 mt-1.5">{t('settings.wordFormDesc', 'Nas emoções e nas intenções. Sem escolher nada, a app mostra as duas formas (cansada/o). Só muda o que lês: os teus registos ficam iguais.')}</p>
         </div>
     );
 };
@@ -370,7 +370,7 @@ export const SettingsView = ({
                         <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${askOutcomeOn ? 'translate-x-7' : 'translate-x-1'}`} />
                     </button>
                 </div>
-                {/* Como a app fala de ti (cansada · cansado · cansad@). Só visual:
+                {/* Como a app fala de ti (cansada · cansado · cansade). Só visual:
                     os registos gravam sempre a palavra original. */}
                 <div className="border-t border-gray-700 my-4" />
                 <WordFormSettings />

@@ -382,8 +382,8 @@
     "wordFormTitle": "How the app talks about you (Portuguese)",
     "wordFormA": "cansada",
     "wordFormO": "cansado",
-    "wordFormX": "cansad@",
-    "wordFormDesc": "Only matters in Portuguese, where words like “tired” change with gender. «cansad@» shows both forms (cansada/o). It only changes what you read: your entries stay the same."
+    "wordFormE": "cansade",
+    "wordFormDesc": "Only matters in Portuguese, where words like “tired” change with gender (cansada · cansado · cansade). With nothing chosen, both forms show (cansada/o). It only changes what you read: your entries stay the same."
   },
   "modals": {
     "dailyLog": {
