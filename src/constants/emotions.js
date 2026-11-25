@@ -8,7 +8,7 @@ export const EMOTIONS_LIST = [
   '😊 Divertido/a', '🔌 Desconectado/a', '🔥 Com craving', '✨ Resiliente',
   '🌈 Otimista', '😩 Overwhelmed', '🤝 Apoiado/a', '🧘 Em paz',
   // v8.9.0 (25-11-2026): palavras que faltavam
-  '🙂 Contente', '🫂 Ligado/a às pessoas', '🛋️ Relaxado/a', '😮‍💨 Aliviado/a', '🛡️ Seguro/a', '🎯 Focado/a', '🎨 Criativo/a', '🤩 Eufórico/a', '😥 Desanimado/a', '🕳️ Vazio/a', '💔 Magoado/a', '🫣 Com vergonha', '😟 Preocupado/a', '😬 Nervoso/a', '😨 Com medo', '🌀 Agitado/a', '👀 Paranoico/a', '😠 Zangado/a', '⏳ Impaciente', '😒 Ressentido/a', '🪫 Exausto/a', '😪 Sonolento/a', '🫥 Entorpecido/a', '🥱 Aborrecido/a', '😶 Indiferente', '🔥 Vontade forte', '🕯️ Vontade leve'
+  '🙂 Contente', '🫂 Ligado/a às pessoas', '🛋️ Relaxado/a', '😮‍💨 Aliviado/a', '🛡️ Seguro/a', '🎯 Focado/a', '🎨 Criativo/a', '🤩 Eufórico/a', '😥 Desanimado/a', '🕳️ Vazio/a', '💔 Magoado/a', '🫣 Com vergonha', '😟 Preocupado/a', '😬 Nervoso/a', '😨 Com medo', '🌀 Agitado/a', '👀 Paranoico/a', '😠 Zangado/a', '⏳ Impaciente', '😒 Ressentido/a', '🪫 Exausto/a', '😪 Sonolento/a', '🫥 Entorpecido/a', '🥱 Aborrecido/a', '😶 Indiferente', '🔥 Vontade forte', '🕯️ Vontade leve', '⚙️ Funcional'
 ];
 
 // Categorização de emoções para análise de bem-estar emocional
@@ -21,7 +21,8 @@ export const EMOTION_CATEGORIES = {
     // famílias (v8.8.0)
     '😊 Bem', '⚡ Com energia',
     // v8.9.0
-    '🙂 Contente', '🫂 Ligado/a às pessoas', '🛋️ Relaxado/a', '😮‍💨 Aliviado/a', '🛡️ Seguro/a', '🎯 Focado/a', '🎨 Criativo/a', '🤩 Eufórico/a'
+    '🙂 Contente', '🫂 Ligado/a às pessoas', '🛋️ Relaxado/a', '😮‍💨 Aliviado/a', '🛡️ Seguro/a', '🎯 Focado/a', '🎨 Criativo/a', '🤩 Eufórico/a',
+    '⚙️ Funcional',
   ],
   negative: [
     '😢 Triste', '😰 Ansioso/a', '😤 Irritado/a', '😫 Frustrado/a',
@@ -102,6 +103,7 @@ export const EMOTION_EN = {
   '😶 Indiferente': '😶 Indifferent',
   '🔥 Vontade forte': '🔥 Strong urge',
   '🕯️ Vontade leve': '🕯️ Mild urge',
+  '⚙️ Funcional': '⚙️ Functional',
 };
 
 export const getEmotionCategory = (emotion) => {
@@ -126,7 +128,7 @@ export const getEmotionCategory = (emotion) => {
 // As cores do seletor são neutras: nenhuma família é "boa" ou "má".
 export const EMOTION_FAMILIES = [
   { id: 'bem', emoji: '😊', value: '😊 Bem', pt: 'bem', en: 'good',
-    words: ['😊 Feliz', '🙂 Contente', '😊 Divertido/a', '🌱 Orgulhoso/a', '🌈 Otimista', '🥰 Amado/a', '🫂 Ligado/a às pessoas', '⚡ Okay'] },
+    words: ['😊 Feliz', '🙂 Contente', '😊 Divertido/a', '🌱 Orgulhoso/a', '🌈 Otimista', '🥰 Amado/a', '🫂 Ligado/a às pessoas', '⚡ Okay', '⚙️ Funcional'] },
   { id: 'calma', emoji: '😌', value: '😌 Calmo/a', pt: 'calma/o', en: 'calm',
     words: ['🧘 Em paz', '🛋️ Relaxado/a', '😮‍💨 Aliviado/a', '🙏 Grato/a', '🤝 Apoiado/a', '🛡️ Seguro/a', '✨ Resiliente'] },
   { id: 'energia', emoji: '⚡', value: '⚡ Com energia', pt: 'com energia', en: 'energetic',
