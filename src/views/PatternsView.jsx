@@ -7,7 +7,7 @@ import { useMetrics } from '../contexts/MetricsContext';
 import { useUI } from '../contexts/UIContext';
 import { themeClasses } from '../utils/classNames';
 import { safeToISODate, getTodayKey, subtractDays, getDateKeyFromItem, datesInRange, goalCountsFrom, goalFirstDay, goalTargetForDay, gapCrossesDays, isDayMarkLog, meetsGoal, GOAL_DIRECTION, bedtimeMeetsTarget, isKeepGoal, keepGoalZone, readTolerance, goalToleranceForDay } from '../utils/helpers';
-import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN, applyWordForm } from '../constants/emotions';
+import { getEmotionCategory, EMOTION_CATEGORIES, EMOTION_EN, applyWordForm, emotionLabel } from '../constants/emotions';
 import HeatmapChart from '../components/HeatmapChart';
 import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -2047,7 +2047,7 @@ export function PatternsView({
                                                                                 <div key={idx} className="flex items-center justify-between">
                                                                                     <div className="flex items-center gap-2">
                                                                                         <span className={'text-xs font-bold text-gray-500'}>#{idx + 1}</span>
-                                                                                        <span className={'text-sm text-gray-200'}>{i18n.language === 'en' ? (EMOTION_EN[item.emotion] || item.emotion) : applyWordForm(item.emotion)}</span>
+                                                                                        <span className={'text-sm text-gray-200'}>{emotionLabel(item.emotion, i18n.language === 'en' ? 'en' : 'pt')}</span>
                                                                                     </div>
                                                                                     <span className={'text-xs px-2 py-0.5 rounded bg-gray-800/50 text-gray-400'}>{item.count}×</span>
                                                                                 </div>

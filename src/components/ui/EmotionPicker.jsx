@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EMOTION_FAMILIES, FAMILY_OF, EMOTION_EN, applyWordForm } from '../../constants/emotions';
+import { EMOTION_FAMILIES, FAMILY_OF, EMOTION_EN, applyWordForm, emotionLabel } from '../../constants/emotions';
 import { useWordForm } from '../../hooks/useWordForm';
 
 // Seletor de emoções (v8.8.0): 9 famílias em grelha 3×3 + por cima "As tuas"
@@ -20,13 +20,11 @@ export const EmotionPicker = ({ value = [], onChange, logs = [], title }) => {
   const { t, i18n } = useTranslation();
   const en = i18n.language === 'en';
   const form = useWordForm();
-  // Famílias tocadas NESTA vez (na caixa ou em "As tuas"). Só nestas a palavra
-  // fina substitui o valor da família — um registo antigo que já tinha, p. ex.,
-  // "Cansado/a" + "Apático/a" não perde nada ao ser editado.
+  // Famílias tocadas NESTA vez (na caixa ou em "As tuas").
   const picked = useRef(new Set());
   const chosen = Array.isArray(value) ? value : [];
 
-  const wordLabel = (e) => lowerFirst(strip(en ? (EMOTION_EN[e] || e) : applyWordForm(e, form)));
+  const wordLabel = (e) => lowerFirst(strip(emotionLabel(e, en ? 'en' : 'pt', form)));
   const famLabel = (f) => (en ? f.en : applyWordForm(f.pt, form));
   const labelOf = (e) => {
     const f = FAMILY_OF[e];
@@ -48,15 +46,14 @@ export const EmotionPicker = ({ value = [], onChange, logs = [], title }) => {
   const tapWord = (w) => {
     const f = FAMILY_OF[w];
     if (chosen.includes(w)) {
-      let next = chosen.filter(e => e !== w);
-      // Tirou a última palavra fina: a família continua escolhida se foi tocada.
-      if (f && picked.current.has(f.id) && !f.words.some(x => next.includes(x)) && !next.includes(f.value)) {
-        next = [...next, f.value];
-      }
-      onChange(next);
+      // Tirar a palavra fina não tira a família (continua escolhida).
+      onChange(chosen.filter(e => e !== w));
     } else {
+      // Família + palavra fina: ficam AS DUAS (v8.9.0). Se a família ainda não
+      // estava marcada, marca-se também.
       let next = [...chosen, w];
-      if (f && picked.current.has(f.id)) next = next.filter(e => e !== f.value);
+      if (f && !next.includes(f.value)) next = [...next, f.value];
+      if (f) picked.current.add(f.id);
       onChange(next);
     }
   };
@@ -134,7 +131,7 @@ export const EmotionPicker = ({ value = [], onChange, logs = [], title }) => {
           {others.map(e => (
             <button key={'o-' + e} type="button" aria-pressed="true" onClick={() => onChange(chosen.filter(x => x !== e))}
               className="px-3 py-1.5 rounded-full text-xs border bg-purple-600 border-purple-300 text-white font-semibold">
-              {en ? (EMOTION_EN[e] || e) : applyWordForm(e, form)} ×
+              {emotionLabel(e, en ? 'en' : 'pt', form)} ×
             </button>
           ))}
         </div>

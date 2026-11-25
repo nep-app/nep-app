@@ -12,7 +12,7 @@ import { analyzeNote, getSentimentDescription } from '../utils/sentimentAnalysis
 import { periodInfoForClosing, typicalMgPerDose, balanceAverage } from '../utils/mgDerivation';
 import { GapsReport } from '../components/ui/GapsReport';
 import { DayMarksPanel } from '../components/ui/DayMarksPanel';
-import { EMOTION_EN, applyWordForm } from '../constants/emotions';
+import { EMOTION_EN, applyWordForm, emotionLabel } from '../constants/emotions';
 import { PeriodBar, ViewTabs } from '../components/ui/PeriodBar';
 import { intentionLabel, howLabel, outcomeLabel } from '../components/Intention';
 import { ROUTE_PT } from '../utils/substances';
@@ -85,7 +85,7 @@ export function HistoryView({
     // Em inglês, traduzir emoções (guardadas como '😌 Calmo/a') e gatilhos (guardados
     // em PT, ex.: 'Ansiedade') para não mostrarem português na versão EN.
     const isEN = i18n.language === 'en';
-    const trEmotion = (e) => (isEN ? (EMOTION_EN[e] || e) : applyWordForm(e));
+    const trEmotion = (e) => emotionLabel(e, isEN ? 'en' : 'pt');
     const trTrigger = (tr) => t('triggers.' + tr, tr);
 
     const [expandedAnalysis, setExpandedAnalysis] = useState(null);

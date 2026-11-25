@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import * as analyticsService from '../../services/analyticsService';
 import { analyzeMultipleNotes, analyzeNote, identifyThemes } from '../../utils/sentimentAnalysis';
-import { getEmotionCategory, EMOTION_EN, applyWordForm } from '../../constants/emotions';
+import { getEmotionCategory, EMOTION_EN, applyWordForm, emotionLabel } from '../../constants/emotions';
 import { safeToISODate, getTodayKey, gapCrossesDays, datesInRange, keepGoalZone, readTolerance } from '../../utils/helpers';
 import { useCrossMountMemo } from '../../hooks/useCrossMountMemo';
 import { diffPermutation, spearmanPermutation, MIN_PER_WINDOW, MIN_SHIFT, rangePermutation } from '../../utils/stats';
@@ -1762,7 +1762,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                         return (
                             <p>
                                 🌈 <strong className={('text-cyan-400')}>{t('coach.emotionalStateLabel')}</strong>{' '}{t('coach.emotionalBalance')} <strong className="text-white">{t(balanceLabelKey)}</strong> {t('coach.pctPositiveEmotions', { pct: positivePercent })}
-                                {topEmotions.length > 0 && <> {t('coach.mostFrequentEmotions')} <strong>{topEmotions.map(e => i18n.language === 'en' ? (EMOTION_EN[e] || e) : applyWordForm(e)).join(', ')}</strong>.</>}
+                                {topEmotions.length > 0 && <> {t('coach.mostFrequentEmotions')} <strong>{topEmotions.map(e => emotionLabel(e, i18n.language === 'en' ? 'en' : 'pt')).join(', ')}</strong>.</>}
                                 {/* Antes, com ≥60%: "✨ Ótimo! Mantém estas práticas que te fazem
                                     sentir bem" — elogio e uma causa que a app não conhece. */}
                                 {positivePercent < 40 && (
@@ -1802,7 +1802,7 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
                             const r = diffPermutation(sem, com);
                             testadas.push({ emotion, n: com.length, a: media(com), b: media(sem), p: r.p });
                         });
-                        const nomeEmocao = (e) => (i18n.language === 'en' ? (EMOTION_EN[e] || e) : applyWordForm(e));
+                        const nomeEmocao = (e) => emotionLabel(e, i18n.language === 'en' ? 'en' : 'pt');
                         const label = (<>🎭 <strong className={('text-white')}>{t('coach.emotionalTriggersLabel')}</strong>{' '}</>);
                         if (testadas.length === 0) {
                             return (
@@ -1840,13 +1840,13 @@ export const AnalysesCoachTab = React.memo(function AnalysesCoachTab({
 
                         // Agrupar emoções por tipo
                         const emotionTypes = {
-                            ansiedade: ['😰 Ansioso/a', '😓 Stressado/a', '😩 Overwhelmed'],
-                            frustração: ['😫 Frustrado/a', '😤 Irritado/a', '😕 Confuso/a'],
+                            ansiedade: ['😰 Ansioso/a', '😓 Stressado/a', '😩 Overwhelmed', '😟 Preocupado/a', '😬 Nervoso/a', '😨 Com medo', '🌀 Agitado/a', '👀 Paranoico/a'],
+                            frustração: ['😫 Frustrado/a', '😤 Irritado/a', '😕 Confuso/a', '😠 Zangado/a', '⏳ Impaciente', '😒 Ressentido/a'],
                             // + as famílias novas da v8.8.0 (só acrescentam; os registos antigos contam igual)
-                            tristeza: ['😢 Triste', '😔 Inseguro/a', '🥺 Solitário/a', '😢 Em baixo'],
-                            apatia: ['😞 Apático/a', '🔌 Desconectado/a', '😐 Ambivalente', '🔌 Desligada/o'],
-                            energia: ['💪 Motivado/a', '⚡ Okay', '🌟 Produtiva/o', '⚡ Com energia'],
-                            positivas: ['😊 Feliz', '🎉 Entusiasmado/a', '🌈 Otimista', '😌 Calmo/a', '😊 Bem']
+                            tristeza: ['😢 Triste', '😔 Inseguro/a', '🥺 Solitário/a', '😢 Em baixo', '😥 Desanimado/a', '🕳️ Vazio/a', '💔 Magoado/a', '🫣 Com vergonha'],
+                            apatia: ['😞 Apático/a', '🔌 Desconectado/a', '😐 Ambivalente', '🔌 Desligada/o', '🫥 Entorpecido/a', '🥱 Aborrecido/a', '😶 Indiferente'],
+                            energia: ['💪 Motivado/a', '⚡ Okay', '🌟 Produtiva/o', '⚡ Com energia', '🎯 Focado/a', '🎨 Criativo/a', '🤩 Eufórico/a'],
+                            positivas: ['😊 Feliz', '🎉 Entusiasmado/a', '🌈 Otimista', '😌 Calmo/a', '😊 Bem', '🙂 Contente', '🛋️ Relaxado/a', '😮‍💨 Aliviado/a', '🛡️ Seguro/a', '🫂 Ligado/a às pessoas']
                         };
 
                         const typeCounts = {};
